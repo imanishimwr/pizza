@@ -1,8 +1,18 @@
-// Real-time Event Bus for HotPot Order Alerts & Notifications
+// Real-time Event Bus & Cross-Tab BroadcastChannel for HotPot Order Alerts
 
 class EventBus {
   constructor() {
     this.listeners = {};
+    // Setup cross-tab sync via BroadcastChannel if available in browser
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      this.channel = new BroadcastChannel('hotpot_crosstab_events');
+      this.channel.onmessage = (event) => {
+        const { type, data } = event.data || {};
+        if (type && this.listeners[type]) {
+          this.listeners[type].forEach(callback => callback(data, true)); // true indicates cross-tab
+        }
+      };
+    }
   }
 
   on(event, callback) {
@@ -19,8 +29,14 @@ class EventBus {
   }
 
   emit(event, data) {
-    if (!this.listeners[event]) return;
-    this.listeners[event].forEach(callback => callback(data));
+    // Notify local listeners
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(callback => callback(data, false));
+    }
+    // Broadcast to all other open browser tabs
+    if (this.channel) {
+      this.channel.postMessage({ type: event, data });
+    }
   }
 }
 

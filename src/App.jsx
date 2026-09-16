@@ -17,6 +17,7 @@ import RiderDashboard from './components/delivery/RiderDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import { apiService } from './services/apiService';
 import { eventBus } from './services/eventBus';
+import { notificationService } from './services/notificationService';
 import { Bell, CheckCircle2, Flame } from 'lucide-react';
 
 export default function App() {
@@ -47,6 +48,33 @@ export default function App() {
   const [checkoutData, setCheckoutData] = useState(null);
   const [trackedOrder, setTrackedOrder] = useState(orders[0] || null);
 
+  // Cross-Tab Event Listeners & Audio Notifications
+  useEffect(() => {
+    const unsubOrder = eventBus.on('NEW_ORDER', (newOrder, isCrossTab) => {
+      if (isCrossTab) {
+        setOrders(apiService.getOrders());
+        showToast(`New Order #${newOrder.id} received!`, 'Incoming Order');
+        notificationService.playChime('new_order');
+        notificationService.sendDesktopNotification(`New Order #${newOrder.id}`, {
+          body: `Order total: ${newOrder.totalRWF} RWF`
+        });
+      }
+    });
+
+    const unsubStatus = eventBus.on('ORDER_STATUS_UPDATE', ({ orderId, status }, isCrossTab) => {
+      if (isCrossTab) {
+        setOrders(apiService.getOrders());
+        showToast(`Order #${orderId} status changed to ${status.toUpperCase()}`, 'Order Updated');
+        notificationService.playChime('status_update');
+      }
+    });
+
+    return () => {
+      unsubOrder();
+      unsubStatus();
+    };
+  }, []);
+
   // Save changes to localStorage automatically
   useEffect(() => {
     apiService.saveMeals(meals);
@@ -65,6 +93,7 @@ export default function App() {
     setToast({ title, message });
     setTimeout(() => setToast(null), 4000);
   };
+
 
   // Cart Operations
   const handleAddToCart = (cartItem) => {
@@ -96,8 +125,9 @@ export default function App() {
     setTrackedOrder(newOrder);
     setActiveTab('tracking');
 
-    // Trigger event notification
+    // Trigger event notification & chime
     eventBus.emit('NEW_ORDER', newOrder);
+    notificationService.playChime('new_order');
     showToast(`Order #${newOrder.id} placed successfully! Kitchen is on it.`, 'Order Placed');
   };
 
@@ -108,6 +138,10 @@ export default function App() {
     if (trackedOrder && trackedOrder.id === orderId) {
       setTrackedOrder((prev) => ({ ...prev, status: newStatus }));
     }
+    
+    // Broadcast status change to other tabs & play audio chime
+    eventBus.emit('ORDER_STATUS_UPDATE', { orderId, status: newStatus });
+    notificationService.playChime('status_update');
     showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
   };
 

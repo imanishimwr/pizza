@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Printer, CheckCircle2, Flame, MapPin, Phone, Calendar } from 'lucide-react';
+import { X, Printer, CheckCircle2, Flame, Download } from 'lucide-react';
 
 export default function ReceiptModal({ isOpen, onClose, order }) {
   if (!isOpen || !order) return null;
@@ -8,9 +8,37 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
     window.print();
   };
 
+  const handleDownloadInvoice = () => {
+    const textContent = `
+========================================
+       HOTPOT DELIGHTS KIGALI
+========================================
+Receipt No: #${order.id}
+Date: ${order.orderTime || new Date().toLocaleString()}
+Customer: ${order.customerName}
+Phone: ${order.phone}
+Address: ${order.address}
+Payment: ${order.paymentMethod || 'MTN Mobile Money'}
+----------------------------------------
+ITEMS:
+${order.items.map(item => `- ${item.name} (${item.spice || 'Regular'}) x${item.qty}: ${(item.qty * item.price).toLocaleString()} RWF`).join('\n')}
+----------------------------------------
+TOTAL PAID: ${order.totalRWF.toLocaleString()} RWF
+========================================
+Murakoze! Thank you for your order.
+`;
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Invoice_${order.id}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in print:bg-white print:p-0">
-      <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:max-w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in print:p-0 print:bg-white print:static print:block">
+      <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:max-w-full print:w-full">
         
         {/* Header Actions */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4 print:hidden">
@@ -19,6 +47,14 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
             <h2 className="text-base font-bold text-text-main">Official Order Receipt</h2>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadInvoice}
+              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+              title="Download text receipt"
+            >
+              <Download className="w-3.5 h-3.5 text-amber-400" />
+              Download
+            </button>
             <button
               onClick={handlePrint}
               className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
@@ -38,7 +74,7 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
           {/* Logo Header */}
           <div className="text-center space-y-1 pb-3 border-b border-dashed border-white/20 print:border-black/20">
             <div className="flex items-center justify-center gap-1.5 font-extrabold text-base text-primary print:text-black">
-              <Flame className="w-5 h-5 text-primary" />
+              <Flame className="w-5 h-5 text-primary print:text-black" />
               HOTPOT DELIGHTS KIGALI
             </div>
             <div className="text-[11px] text-text-muted print:text-gray-600">
@@ -89,7 +125,7 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
                 <div key={idx} className="flex justify-between text-text-muted print:text-black">
                   <div>
                     <div className="font-semibold text-text-main print:text-black">{item.name}</div>
-                    {item.spice && <div className="text-[10px] text-orange-400">Spice: {item.spice}</div>}
+                    {item.spice && <div className="text-[10px] text-orange-400 print:text-gray-700">Spice: {item.spice}</div>}
                   </div>
                   <div className="text-right">
                     <div>{item.qty} x {item.price.toLocaleString()}</div>
@@ -130,3 +166,4 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
     </div>
   );
 }
+

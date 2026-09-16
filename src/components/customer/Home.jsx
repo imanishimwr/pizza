@@ -6,10 +6,17 @@ export default function Home({ meals, onSelectMeal, searchQuery, selectedCategor
   const [activeBanner, setActiveBanner] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate network request for premium feel
+  // Simulate network request for premium feel & auto-rotate hero banner graphic
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
+    const bannerInterval = setInterval(() => {
+      setActiveBanner((prev) => (prev + 1) % PROMO_BANNERS.length);
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(bannerInterval);
+    };
   }, [selectedCategory, searchQuery]);
 
   const filteredMeals = meals.filter(meal => {
@@ -63,17 +70,63 @@ export default function Home({ meals, onSelectMeal, searchQuery, selectedCategor
             </div>
           </div>
 
-          {/* Right Column: User Shared HotPot Delivery Moto Graphic */}
-          <div className="lg:col-span-5 flex justify-center lg:justify-end relative">
-            <div className="relative max-w-sm sm:max-w-md w-full animate-float-moto">
-              <img
-                src="/assets/delivery_rider_hotpot.png"
-                alt="HotPot Delivery Rider Moto"
-                className="w-full h-auto object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.6)]"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
+          {/* Right Column: Animated Switcher between HotPot Logo & Delivery Moto Graphic */}
+          <div className="lg:col-span-5 flex justify-center lg:justify-end relative min-h-[220px] sm:min-h-[280px] items-center">
+            <div className="relative max-w-sm sm:max-w-md w-full flex items-center justify-center">
+              
+              {/* HotPot Logo Animated Graphic Frame */}
+              <div className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 transform ${
+                activeBanner % 2 === 0 ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-95 -rotate-6 pointer-events-none'
+              }`}>
+                <div className="relative group">
+                  {/* Glowing backdrop aura */}
+                  <div className="absolute -inset-4 bg-gradient-to-r from-primary via-orange-500 to-amber-400 rounded-3xl blur-2xl opacity-60 animate-pulse"></div>
+                  
+                  <div className="relative p-6 sm:p-8 rounded-3xl bg-surface-dark/95 border-2 border-amber-500/50 shadow-2xl flex flex-col items-center text-center space-y-3 backdrop-blur-md">
+                    <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-black border border-white/20 p-1 flex items-center justify-center shadow-2xl shadow-primary/50 overflow-hidden group-hover:scale-105 transition-transform">
+                      <img
+                        src="/assets/1152x1152_S7.png"
+                        alt="Official HotPot Logo"
+                        className="w-full h-full object-contain rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black bg-gradient-to-r from-white via-orange-200 to-amber-400 bg-clip-text text-transparent">
+                        HotPot Delights
+                      </h3>
+                      <p className="text-xs font-bold text-amber-300 uppercase tracking-widest mt-1">
+                        Authentic Gourmet Kigali
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Moto Rider Graphic Frame */}
+              <div className={`transition-all duration-700 transform ${
+                activeBanner % 2 !== 0 ? 'opacity-100 scale-100 translate-x-0' : 'opacity-0 scale-95 translate-x-8 pointer-events-none'
+              }`}>
+                <div className="relative max-w-xs sm:max-w-sm w-full animate-float-moto">
+                  <img
+                    src="/assets/delivery_rider_hotpot.png"
+                    alt="HotPot Delivery Rider Moto"
+                    className="w-full h-auto object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.6)]"
+                    onError={(e) => {
+                      // Fallback SVG rider if image file not loaded
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  {/* Backup fallback graphic if image missing */}
+                  <div className="p-6 rounded-3xl bg-black/40 border border-white/10 text-center space-y-2 backdrop-blur-sm">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-2xl animate-bounce">
+                      🛵
+                    </div>
+                    <div className="font-extrabold text-sm text-white">Fast Kigali Moto Express</div>
+                    <div className="text-[11px] text-text-muted">15-30 Min Average Arrival Time</div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
