@@ -252,10 +252,11 @@ export default function Home({ meals, onSelectMeal, searchQuery, selectedCategor
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredMeals.map(meal => (
+            {filteredMeals.map((meal, index) => (
               <div 
                 key={meal.id}
-                className={`card-item group flex flex-col justify-between overflow-hidden cursor-pointer ${
+                style={{ animationDelay: `${Math.min(index * 60, 450)}ms` }}
+                className={`card-item group flex flex-col justify-between overflow-hidden cursor-pointer animate-card-stagger ${
                   meal.outOfStock ? 'opacity-60' : ''
                 }`}
                 onClick={() => !meal.outOfStock && onSelectMeal(meal)}
@@ -277,12 +278,12 @@ export default function Home({ meals, onSelectMeal, searchQuery, selectedCategor
                         Out of Stock
                       </span>
                     ) : meal.spicy ? (
-                      <span className="badge-tag bg-red-950/80 text-red-400 border border-red-500/40 backdrop-blur-md">
+                      <span className="badge-tag bg-red-950/80 text-red-400 border border-red-500/40 backdrop-blur-md badge-shimmer">
                         🔥 Spicy
                       </span>
                     ) : null}
                     {meal.category === 'hotpot' && (
-                      <span className="badge-tag bg-amber-950/80 text-amber-400 border border-amber-500/40 backdrop-blur-md">
+                      <span className="badge-tag bg-amber-950/80 text-amber-400 border border-amber-500/40 backdrop-blur-md badge-shimmer">
                         🍲 Hotpot
                       </span>
                     )}

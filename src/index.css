@@ -112,7 +112,7 @@ body {
 /* Animations: Floating Moto & Right-To-Left Marquee */
 @keyframes floatMoto {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(-1deg); }
+  50% { transform: translateY(-6px) rotate(-1deg); }
 }
 
 .animate-float-moto {
@@ -127,11 +127,53 @@ body {
 .animate-marquee {
   display: flex;
   width: max-content;
-  animation: marquee 25s linear infinite;
+  animation: marquee 28s linear infinite;
 }
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+/* Badge Shimmer Streak */
+@keyframes badgeShimmer {
+  0% { transform: translateX(-100%) rotate(20deg); }
+  100% { transform: translateX(200%) rotate(20deg); }
+}
+
+.badge-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: badgeShimmer 3s infinite ease-in-out;
+}
+
+/* Smooth Staggered Card Entrance */
+@keyframes cardStagger {
+  0% { opacity: 0; transform: translateY(16px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-card-stagger {
+  animation: cardStagger 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Gentle Glow Pulse */
+@keyframes softPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+.animate-soft-glow {
+  animation: softPulse 4s ease-in-out infinite;
 }
 
 /* Skeleton Loading (Shimmer) */
