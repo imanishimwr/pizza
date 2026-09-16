@@ -18,14 +18,20 @@
   --color-text-subdued: #736B66;
 }
 
-body {
+html, body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   background-color: #120F0E;
   color: #F7F4F2;
   min-height: 100vh;
+  width: 100%;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: border-box;
 }
 
 /* Glass & Card Effects */
