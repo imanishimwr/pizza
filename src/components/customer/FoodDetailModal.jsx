@@ -22,9 +22,9 @@ export default function FoodDetailModal({ meal, onClose, onAddToCart }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div 
-        className="bg-surface-dark border border-white/10 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col justify-between"
+        className="bg-surface-dark border border-white/10 rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col justify-between"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Image */}

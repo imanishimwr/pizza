@@ -68,8 +68,8 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="bg-surface-dark border border-white/10 rounded-2xl sm:rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl">
         
         {/* Header */}
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
