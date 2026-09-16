@@ -40,20 +40,25 @@ export default function Home({ meals, onSelectMeal, searchQuery, selectedCategor
           
           {/* Left Text Column */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Logo Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-md">
+            {/* Logo & 24/7 Delivery Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-md">
               <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-white">
                 <Flame className="w-4 h-4" />
               </div>
-              <span className="tracking-wider uppercase text-amber-300">HotPot Kigali • Fresh. Hot. Delivered.</span>
+              <span className="tracking-wider uppercase text-amber-300">Hot Pot Kigali • We Deliver 24/7 🚀</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-lg leading-tight">
-              {PROMO_BANNERS[activeBanner].title}
-            </h1>
+            <div className="space-y-1">
+              <h2 className="text-base sm:text-xl font-extrabold text-amber-400 tracking-wide uppercase">
+                Welcome to the home of pizza 🍕
+              </h2>
+              <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-lg leading-tight">
+                {PROMO_BANNERS[activeBanner].title}
+              </h1>
+            </div>
 
             <p className="text-sm sm:text-base text-white/90 font-medium leading-relaxed max-w-lg">
-              {PROMO_BANNERS[activeBanner].subtitle}
+              {PROMO_BANNERS[activeBanner].subtitle} — Order your favorite hotpot combos & gourmet pizzas anytime, 24 hours a day, 7 days a week!
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
@@ -92,10 +97,10 @@ export default function Home({ meals, onSelectMeal, searchQuery, selectedCategor
                     </div>
                     <div>
                       <h3 className="text-2xl font-black bg-gradient-to-r from-white via-orange-200 to-amber-400 bg-clip-text text-transparent">
-                        HotPot Delights
+                        Hot Pot
                       </h3>
                       <p className="text-xs font-bold text-amber-300 uppercase tracking-widest mt-1">
-                        Authentic Gourmet Kigali
+                        Welcome to the home of pizza • 24/7 Delivery
                       </p>
                     </div>
                   </div>

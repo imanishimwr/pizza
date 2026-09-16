@@ -95,10 +95,11 @@ export default function Header({
           </div>
           <div>
             <span className="text-base sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-orange-100 to-primary bg-clip-text text-transparent">
-              HotPot Delights
+              Hot Pot
             </span>
-            <span className="block text-[9px] sm:text-[10px] text-accent-gold font-semibold uppercase tracking-wider">
-              Kigali Gourmet
+            <span className="block text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
+              24/7 Delivery in Kigali
             </span>
           </div>
         </div>
