@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, TrendingUp, DollarSign, ShoppingBag, Users, Plus, UtensilsCrossed, Trash2, CheckCircle2, AlertCircle, Edit, RefreshCw } from 'lucide-react';
 
-export default function AdminDashboard({ meals, setMeals, orders }) {
+export default function AdminDashboard({ meals = [], setMeals, orders = [] }) {
   const [showAddMeal, setShowAddMeal] = useState(false);
   
   // Form fields
@@ -12,7 +12,7 @@ export default function AdminDashboard({ meals, setMeals, orders }) {
   const [newMealImage, setNewMealImage] = useState('/assets/1122x850_AO.png');
   const [isSpicy, setIsSpicy] = useState(false);
 
-  const totalRevenue = orders.reduce((acc, o) => acc + o.totalRWF, 94000);
+  const totalRevenue = orders.reduce((acc, o) => acc + (o.totalRWF || 0), 94000);
   const totalOrdersCount = orders.length + 18;
 
   const handleAddMeal = (e) => {
@@ -39,7 +39,6 @@ export default function AdminDashboard({ meals, setMeals, orders }) {
     setNewMealPrice('');
     setNewMealDesc('');
     setShowAddMeal(false);
-    alert(`"${newFoodItem.name}" has been added to the menu and is live on the Home page!`);
   };
 
   const handleDeleteMeal = (id, name) => {
@@ -107,7 +106,7 @@ export default function AdminDashboard({ meals, setMeals, orders }) {
             <UtensilsCrossed className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-2xl font-black font-mono text-text-main">
-            4 Active
+            {orders.filter(o => o.status === 'pending' || o.status === 'preparing').length} Active
           </div>
           <span className="text-[11px] text-blue-400 font-semibold">Avg prep time: 18 min</span>
         </div>
@@ -120,7 +119,7 @@ export default function AdminDashboard({ meals, setMeals, orders }) {
           <div className="text-2xl font-black font-mono text-text-main">
             {meals.length} Items Live
           </div>
-          <span className="text-[11px] text-emerald-400 font-semibold">Synced with Home Page</span>
+          <span className="text-[11px] text-emerald-400 font-semibold">Synced with Customer Home</span>
         </div>
       </div>
 
@@ -240,7 +239,7 @@ export default function AdminDashboard({ meals, setMeals, orders }) {
                     </div>
                   </td>
                   <td className="p-3 capitalize font-semibold">{meal.category}</td>
-                  <td className="p-3 font-mono font-bold text-primary">{meal.price.toLocaleString()} RWF</td>
+                  <td className="p-3 font-mono font-bold text-primary">{(meal.price || 0).toLocaleString()} RWF</td>
                   <td className="p-3">
                     <button
                       onClick={() => handleToggleStock(meal.id)}

@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, User, Phone, MapPin, Mail, Lock, ShieldCheck, Check } from 'lucide-react';
 
 export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
-  if (!isOpen || !user) return null;
-
-  const [name, setName] = useState(user.name || 'Aline Uwase');
-  const [phone, setPhone] = useState(user.phone || '0788000001');
-  const [address, setAddress] = useState('KG 9 Ave, Nyarutarama, Kigali');
-  const [email, setEmail] = useState(user.email || 'aline@example.com');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [email, setEmail] = useState('');
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setPhone(user.phone || '');
+      setAddress(user.address || user.location || 'KG 9 Ave, Nyarutarama, Kigali');
+      setEmail(user.email || '');
+    }
+  }, [user]);
+
+  if (!isOpen || !user) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();

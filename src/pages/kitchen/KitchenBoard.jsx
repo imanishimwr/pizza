@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChefHat, Clock, AlertCircle, CheckCircle2, ArrowRight, Bell, Sparkles } from 'lucide-react';
 
-export default function KitchenBoard({ orders, onUpdateStatus }) {
+export default function KitchenBoard({ orders = [], onUpdateStatus }) {
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const readyOrders = orders.filter(o => o.status === 'ready' || o.status === 'delivery');
@@ -35,7 +35,6 @@ export default function KitchenBoard({ orders, onUpdateStatus }) {
 
       {/* Kanban 3-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Column 1: New / Pending Orders */}
         <div className="space-y-4">
           <div className="p-3 rounded-xl bg-surface-card border border-white/10 flex items-center justify-between">
@@ -151,14 +150,13 @@ export default function KitchenBoard({ orders, onUpdateStatus }) {
                     </span>
                   </div>
                   <p className="text-xs text-text-muted">
-                    Order #{order.id} is ready at the kitchen. Head over to collect.
+                    Order #{order.id} is ready at the kitchen counter for dispatch.
                   </p>
                 </div>
               ))
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

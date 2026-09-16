@@ -5,8 +5,11 @@ const STORAGE_KEYS = {
   MEALS: 'hotpot_meals_v1',
   ORDERS: 'hotpot_orders_v1',
   USER: 'hotpot_user_v1',
-  CART: 'hotpot_cart_v1'
+  CART: 'hotpot_cart_v1',
+  WISHLIST: 'hotpot_wishlist_v1',
+  TRACKED_ORDER_ID: 'hotpot_tracked_order_id_v1'
 };
+
 
 export const apiService = {
   // Meals Persistence
@@ -67,6 +70,64 @@ export const apiService = {
     }
   },
 
+  // Cart Persistence across all MPA pages
+  getCart: () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.CART);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  saveCart: (cart) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
+    } catch (e) {
+      console.error('Error saving cart:', e);
+    }
+  },
+
+  // Wishlist Persistence
+  getWishlist: () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.WISHLIST);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  saveWishlist: (wishlist) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.WISHLIST, JSON.stringify(wishlist));
+    } catch (e) {
+      console.error('Error saving wishlist:', e);
+    }
+  },
+
+
+  // Active Tracked Order Persistence
+  getTrackedOrderId: () => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.TRACKED_ORDER_ID) || null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  setTrackedOrderId: (orderId) => {
+    try {
+      if (orderId) {
+        localStorage.setItem(STORAGE_KEYS.TRACKED_ORDER_ID, orderId);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.TRACKED_ORDER_ID);
+      }
+    } catch (e) {
+      console.error('Error saving tracked order id:', e);
+    }
+  },
+
   // Sync to backend if endpoint available
   syncOrderToBackend: async (order) => {
     try {
@@ -82,3 +143,4 @@ export const apiService = {
     }
   }
 };
+

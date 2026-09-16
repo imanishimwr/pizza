@@ -142,7 +142,7 @@ Murakoze! Thank you for your order.
           <div className="pt-3 border-t border-dashed border-white/20 print:border-black/20 space-y-1">
             <div className="flex justify-between text-text-muted print:text-black">
               <span>Subtotal:</span>
-              <span>{order.totalRWF.toLocaleString()} RWF</span>
+              <span>{(order.totalRWF || 0).toLocaleString()} RWF</span>
             </div>
             <div className="flex justify-between text-text-muted print:text-black">
               <span>Delivery Fee (Kigali):</span>
@@ -150,9 +150,10 @@ Murakoze! Thank you for your order.
             </div>
             <div className="flex justify-between text-base font-extrabold text-primary print:text-black pt-1 border-t border-white/10">
               <span>TOTAL PAID:</span>
-              <span>{order.totalRWF.toLocaleString()} RWF</span>
+              <span>{(order.totalRWF || 0).toLocaleString()} RWF</span>
             </div>
           </div>
+
 
           {/* Footer Note */}
           <div className="text-center text-[10px] text-text-subdued pt-4 print:text-gray-500">

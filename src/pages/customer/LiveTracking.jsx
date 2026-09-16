@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, Phone, Clock, ChefHat, Bike, CheckCircle2, ShieldCheck, FileText } from 'lucide-react';
 import L from 'leaflet';
-import ReceiptModal from './ReceiptModal';
+import ReceiptModal from '../../components/customer/ReceiptModal';
 
 export default function LiveTracking({ order }) {
   const mapRef = useRef(null);
@@ -13,11 +13,11 @@ export default function LiveTracking({ order }) {
   const restaurantCoords = [-1.9441, 30.0619]; // HotPot Delights HQ
   const deliveryCoords = [-1.9360, 30.0820];   // Nyarutarama Delivery Spot
 
-  const [currentStep, setCurrentStep] = useState(
+  // Reactive step calculation based on order status
+  const currentStep = 
     order?.status === 'pending' ? 1 :
     order?.status === 'preparing' ? 2 :
-    order?.status === 'delivery' ? 3 : 4
-  );
+    order?.status === 'delivery' ? 3 : 4;
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -52,7 +52,7 @@ export default function LiveTracking({ order }) {
       opacity: 0.8
     }).addTo(map);
 
-    // Rider Moving Marker (Extracted from APK Hermes string: riderIcon divIcon)
+    // Rider Marker
     const riderIcon = L.divIcon({
       className: 'custom-leaflet-icon',
       html: '<div class="pin-rider">🛵 Eric (Delivery Rider)</div>'
@@ -112,7 +112,6 @@ export default function LiveTracking({ order }) {
 
       {/* Grid: Map + Stepper */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Interactive Leaflet Map */}
         <div className="lg:col-span-2 h-96 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
           <div ref={mapRef} className="w-full h-full" />
@@ -162,7 +161,6 @@ export default function LiveTracking({ order }) {
             <div>{order?.address || 'KG 9 Ave, Nyarutarama, Kigali'}</div>
           </div>
         </div>
-
       </div>
 
       <ReceiptModal

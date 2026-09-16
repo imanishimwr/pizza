@@ -16,7 +16,7 @@ import {
   Flame,
   ArrowUpRight
 } from 'lucide-react';
-import ReceiptModal from './ReceiptModal';
+import ReceiptModal from '../../components/customer/ReceiptModal';
 
 export default function CustomerDashboard({ 
   user, 
@@ -143,7 +143,7 @@ export default function CustomerDashboard({
                 {activeOrders.map((order) => (
                   <div
                     key={order.id}
-                    onClick={() => onSelectOrder(order)}
+                    onClick={() => onSelectOrder && onSelectOrder(order)}
                     className="p-5 rounded-2xl bg-gradient-to-r from-primary-dark/40 to-surface-card border border-primary/50 hover:border-primary transition-all cursor-pointer space-y-3 shadow-lg"
                   >
                     <div className="flex items-center justify-between">
@@ -182,7 +182,7 @@ export default function CustomerDashboard({
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-text-muted" />
-                Order History
+                Recent Orders
               </h2>
               <span className="text-xs text-text-muted">{orders.length} total</span>
             </div>
@@ -204,7 +204,7 @@ export default function CustomerDashboard({
                   <div
                     key={order.id}
                     className="p-4 rounded-2xl bg-surface-card border border-white/5 hover:border-white/20 transition-all cursor-pointer space-y-3"
-                    onClick={() => onSelectOrder(order)}
+                    onClick={() => onSelectOrder && onSelectOrder(order)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -234,7 +234,7 @@ export default function CustomerDashboard({
                       {order.items.map((item, idx) => (
                         <div key={idx} className="flex justify-between text-xs text-text-muted">
                           <span>{item.qty}x {item.name}</span>
-                          <span className="font-mono">{item.price.toLocaleString()} RWF</span>
+                          <span className="font-mono">{(item.price || 0).toLocaleString()} RWF</span>
                         </div>
                       ))}
                     </div>
@@ -242,7 +242,7 @@ export default function CustomerDashboard({
                     <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
                       <span className="text-text-muted line-clamp-1">{order.address}</span>
                       <span className="font-mono font-extrabold text-primary">
-                        {order.totalRWF?.toLocaleString()} RWF
+                        {(order.totalRWF || 0).toLocaleString()} RWF
                       </span>
                     </div>
                   </div>

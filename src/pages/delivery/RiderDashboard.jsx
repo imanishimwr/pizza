@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bike, MapPin, Phone, CheckCircle2, Navigation, DollarSign, Clock, Shield } from 'lucide-react';
 
-export default function RiderDashboard({ orders, onUpdateStatus }) {
+export default function RiderDashboard({ orders = [], onUpdateStatus }) {
   const activeDeliveries = orders.filter(o => o.status === 'ready' || o.status === 'delivery');
   const completedDeliveries = orders.filter(o => o.status === 'delivered');
 
@@ -31,7 +31,6 @@ export default function RiderDashboard({ orders, onUpdateStatus }) {
 
       {/* Grid: Delivery Orders & Map */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Active Deliveries List */}
         <div className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
@@ -71,7 +70,7 @@ export default function RiderDashboard({ orders, onUpdateStatus }) {
                   </div>
 
                   <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-primary">{order.totalRWF.toLocaleString()} RWF</span>
+                    <span className="font-mono font-bold text-primary">{(order.totalRWF || 0).toLocaleString()} RWF</span>
                     <a
                       href={`https://www.google.com/maps?q=${encodeURIComponent(order.address)}`}
                       target="_blank"
@@ -131,11 +130,11 @@ export default function RiderDashboard({ orders, onUpdateStatus }) {
                   Update Delivery Status
                 </label>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     onClick={() => onUpdateStatus(selectedOrder.id, 'delivery')}
                     className={`btn-secondary text-xs py-3 justify-center ${
-                      selectedOrder.status === 'delivery' ? 'bg-amber-600/30 border-amber-500 text-amber-300' : ''
+                      selectedOrder.status === 'delivery' ? 'bg-amber-600/30 border-amber-500 text-amber-300 font-bold' : ''
                     }`}
                   >
                     1. Picked Up from Kitchen
@@ -144,7 +143,6 @@ export default function RiderDashboard({ orders, onUpdateStatus }) {
                   <button
                     onClick={() => {
                       onUpdateStatus(selectedOrder.id, 'delivered');
-                      alert(`Finish Order #${selectedOrder.id} was delivered successfully. Nice work!`);
                     }}
                     className="btn-primary text-xs py-3 justify-center bg-emerald-600 hover:bg-emerald-700"
                   >
@@ -153,7 +151,6 @@ export default function RiderDashboard({ orders, onUpdateStatus }) {
                   </button>
                 </div>
               </div>
-
             </div>
           ) : (
             <div className="p-12 text-center bg-surface-card rounded-2xl border border-white/5 text-text-muted">
@@ -161,7 +158,6 @@ export default function RiderDashboard({ orders, onUpdateStatus }) {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Clock, MapPin, CheckCircle2, ChevronRight, FileText } from 'lucide-react';
-import ReceiptModal from './ReceiptModal';
+import ReceiptModal from '../../components/customer/ReceiptModal';
 
-export default function OrdersHistory({ orders, onSelectOrder }) {
+export default function OrdersHistory({ orders = [], onSelectOrder }) {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   return (
@@ -28,7 +28,7 @@ export default function OrdersHistory({ orders, onSelectOrder }) {
             <div 
               key={order.id}
               className="p-5 rounded-2xl bg-surface-card border border-white/5 hover:border-primary/40 transition-all cursor-pointer space-y-3"
-              onClick={() => onSelectOrder(order)}
+              onClick={() => onSelectOrder && onSelectOrder(order)}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-3">
                 <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function OrdersHistory({ orders, onSelectOrder }) {
                 {order.items.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-xs text-text-muted">
                     <span>{item.qty}x {item.name} {item.spice ? `(${item.spice})` : ''}</span>
-                    <span className="font-mono">{item.price.toLocaleString()} RWF</span>
+                    <span className="font-mono">{(item.price || 0).toLocaleString()} RWF</span>
                   </div>
                 ))}
               </div>
@@ -78,7 +78,7 @@ export default function OrdersHistory({ orders, onSelectOrder }) {
 
                 <div className="flex items-center gap-3">
                   <span className="font-mono font-extrabold text-sm text-primary">
-                    Total: {order.totalRWF.toLocaleString()} RWF
+                    Total: {(order.totalRWF || 0).toLocaleString()} RWF
                   </span>
                   <ChevronRight className="w-4 h-4 text-text-muted" />
                 </div>

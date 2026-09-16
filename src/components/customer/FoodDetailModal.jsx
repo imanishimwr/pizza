@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Star, Flame, Plus, Minus, ShoppingBag, Check } from 'lucide-react';
 
 export default function FoodDetailModal({ meal, onClose, onAddToCart }) {
-  if (!meal) return null;
-
-  const [selectedSpice, setSelectedSpice] = useState(meal.spiceLevels ? meal.spiceLevels[0] : null);
-  const [selectedBroth, setSelectedBroth] = useState(meal.broths ? meal.broths[0] : null);
+  const [selectedSpice, setSelectedSpice] = useState(null);
+  const [selectedBroth, setSelectedBroth] = useState(null);
   const [specialNote, setSpecialNote] = useState('');
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    if (meal) {
+      setSelectedSpice(meal.spiceLevels ? meal.spiceLevels[0] : null);
+      setSelectedBroth(meal.broths ? meal.broths[0] : null);
+      setSpecialNote('');
+      setQuantity(1);
+    }
+  }, [meal]);
+
+  if (!meal) return null;
 
   const handleAdd = () => {
     onAddToCart({

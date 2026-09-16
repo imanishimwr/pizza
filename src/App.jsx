@@ -1,44 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
-import Home from './components/customer/Home';
-import FoodDetailModal from './components/customer/FoodDetailModal';
+import Home from './pages/customer/Home';
+import ProductDetailsPage from './pages/customer/ProductDetailsPage';
+import CustomerDashboard from './pages/customer/CustomerDashboard';
+import LiveTracking from './pages/customer/LiveTracking';
+import OrdersHistory from './pages/customer/OrdersHistory';
+import KitchenBoard from './pages/kitchen/KitchenBoard';
+import RiderDashboard from './pages/delivery/RiderDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import CartDrawer from './components/customer/CartDrawer';
 import CheckoutModal from './components/customer/CheckoutModal';
-import LiveTracking from './components/customer/LiveTracking';
 import AuthModal from './components/customer/AuthModal';
-import CustomerDashboard from './components/customer/CustomerDashboard';
-import OrdersHistory from './components/customer/OrdersHistory';
+import LocationModal from './components/LocationModal';
 import ReferralModal from './components/customer/ReferralModal';
 import HelpModal from './components/customer/HelpModal';
 import ProfileModal from './components/customer/ProfileModal';
-import LocationModal from './components/LocationModal';
-import KitchenBoard from './components/kitchen/KitchenBoard';
-import RiderDashboard from './components/delivery/RiderDashboard';
-import AdminDashboard from './components/admin/AdminDashboard';
 import { apiService } from './services/apiService';
 import { eventBus } from './services/eventBus';
 import { notificationService } from './services/notificationService';
-import { Bell, CheckCircle2, Flame } from 'lucide-react';
+import { Bell, Flame } from 'lucide-react';
+
+function getRouteFromPath(pathname) {
+  const path = (pathname || '/').toLowerCase();
+  if (path.startsWith('/kitchen')) return { role: 'kitchen', tab: 'kitchen' };
+  if (path.startsWith('/delivery') || path.startsWith('/rider')) return { role: 'delivery', tab: 'delivery' };
+  if (path.startsWith('/admin')) return { role: 'admin', tab: 'admin' };
+  if (path.startsWith('/tracking')) return { role: 'customer', tab: 'tracking' };
+  if (path.startsWith('/orders')) return { role: 'customer', tab: 'orders' };
+  if (path.startsWith('/dashboard')) return { role: 'customer', tab: 'dashboard' };
+  if (path.startsWith('/product')) return { role: 'customer', tab: 'product-detail' };
+  return { role: 'customer', tab: 'menu' };
+}
 
 export default function App() {
-  const [currentRole, setCurrentRole] = useState('customer'); // customer | kitchen | delivery | admin
-  const [activeTab, setActiveTab] = useState('menu'); // menu | orders | tracking | dashboard
-  
-  // Dynamic Persistent Food Catalog & Orders State
+  const initialRoute = typeof window !== 'undefined'
+    ? getRouteFromPath(window.location.pathname)
+    : { role: 'customer', tab: 'menu' };
+
+  const [currentRole, setCurrentRole] = useState(initialRoute.role);
+  const [activeTab, setActiveTab] = useState(initialRoute.tab);
   const [meals, setMeals] = useState(() => apiService.getMeals());
   const [orders, setOrders] = useState(() => apiService.getOrders());
   const [user, setUser] = useState(() => apiService.getUser());
-  const [cart, setCart] = useState([]);
-  
-  // Toast Alert State
-  const [toast, setToast] = useState(null);
-
-  // Search & Filter
+  const [cart, setCart] = useState(() => apiService.getCart());
+  const [wishlist, setWishlist] = useState(() => apiService.getWishlist());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-
-  // Modals & Drawers
-  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [selectedMeal, setSelectedMeal] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      const initialMeals = apiService.getMeals();
+      if (id) {
+        const found = initialMeals.find((meal) => String(meal.id) === String(id));
+        if (found) return found;
+      }
+    }
+    return null;
+  });
+  const [trackedOrder, setTrackedOrder] = useState(() => {
+    const savedId = apiService.getTrackedOrderId();
+    const initialOrders = apiService.getOrders();
+    return (savedId && initialOrders.find((order) => order.id === savedId)) || initialOrders[0] || null;
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isReferralOpen, setIsReferralOpen] = useState(false);
@@ -46,9 +71,32 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState(null);
-  const [trackedOrder, setTrackedOrder] = useState(orders[0] || null);
 
-  // Cross-Tab Event Listeners & Audio Notifications
+  const showToast = useCallback((message, title = 'Notification') => {
+    setToast({ title, message });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  useEffect(() => {
+    apiService.saveMeals(meals);
+  }, [meals]);
+
+  useEffect(() => {
+    apiService.saveOrders(orders);
+  }, [orders]);
+
+  useEffect(() => {
+    apiService.saveUser(user);
+  }, [user]);
+
+  useEffect(() => {
+    apiService.saveCart(cart);
+  }, [cart]);
+
+  useEffect(() => {
+    apiService.saveWishlist(wishlist);
+  }, [wishlist]);
+
   useEffect(() => {
     const unsubOrder = eventBus.on('NEW_ORDER', (newOrder, isCrossTab) => {
       if (isCrossTab) {
@@ -56,7 +104,7 @@ export default function App() {
         showToast(`New Order #${newOrder.id} received!`, 'Incoming Order');
         notificationService.playChime('new_order');
         notificationService.sendDesktopNotification(`New Order #${newOrder.id}`, {
-          body: `Order total: ${newOrder.totalRWF} RWF`
+          body: `Order total: ${newOrder.totalRWF} RWF`,
         });
       }
     });
@@ -73,31 +121,106 @@ export default function App() {
       unsubOrder();
       unsubStatus();
     };
-  }, []);
+  }, [showToast]);
 
-  // Save changes to localStorage automatically
   useEffect(() => {
-    apiService.saveMeals(meals);
+    const handlePopState = () => {
+      const route = getRouteFromPath(window.location.pathname);
+      setCurrentRole(route.role);
+      setActiveTab(route.tab);
+      if (route.tab === 'product-detail') {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        if (id) {
+          const found = meals.find((meal) => String(meal.id) === String(id));
+          if (found) setSelectedMeal(found);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [meals]);
 
-  useEffect(() => {
-    apiService.saveOrders(orders);
-  }, [orders]);
+  const handleNavigate = (path, tabName, roleName) => {
+    const targetRole = roleName || (
+      path.includes('kitchen')
+        ? 'kitchen'
+        : path.includes('delivery') || path.includes('rider')
+          ? 'delivery'
+          : path.includes('admin')
+            ? 'admin'
+            : 'customer'
+    );
 
-  useEffect(() => {
-    apiService.saveUser(user);
-  }, [user]);
+    const targetTab = tabName || (
+      path.includes('tracking')
+        ? 'tracking'
+        : path.includes('orders')
+          ? 'orders'
+          : path.includes('dashboard')
+            ? 'dashboard'
+            : path.includes('product')
+              ? 'product-detail'
+              : 'menu'
+    );
 
-  // Toast alert trigger
-  const showToast = (message, title = 'Notification') => {
-    setToast({ title, message });
-    setTimeout(() => setToast(null), 4000);
+    setCurrentRole(targetRole);
+    setActiveTab(targetTab);
+
+    if (typeof window !== 'undefined' && window.history) {
+      if (window.location.pathname + window.location.search !== path) {
+        window.history.pushState({}, '', path);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
+  const handleSelectMeal = (meal) => {
+    setSelectedMeal(meal);
+    handleNavigate(`/product?id=${meal.id}`, 'product-detail', 'customer');
+  };
 
-  // Cart Operations
+  const handleToggleWishlist = (meal) => {
+    setWishlist((prev) => {
+      const exists = prev.some((item) => (typeof item === 'string' ? item === meal.id : item.id === meal.id));
+      const next = exists
+        ? prev.filter((item) => (typeof item === 'string' ? item !== meal.id : item.id !== meal.id))
+        : [...prev, meal];
+
+      apiService.saveWishlist(next);
+      showToast(
+        exists ? `Removed ${meal.name} from wishlist` : `Added ${meal.name} to wishlist!`,
+        exists ? 'Wishlist Updated' : 'Saved to Wishlist'
+      );
+      return next;
+    });
+  };
+
   const handleAddToCart = (cartItem) => {
-    setCart((prev) => [...prev, cartItem]);
+    setCart((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) =>
+          item.meal.id === cartItem.meal.id &&
+          item.selectedSpice === cartItem.selectedSpice &&
+          item.selectedBroth === cartItem.selectedBroth
+      );
+
+      let next;
+      if (existingIndex !== -1) {
+        next = [...prev];
+        next[existingIndex] = {
+          ...next[existingIndex],
+          quantity: next[existingIndex].quantity + cartItem.quantity,
+        };
+      } else {
+        next = [...prev, cartItem];
+      }
+
+      apiService.saveCart(next);
+      return next;
+    });
+
     setIsCartOpen(true);
     showToast(`Added ${cartItem.meal.name} to order!`, 'Item Added');
   };
@@ -105,41 +228,54 @@ export default function App() {
   const handleUpdateQty = (index, newQty) => {
     if (newQty <= 0) {
       handleRemoveCartItem(index);
-    } else {
-      setCart((prev) => {
-        const next = [...prev];
-        next[index].quantity = newQty;
-        return next;
-      });
+      return;
     }
+
+    setCart((prev) => {
+      const next = [...prev];
+      next[index].quantity = newQty;
+      apiService.saveCart(next);
+      return next;
+    });
   };
 
   const handleRemoveCartItem = (index) => {
-    setCart((prev) => prev.filter((_, i) => i !== index));
+    setCart((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      apiService.saveCart(next);
+      return next;
+    });
   };
 
-  // Order Operations
   const handleOrderPlaced = (newOrder) => {
-    setOrders((prev) => [newOrder, ...prev]);
-    setCart([]);
-    setTrackedOrder(newOrder);
-    setActiveTab('tracking');
+    setOrders((prev) => {
+      const next = [newOrder, ...prev];
+      apiService.saveOrders(next);
+      return next;
+    });
 
-    // Trigger event notification & chime
+    setCart([]);
+    apiService.saveCart([]);
+    setTrackedOrder(newOrder);
+    apiService.setTrackedOrderId(newOrder.id);
+
     eventBus.emit('NEW_ORDER', newOrder);
     notificationService.playChime('new_order');
     showToast(`Order #${newOrder.id} placed successfully! Kitchen is on it.`, 'Order Placed');
+    handleNavigate('/tracking', 'tracking', 'customer');
   };
 
   const handleUpdateOrderStatus = (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
+    setOrders((prev) => {
+      const next = prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order));
+      apiService.saveOrders(next);
+      return next;
+    });
+
     if (trackedOrder && trackedOrder.id === orderId) {
       setTrackedOrder((prev) => ({ ...prev, status: newStatus }));
     }
-    
-    // Broadcast status change to other tabs & play audio chime
+
     eventBus.emit('ORDER_STATUS_UPDATE', { orderId, status: newStatus });
     notificationService.playChime('status_update');
     showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
@@ -147,7 +283,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-bg-dark text-text-main flex flex-col justify-between selection:bg-primary selection:text-white relative">
-      {/* Toast Alert Banner */}
       {toast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 p-4 rounded-xl bg-surface-card border border-primary/40 shadow-2xl flex items-center gap-4 animate-toast-enter min-w-[320px]">
           <div className="w-10 h-10 rounded-full bg-primary-light text-primary flex items-center justify-center shrink-0">
@@ -157,98 +292,101 @@ export default function App() {
             <div className="font-bold text-sm text-text-main">{toast.title}</div>
             <div className="text-xs text-text-muted mt-0.5">{toast.message}</div>
           </div>
-          {/* Progress bar simulation */}
-          <div className="absolute bottom-0 left-0 h-1 bg-primary rounded-b-xl animate-[shimmer_4s_linear]" style={{ width: '100%' }}></div>
+          <div className="absolute bottom-0 left-0 h-1 bg-primary rounded-b-xl" style={{ width: '100%' }}></div>
         </div>
       )}
 
-      {/* Header with Role Switcher */}
       <Header
         currentRole={currentRole}
-        onSwitchRole={setCurrentRole}
+        onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
         cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)}
+        wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenReferral={() => setIsReferralOpen(true)}
         onOpenHelp={() => setIsHelpOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         user={user}
-        onLogout={() => setUser(null)}
+        onLogout={() => {
+          setUser(null);
+          apiService.saveUser(null);
+          showToast('You have been logged out.', 'Signed Out');
+        }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => handleNavigate(tab === 'dashboard' ? '/dashboard' : tab === 'orders' ? '/orders' : tab === 'tracking' ? '/tracking' : '/', tab, 'customer')}
+        onNavigate={handleNavigate}
       />
 
-      {/* Main Body */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full relative">
         <div key={activeTab + currentRole} className="animate-page-enter">
-          {/* Customer Portal */}
           {currentRole === 'customer' && (
-          <>
-            {activeTab === 'menu' && (
-              <Home
-                meals={meals}
-                onSelectMeal={setSelectedMeal}
-                searchQuery={searchQuery}
-                selectedCategory={selectedCategory}
-                setSelectedCategory={setSelectedCategory}
-              />
-            )}
+            <>
+              {activeTab === 'menu' && (
+                <Home
+                  meals={meals}
+                  onSelectMeal={handleSelectMeal}
+                  searchQuery={searchQuery}
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={setSelectedCategory}
+                  cart={cart}
+                  wishlist={wishlist}
+                  onToggleWishlist={handleToggleWishlist}
+                />
+              )}
 
-            {activeTab === 'tracking' && (
-              <LiveTracking order={trackedOrder || orders[0]} />
-            )}
+              {activeTab === 'product-detail' && (
+                <ProductDetailsPage
+                  meal={selectedMeal || meals[0]}
+                  allMeals={meals}
+                  cart={cart}
+                  onAddToCart={handleAddToCart}
+                  onUpdateCartQty={handleUpdateQty}
+                  onRemoveCartItem={handleRemoveCartItem}
+                  onOpenCart={() => setIsCartOpen(true)}
+                  onSelectMeal={handleSelectMeal}
+                  onBackToMenu={() => handleNavigate('/', 'menu', 'customer')}
+                  wishlist={wishlist}
+                  onToggleWishlist={handleToggleWishlist}
+                />
+              )}
 
-            {(activeTab === 'orders' || activeTab === 'dashboard') && (
-              <CustomerDashboard
-                user={user}
-                orders={orders}
-                onSelectOrder={(order) => {
-                  setTrackedOrder(order);
-                  setActiveTab('tracking');
-                }}
-                onOpenReferral={() => setIsReferralOpen(true)}
-                onOpenProfile={() => setIsProfileOpen(true)}
-                onExploreMenu={() => setActiveTab('menu')}
-              />
-            )}
-          </>
-        )}
+              {activeTab === 'dashboard' && (
+                <CustomerDashboard
+                  user={user}
+                  orders={orders}
+                  onSelectOrder={(order) => {
+                    setTrackedOrder(order);
+                    apiService.setTrackedOrderId(order.id);
+                    handleNavigate('/tracking', 'tracking', 'customer');
+                  }}
+                  onOpenReferral={() => setIsReferralOpen(true)}
+                  onOpenProfile={() => setIsProfileOpen(true)}
+                  onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+                />
+              )}
 
-        {/* Kitchen Staff Portal */}
-        {currentRole === 'kitchen' && (
-          <KitchenBoard
-            orders={orders}
-            onUpdateStatus={handleUpdateOrderStatus}
-          />
-        )}
+              {activeTab === 'orders' && (
+                <OrdersHistory
+                  orders={orders}
+                  onSelectOrder={(order) => {
+                    setTrackedOrder(order);
+                    apiService.setTrackedOrderId(order.id);
+                    handleNavigate('/tracking', 'tracking', 'customer');
+                  }}
+                />
+              )}
 
-        {/* Delivery Rider Portal */}
-        {currentRole === 'delivery' && (
-          <RiderDashboard
-            orders={orders}
-            onUpdateStatus={handleUpdateOrderStatus}
-          />
-        )}
+              {activeTab === 'tracking' && <LiveTracking order={trackedOrder || orders[0]} />}
+            </>
+          )}
 
-        {/* Admin Portal */}
-        {currentRole === 'admin' && (
-          <AdminDashboard
-            meals={meals}
-            setMeals={setMeals}
-            orders={orders}
-          />
-        )}
+          {currentRole === 'kitchen' && <KitchenBoard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
+          {currentRole === 'delivery' && <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
+          {currentRole === 'admin' && <AdminDashboard meals={meals} setMeals={setMeals} orders={orders} />}
         </div>
       </main>
-
-      {/* Modals & Drawers */}
-      <FoodDetailModal
-        meal={selectedMeal}
-        onClose={() => setSelectedMeal(null)}
-        onAddToCart={handleAddToCart}
-      />
 
       <CartDrawer
         isOpen={isCartOpen}
@@ -269,10 +407,23 @@ export default function App() {
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
-        onLoginSuccess={(u) => {
-          setUser(u);
-          if (u.role) setCurrentRole(u.role);
-          if (!u.location) setIsLocationModalOpen(true);
+        onLoginSuccess={(loggedInUser) => {
+          setUser(loggedInUser);
+          apiService.saveUser(loggedInUser);
+          if (loggedInUser.role) {
+            handleNavigate(
+              loggedInUser.role === 'kitchen'
+                ? '/kitchen'
+                : loggedInUser.role === 'delivery'
+                  ? '/delivery'
+                  : loggedInUser.role === 'admin'
+                    ? '/admin'
+                    : '/',
+              'menu',
+              loggedInUser.role
+            );
+          }
+          if (!loggedInUser.location) setIsLocationModalOpen(true);
         }}
       />
 
@@ -280,29 +431,26 @@ export default function App() {
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
         onSetLocation={(loc) => {
-          setUser(prev => ({ ...prev, location: loc }));
+          const updated = { ...(user || {}), location: loc };
+          setUser(updated);
+          apiService.saveUser(updated);
           showToast(`Location set to: ${loc}`, 'Location Updated');
         }}
       />
 
-      <ReferralModal
-        isOpen={isReferralOpen}
-        onClose={() => setIsReferralOpen(false)}
-      />
-
-      <HelpModal
-        isOpen={isHelpOpen}
-        onClose={() => setIsHelpOpen(false)}
-      />
-
+      <ReferralModal isOpen={isReferralOpen} onClose={() => setIsReferralOpen(false)} />
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         user={user}
-        onSaveUser={(u) => setUser(u)}
+        onSaveUser={(profileUser) => {
+          setUser(profileUser);
+          apiService.saveUser(profileUser);
+          showToast('Profile saved successfully!', 'Profile Saved');
+        }}
       />
 
-      {/* Footer */}
       <footer className="border-t border-white/10 bg-surface-dark py-12 px-4 mt-auto">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           <div className="space-y-3">
@@ -310,11 +458,11 @@ export default function App() {
               <Flame className="w-5 h-5 text-primary" /> HotPot Delights
             </h4>
             <p className="text-xs text-text-muted leading-relaxed">
-              Authentic Gourmet Hotpot & Pizza Delivery in Kigali.<br/>
-              Made with fresh, locally sourced ingredients.
+              Authentic Gourmet Hotpot & Artisanal Pizza Delivery in Kigali.<br />
+              Crafted fresh with locally sourced ingredients.
             </p>
           </div>
-          
+
           <div className="space-y-3">
             <h4 className="font-bold text-white text-sm">Download Our App</h4>
             <div className="flex items-center justify-center md:justify-start gap-3">
@@ -343,7 +491,7 @@ export default function App() {
           <p className="font-semibold text-text-muted">
             HotPot Delights © {new Date().getFullYear()} — Premium Kigali Dining Experience
           </p>
-          <p>Live Backend: <span className="font-mono text-primary">hotpot-backend-tsae.onrender.com</span></p>
+          <p>Live Backend API: <span className="font-mono text-primary">hotpot-backend-tsae.onrender.com</span></p>
         </div>
       </footer>
     </div>
