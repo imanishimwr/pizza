@@ -42,6 +42,12 @@ html, body {
   box-sizing: border-box;
 }
 
+/* Prevent any fixed or absolutely positioned stray elements from overflowing the viewport */
+#root {
+  overflow-x: hidden;
+  position: relative;
+}
+
 *, *:before, *:after {
   box-sizing: border-box;
 }

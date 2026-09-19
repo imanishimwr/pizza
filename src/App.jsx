@@ -578,7 +578,6 @@ export default function App() {
           <p className="font-semibold text-text-muted">
             HotPot Delights © {new Date().getFullYear()} — Premium Kigali Dining Experience
           </p>
-          <p>Live Backend API: <span className="font-mono text-primary">hotpot-backend-tsae.onrender.com</span></p>
         </div>
       </footer>
     </div>
