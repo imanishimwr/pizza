@@ -175,7 +175,9 @@ export default function KitchenBoard({ orders = [], onUpdateStatus }) {
             )}
           </div>
         </div>
+        </div>
       </div>
     </div>
   );
 }
+

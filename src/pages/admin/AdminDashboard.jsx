@@ -768,5 +768,8 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
         )}
       </div>
     </div>
+    </div>
   );
 }
+
+
