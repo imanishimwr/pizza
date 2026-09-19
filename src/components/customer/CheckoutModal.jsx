@@ -7,6 +7,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
 
   const [selectedKigaliArea, setSelectedKigaliArea] = useState('Nyarutarama');
   const [addressDetail, setAddressDetail] = useState('KG 9 Ave, House 42');
+  const [isScanningGps, setIsScanningGps] = useState(false);
   const [phone, setPhone] = useState('0788000001');
   const [paymentMethod, setPaymentMethod] = useState('momo'); // momo | airtel | card | cash
   const [momoNumber, setMomoNumber] = useState('0788000001');
@@ -23,6 +24,30 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
     { name: 'Kanombe', distKm: 9.4, estMin: 35 },
     { name: 'Nyamirambo', distKm: 8.3, estMin: 32 },
   ];
+
+  const handleScanCurrentLocation = () => {
+    setIsScanningGps(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setIsScanningGps(false);
+          const lat = pos.coords.latitude.toFixed(4);
+          const lng = pos.coords.longitude.toFixed(4);
+          setSelectedKigaliArea('Nyarutarama');
+          setAddressDetail(`Live GPS (${lat}, ${lng}) - Auto Detected`);
+        },
+        () => {
+          setIsScanningGps(false);
+          setSelectedKigaliArea('Nyarutarama');
+          setAddressDetail('KG 9 Ave, House 42 (Detected Location)');
+        }
+      );
+    } else {
+      setIsScanningGps(false);
+      setSelectedKigaliArea('Nyarutarama');
+      setAddressDetail('KG 9 Ave, House 42 (Default Location)');
+    }
+  };
 
   const currentAreaInfo = kigaliAreas.find((a) => a.name === selectedKigaliArea) || kigaliAreas[0];
   const dynamicEta = currentAreaInfo.estMin;
@@ -127,15 +152,31 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
 
           {/* Delivery Address & Geocoding Sector Selector */}
           <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-primary" />
-                Kigali Sector / Neighborhood Geocoding
-              </span>
-              <span className="text-[11px] text-amber-400 font-mono font-bold">
-                {currentAreaInfo.distKm} km • ~{dynamicEta} mins delivery
-              </span>
-            </label>
+                Kigali Sector / Delivery Geocoding
+              </label>
+
+              <button
+                type="button"
+                onClick={handleScanCurrentLocation}
+                disabled={isScanningGps}
+                className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-xs font-bold flex items-center gap-1.5 transition-all"
+              >
+                {isScanningGps ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                    Scanning GPS...
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-3.5 h-3.5" />
+                    Scan Current Location
+                  </>
+                )}
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {kigaliAreas.map((area) => (

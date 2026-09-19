@@ -457,7 +457,8 @@ export default function App() {
               loggedInUser.role
             );
           }
-          if (!loggedInUser.location) setIsLocationModalOpen(true);
+          // Always ask logged in user to scan/set location for delivery
+          setIsLocationModalOpen(true);
         }}
       />
 
