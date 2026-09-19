@@ -281,6 +281,34 @@ export default function App() {
     showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
   };
 
+  const handleCancelOrder = (orderId) => {
+    setOrders((prev) => {
+      const next = prev.map((order) => (order.id === orderId ? { ...order, status: 'cancelled' } : order));
+      apiService.saveOrders(next);
+      return next;
+    });
+
+    if (trackedOrder && trackedOrder.id === orderId) {
+      setTrackedOrder((prev) => ({ ...prev, status: 'cancelled' }));
+    }
+
+    showToast(`Order #${orderId} has been cancelled successfully.`, 'Order Cancelled');
+  };
+
+  const handleModifyOrder = (orderId, updatedFields) => {
+    setOrders((prev) => {
+      const next = prev.map((order) => (order.id === orderId ? { ...order, ...updatedFields } : order));
+      apiService.saveOrders(next);
+      return next;
+    });
+
+    if (trackedOrder && trackedOrder.id === orderId) {
+      setTrackedOrder((prev) => ({ ...prev, ...updatedFields }));
+    }
+
+    showToast(`Order #${orderId} details updated!`, 'Order Modified');
+  };
+
   return (
     <div className="min-h-screen bg-bg-dark text-text-main flex flex-col justify-between selection:bg-primary selection:text-white relative">
       {toast && (
@@ -378,7 +406,13 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'tracking' && <LiveTracking order={trackedOrder || orders[0]} />}
+              {activeTab === 'tracking' && (
+                <LiveTracking
+                  order={trackedOrder || orders[0]}
+                  onCancelOrder={handleCancelOrder}
+                  onModifyOrder={handleModifyOrder}
+                />
+              )}
             </>
           )}
 

@@ -5,12 +5,28 @@ import { API_BASE_URL } from '../../data/mockData';
 export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPlaced }) {
   if (!isOpen || !checkoutData) return null;
 
-  const [address, setAddress] = useState('KG 9 Ave, Nyarutarama, Kigali');
+  const [selectedKigaliArea, setSelectedKigaliArea] = useState('Nyarutarama');
+  const [addressDetail, setAddressDetail] = useState('KG 9 Ave, House 42');
   const [phone, setPhone] = useState('0788000001');
   const [paymentMethod, setPaymentMethod] = useState('momo'); // momo | airtel | card | cash
   const [momoNumber, setMomoNumber] = useState('0788000001');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const kigaliAreas = [
+    { name: 'Nyarutarama', distKm: 3.5, estMin: 18 },
+    { name: 'Kimironko', distKm: 5.2, estMin: 22 },
+    { name: 'Kacyiru', distKm: 4.1, estMin: 20 },
+    { name: 'Remera', distKm: 4.8, estMin: 21 },
+    { name: 'Kiyovu (CBD)', distKm: 6.5, estMin: 28 },
+    { name: 'Gikondo', distKm: 7.1, estMin: 30 },
+    { name: 'Kanombe', distKm: 9.4, estMin: 35 },
+    { name: 'Nyamirambo', distKm: 8.3, estMin: 32 },
+  ];
+
+  const currentAreaInfo = kigaliAreas.find((a) => a.name === selectedKigaliArea) || kigaliAreas[0];
+  const dynamicEta = currentAreaInfo.estMin;
+  const fullDeliveryAddress = `${addressDetail}, ${selectedKigaliArea}, Kigali`;
 
   const validatePhone = (num) => {
     const rwandaRegex = /^(078|079|072|073)\d{7}$/;
@@ -28,25 +44,40 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
 
     setIsSubmitting(true);
 
+    const now = new Date();
+    const etaDate = new Date(now.getTime() + dynamicEta * 60000);
+    const etaTimeString = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     const newOrder = {
       id: `HP-${Math.floor(100000 + Math.random() * 900000)}`,
       customerName: 'Aline Uwase',
       phone: phone,
-      items: checkoutData.cart.map(c => ({
+      items: checkoutData.cart.map((c) => ({
         name: c.meal.name,
         qty: c.quantity,
         price: c.meal.price,
         spice: c.selectedSpice,
-        broth: c.selectedBroth
+        broth: c.selectedBroth,
+        specialNote: c.specialNote || '',
       })),
       totalRWF: checkoutData.grandTotal,
       status: 'pending',
-      address: address,
-      orderTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      paymentMethod: paymentMethod === 'momo' ? 'MTN Mobile Money' :
-                     paymentMethod === 'airtel' ? 'Airtel Money' :
-                     paymentMethod === 'card' ? 'Visa / Mastercard' : 'Cash on Delivery',
-      paymentStatus: paymentMethod === 'cash' ? 'PENDING' : 'PAID'
+      address: fullDeliveryAddress,
+      area: selectedKigaliArea,
+      distanceKm: currentAreaInfo.distKm,
+      etaMinutes: dynamicEta,
+      etaTime: etaTimeString,
+      createdAtTimestamp: Date.now(),
+      orderTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      paymentMethod:
+        paymentMethod === 'momo'
+          ? 'MTN Mobile Money'
+          : paymentMethod === 'airtel'
+          ? 'Airtel Money'
+          : paymentMethod === 'card'
+          ? 'Visa / Mastercard'
+          : 'Cash on Delivery',
+      paymentStatus: paymentMethod === 'cash' ? 'PENDING' : 'PAID',
     };
 
     // Try posting to live backend API, fallback smoothly
@@ -94,18 +125,42 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
             </div>
           )}
 
-          {/* Delivery Address */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-primary" />
-              Delivery Address in Kigali
+          {/* Delivery Address & Geocoding Sector Selector */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-primary" />
+                Kigali Sector / Neighborhood Geocoding
+              </span>
+              <span className="text-[11px] text-amber-400 font-mono font-bold">
+                {currentAreaInfo.distKm} km • ~{dynamicEta} mins delivery
+              </span>
             </label>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {kigaliAreas.map((area) => (
+                <button
+                  type="button"
+                  key={area.name}
+                  onClick={() => setSelectedKigaliArea(area.name)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    selectedKigaliArea === area.name
+                      ? 'bg-primary/20 border-primary text-white font-bold'
+                      : 'bg-surface-card border-white/10 text-text-muted hover:border-white/20'
+                  }`}
+                >
+                  <div className="text-xs truncate">{area.name}</div>
+                  <div className="text-[10px] text-text-subdued font-mono">{area.estMin} min • {area.distKm}km</div>
+                </button>
+              ))}
+            </div>
+
             <input
               type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              value={addressDetail}
+              onChange={(e) => setAddressDetail(e.target.value)}
               required
-              placeholder="e.g. KG 9 Ave, Nyarutarama, Kigali"
+              placeholder="House Number, Street / Landmark (e.g. KG 9 Ave, House 42)"
               className="w-full bg-surface-card border border-white/10 rounded-xl px-4 py-3 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
             />
           </div>
