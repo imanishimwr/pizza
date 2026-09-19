@@ -256,7 +256,16 @@ export default function Header({
             </div>
 
             <div className="flex sm:hidden items-center gap-2">
-              <button onClick={onOpenCart} className="relative p-2 rounded-xl bg-surface-card border border-white/10 text-text-main">
+              {!user && onOpenAuth && (
+                <button
+                  onClick={onOpenAuth}
+                  className="px-2.5 py-1.5 rounded-xl bg-primary text-white text-[11px] font-bold shadow-sm"
+                >
+                  {lang === 'RW' ? 'Kwinjira' : 'Sign In'}
+                </button>
+              )}
+
+              <button onClick={onOpenCart} className="relative p-2 rounded-xl bg-surface-card border border-white/10 text-text-main" aria-label="Shopping Cart">
                 <ShoppingBag className="w-5 h-5" />
                 {cartCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
@@ -268,6 +277,7 @@ export default function Header({
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 text-white bg-surface-card border border-white/10 rounded-xl"
+                aria-label="Toggle Navigation Menu"
               >
                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -344,6 +354,46 @@ export default function Header({
               <MapPin className="w-4 h-4" />
               Tracking
             </button>
+          </div>
+
+          {/* User Account / Auth Section in Mobile Menu */}
+          <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+            {user ? (
+              <>
+                <button
+                  onClick={() => {
+                    if (onOpenProfile) onOpenProfile();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex-1 p-2 rounded-xl bg-surface-card border border-white/10 text-xs font-bold text-white flex items-center justify-center gap-2"
+                >
+                  <User className="w-4 h-4 text-primary" />
+                  <span>{user.name || 'My Profile'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (onLogout) onLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="p-2 rounded-xl bg-red-950/40 border border-red-500/30 text-red-400 hover:text-white text-xs font-bold flex items-center gap-1.5"
+                  title="Log Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  if (onOpenAuth) onOpenAuth();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full btn-primary text-xs py-2.5 font-bold flex items-center justify-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                <span>Sign In / Create Account</span>
+              </button>
+            )}
           </div>
         </div>
       )}

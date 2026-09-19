@@ -534,7 +534,7 @@ export default function App() {
           cartCount={cart.reduce((sum, item) => sum + (item.qty || 1), 0)}
           onOpenCart={() => setIsCartOpen(true)}
           onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
-          onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenProfile={() => (user ? setIsProfileOpen(true) : setIsAuthOpen(true))}
         />
       )}
 

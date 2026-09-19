@@ -133,7 +133,7 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
         </div>
 
         {/* Modal Body */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '24px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-6">
           
           {/* Left Column: Visual Pizza Canvas */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
