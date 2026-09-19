@@ -103,16 +103,6 @@ export default function Home({
                 Claim Offer Now
                 <ChevronRight className="w-4 h-4" />
               </button>
-
-              {onOpenCustomBuilder && (
-                <button
-                  onClick={onOpenCustomBuilder}
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-xs hover:opacity-90 transition-all shadow-xl flex items-center gap-2 hover:scale-105 border border-amber-400/40"
-                >
-                  <Sparkles className="w-4 h-4 text-yellow-300" />
-                  Custom Pizza Studio
-                </button>
-              )}
             </div>
           </div>
 
