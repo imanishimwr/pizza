@@ -4,30 +4,30 @@
 @theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   
-  /* Strict 4-Color Palette: 1 Primary (Terracotta Red) + 2 Backgrounds (Dark/Surface) + 1 Text */
-  --color-primary: #C83200;
-  --color-primary-hover: #E03A00;
-  --color-primary-light: rgba(200, 50, 0, 0.15);
+  /* Strict Vuba Vuba Brand Palette: Signature Electric Red-Orange + Dark Charcoal + Crisp White */
+  --color-primary: #FF3B00;
+  --color-primary-hover: #E03400;
+  --color-primary-light: rgba(255, 59, 0, 0.15);
   
-  --color-bg-dark: #121010;
-  --color-surface-dark: #1A1717;
-  --color-surface-card: #242020;
-  --color-surface-card-hover: #2E2929;
+  --color-bg-dark: #0F0F12;
+  --color-surface-dark: #18181D;
+  --color-surface-card: #22222A;
+  --color-surface-card-hover: #2B2B36;
   
-  --color-text-main: #F7F5F5;
-  --color-text-muted: #A8A0A0;
-  --color-text-subdued: #7A7272;
+  --color-text-main: #FFFFFF;
+  --color-text-muted: #A0A0B0;
+  --color-text-subdued: #6C6C80;
 }
 
 /* Global Dark/Light Theme Switching */
 html.light-theme {
-  --color-bg-dark: #F5F3F2;
+  --color-bg-dark: #F8F9FC;
   --color-surface-dark: #FFFFFF;
-  --color-surface-card: #EBE8E6;
-  --color-surface-card-hover: #E0DDD9;
-  --color-text-main: #1C1918;
-  --color-text-muted: #57524F;
-  --color-text-subdued: #8C8581;
+  --color-surface-card: #EEF0F6;
+  --color-surface-card-hover: #E2E5F0;
+  --color-text-main: #0F0F12;
+  --color-text-muted: #555566;
+  --color-text-subdued: #888899;
 }
 
 html, body {
