@@ -49,10 +49,11 @@ app.post('/api/auth/google', (req, res) => googleLoginHandler(req, res, neonClie
 
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, phone, password, role } = req.body;
+    let { name, email, phone, password, role } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
     }
+    email = email.trim();
 
     // 1. Check if user already exists in Neon PostgreSQL
     const existingUser = await neonClient.findUserByEmail(email);
@@ -61,7 +62,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // 2. Register user in Neon PostgreSQL
-    const newUser = await neonClient.registerUserInNeon({ name, email, phone, password, role: role || 'CUSTOMER' });
+    const newUser = await neonClient.registerUserInNeon({ name: name.trim(), email, phone, password, role: role || 'CUSTOMER' });
 
     // 3. Generate JWT Token
     const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -81,10 +82,11 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
+    email = email.trim();
 
     // 1. Authenticate against Neon PostgreSQL
     const user = await neonClient.verifyLoginInNeon(email, password);
@@ -111,54 +113,88 @@ app.post('/api/auth/login', async (req, res) => {
 // ----------------------------------------------------
 // 2. Food Catalog Routes (/api/meals)
 // ----------------------------------------------------
-app.get('/api/meals', (req, res) => {
-  const mealsList = db.getMeals(req.query);
-  res.json(mealsList);
+app.get('/api/meals', async (req, res) => {
+  try {
+    const mealsList = await neonClient.getMeals();
+    res.json(mealsList);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch meals from DB' });
+  }
 });
 
-app.post('/api/meals', authMiddleware(['ADMIN']), (req, res) => {
-  const newMeal = db.createMeal(req.body);
-  io.emit('meal_catalog_updated', newMeal);
-  res.status(201).json(newMeal);
+app.post('/api/meals', authMiddleware(['ADMIN']), async (req, res) => {
+  try {
+    const newMeal = await neonClient.createMeal(req.body);
+    io.emit('meal_catalog_updated', newMeal);
+    res.status(201).json(newMeal);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create meal in DB' });
+  }
 });
 
-app.patch('/api/meals/:id', authMiddleware(['ADMIN']), (req, res) => {
-  const updated = db.updateMeal(req.params.id, req.body);
-  if (!updated) return res.status(404).json({ error: 'Meal item not found.' });
-  io.emit('meal_catalog_updated', updated);
-  res.json(updated);
+app.patch('/api/meals/:id', authMiddleware(['ADMIN']), async (req, res) => {
+  try {
+    const updated = await neonClient.updateMeal(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Meal item not found.' });
+    io.emit('meal_catalog_updated', updated);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update meal in DB' });
+  }
+});
+
+app.delete('/api/meals/:id', authMiddleware(['ADMIN']), async (req, res) => {
+  try {
+    await neonClient.deleteMeal(req.params.id);
+    io.emit('meal_catalog_updated', { id: req.params.id, deleted: true });
+    res.json({ message: 'Meal deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete meal in DB' });
+  }
 });
 
 // ----------------------------------------------------
 // 3. Order Management & Cancellation Routes (/api/orders)
 // ----------------------------------------------------
-app.get('/api/orders', (req, res) => {
-  const ordersList = db.getOrders();
-  res.json(ordersList);
+app.get('/api/orders', async (req, res) => {
+  try {
+    const ordersList = await neonClient.getOrders();
+    res.json(ordersList);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch orders from DB' });
+  }
 });
 
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', async (req, res) => {
   const { customerName, phone, address } = req.body;
   if (!customerName || !phone || !address) {
     return res.status(400).json({ error: 'Missing required order details.' });
   }
 
-  const newOrder = db.createOrder(req.body);
-  io.emit('new_order_placed', newOrder);
-  res.status(201).json(newOrder);
+  try {
+    const newOrder = await neonClient.createOrder(req.body);
+    io.emit('new_order_placed', newOrder);
+    res.status(201).json(newOrder);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create order in DB' });
+  }
 });
 
-app.patch('/api/orders/:id/status', (req, res) => {
+app.patch('/api/orders/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status, riderName } = req.body;
 
-  const updatedOrder = db.updateOrderStatus(id, status, riderName);
-  if (!updatedOrder) return res.status(404).json({ error: 'Order not found.' });
+  try {
+    const updatedOrder = await neonClient.updateOrderStatus(id, status, riderName);
+    if (!updatedOrder) return res.status(404).json({ error: 'Order not found.' });
 
-  io.emit('order_status_updated', updatedOrder);
-  io.to(`order_${id}`).emit('live_order_status', updatedOrder);
+    io.emit('order_status_updated', updatedOrder);
+    io.to(`order_${id}`).emit('live_order_status', updatedOrder);
 
-  res.json(updatedOrder);
+    res.json(updatedOrder);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update order status in DB' });
+  }
 });
 
 // Cancel order within 120s grace period
@@ -198,16 +234,38 @@ app.post('/api/payments/momo-checkout', (req, res) => {
 // ----------------------------------------------------
 // 5. Promo Voucher Validation (/api/vouchers/validate)
 // ----------------------------------------------------
-app.post('/api/vouchers/validate', (req, res) => {
+app.get('/api/vouchers', async (req, res) => {
+  try {
+    const vouchers = await neonClient.getVouchers();
+    res.json(vouchers);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch vouchers' });
+  }
+});
+
+app.post('/api/vouchers', authMiddleware(['ADMIN']), async (req, res) => {
+  try {
+    const voucher = await neonClient.createVoucher(req.body);
+    res.status(201).json(voucher);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create voucher' });
+  }
+});
+
+app.post('/api/vouchers/validate', async (req, res) => {
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: 'Voucher code is required.' });
 
-  const voucher = db.validateVoucher(code);
-  if (!voucher) {
-    return res.status(404).json({ error: 'Invalid or expired promo code.' });
+  try {
+    const vouchers = await neonClient.getVouchers();
+    const voucher = vouchers.find(v => v.code === code && v.active);
+    if (!voucher) {
+      return res.status(404).json({ error: 'Invalid or expired promo code.' });
+    }
+    res.json({ valid: true, voucher });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to validate voucher' });
   }
-
-  res.json({ valid: true, voucher });
 });
 
 // ----------------------------------------------------
@@ -217,18 +275,19 @@ app.get('/api/riders/live-gps', (req, res) => {
   res.json(db.getRiderLocations());
 });
 
-app.get('/api/admin/analytics', authMiddleware(['ADMIN']), (req, res) => {
-  const orders = db.getOrders();
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.totalRWF || 0), 0);
-  const activeCount = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length;
-
-  res.json({
-    totalRevenueRWF: totalRevenue,
-    totalOrdersCount: orders.length,
-    activeOrdersCount: activeCount,
-    ridersOnline: 3,
-    topSellingCategory: 'Gourmet Pizzas'
-  });
+app.get('/api/admin/analytics', authMiddleware(['ADMIN']), async (req, res) => {
+  try {
+    const data = await neonClient.getAdminAnalytics();
+    res.json({
+      totalRevenueRWF: Number(data.totalRevenueRWF) || 0,
+      totalOrdersCount: Number(data.totalOrdersCount) || 0,
+      activeOrdersCount: Number(data.activeOrdersCount) || 0,
+      ridersOnline: 3,
+      topSellingCategory: 'Gourmet Pizzas'
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch analytics from DB' });
+  }
 });
 
 // ----------------------------------------------------

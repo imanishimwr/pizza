@@ -41,8 +41,8 @@ export default function App() {
 
   const [currentRole, setCurrentRole] = useState(initialRoute.role);
   const [activeTab, setActiveTab] = useState(initialRoute.tab);
-  const [meals, setMeals] = useState(() => apiService.getMeals());
-  const [orders, setOrders] = useState(() => apiService.getOrders());
+  const [meals, setMeals] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [user, setUser] = useState(() => apiService.getUser());
   const [cart, setCart] = useState(() => apiService.getCart());
   const [wishlist, setWishlist] = useState(() => apiService.getWishlist());
@@ -75,8 +75,7 @@ export default function App() {
   });
   const [trackedOrder, setTrackedOrder] = useState(() => {
     const savedId = apiService.getTrackedOrderId();
-    const initialOrders = apiService.getOrders();
-    return (savedId && initialOrders.find((order) => order.id === savedId)) || initialOrders[0] || null;
+    return savedId ? { id: savedId } : null; // We will enrich this once orders load
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -92,12 +91,31 @@ export default function App() {
     setTimeout(() => setToast(null), 4000);
   }, []);
 
+  // Load Initial Data from Backend
   useEffect(() => {
-    apiService.saveMeals(meals);
+    const loadData = async () => {
+      const fetchedMeals = await apiService.getMeals();
+      setMeals(fetchedMeals);
+
+      const fetchedOrders = await apiService.getOrders();
+      setOrders(fetchedOrders);
+
+      const trackedId = apiService.getTrackedOrderId();
+      if (trackedId) {
+        const found = fetchedOrders.find(o => o.id === trackedId);
+        if (found) setTrackedOrder(found);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Sync state to local storage is no longer primary for meals/orders, but keeping it for offline fallback if needed.
+  useEffect(() => {
+    if (meals.length > 0) apiService.saveMeals?.(meals);
   }, [meals]);
 
   useEffect(() => {
-    apiService.saveOrders(orders);
+    if (orders.length > 0) apiService.saveOrders?.(orders);
   }, [orders]);
 
   useEffect(() => {
@@ -262,38 +280,51 @@ export default function App() {
     });
   };
 
-  const handleOrderPlaced = (newOrder) => {
-    setOrders((prev) => {
-      const next = [newOrder, ...prev];
-      apiService.saveOrders(next);
-      return next;
-    });
+  const handleOrderPlaced = async (newOrder) => {
+    try {
+      const createdOrder = await apiService.createOrder({
+        ...newOrder,
+        userId: user ? user.id : null
+      });
 
-    setCart([]);
-    apiService.saveCart([]);
-    setTrackedOrder(newOrder);
-    apiService.setTrackedOrderId(newOrder.id);
+      setOrders((prev) => {
+        const next = [createdOrder, ...prev];
+        return next;
+      });
 
-    eventBus.emit('NEW_ORDER', newOrder);
-    notificationService.playChime('new_order');
-    showToast(`Order #${newOrder.id} placed successfully! Kitchen is on it.`, 'Order Placed');
-    handleNavigate('/tracking', 'tracking', 'customer');
+      setCart([]);
+      setTrackedOrder(createdOrder);
+      apiService.setTrackedOrderId(createdOrder.id);
+
+      eventBus.emit('NEW_ORDER', createdOrder);
+      notificationService.playChime('new_order');
+      showToast(`Order #${createdOrder.id} placed successfully! Kitchen is on it.`, 'Order Placed');
+      handleNavigate('/tracking', 'tracking', 'customer');
+    } catch (e) {
+      showToast('Failed to place order. Please try again.', 'Error');
+    }
   };
 
-  const handleUpdateOrderStatus = (orderId, newStatus) => {
-    setOrders((prev) => {
-      const next = prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order));
-      apiService.saveOrders(next);
-      return next;
-    });
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token'); // Use auth token for admin
+      const updatedOrder = await apiService.updateOrderStatus(orderId, newStatus, null, token);
+      
+      setOrders((prev) => {
+        const next = prev.map((order) => (order.id === orderId ? updatedOrder : order));
+        return next;
+      });
 
-    if (trackedOrder && trackedOrder.id === orderId) {
-      setTrackedOrder((prev) => ({ ...prev, status: newStatus }));
+      if (trackedOrder && trackedOrder.id === orderId) {
+        setTrackedOrder(updatedOrder);
+      }
+
+      eventBus.emit('ORDER_STATUS_UPDATE', { orderId, status: newStatus });
+      notificationService.playChime('status_update');
+      showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
+    } catch (e) {
+      showToast('Failed to update order status.', 'Error');
     }
-
-    eventBus.emit('ORDER_STATUS_UPDATE', { orderId, status: newStatus });
-    notificationService.playChime('status_update');
-    showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
   };
 
   const handleCancelOrder = (orderId) => {
@@ -476,21 +507,25 @@ export default function App() {
         onLoginSuccess={(loggedInUser) => {
           setUser(loggedInUser);
           apiService.saveUser(loggedInUser);
-          if (loggedInUser.role) {
-            handleNavigate(
-              loggedInUser.role === 'kitchen'
-                ? '/kitchen'
-                : loggedInUser.role === 'delivery'
-                  ? '/delivery'
-                  : loggedInUser.role === 'admin'
-                    ? '/admin'
-                    : '/',
-              'menu',
-              loggedInUser.role
-            );
+          
+          const userRole = (loggedInUser.role || 'customer').toLowerCase();
+          
+          handleNavigate(
+            userRole === 'kitchen'
+              ? '/kitchen'
+              : userRole === 'delivery'
+                ? '/delivery'
+                : userRole === 'admin'
+                  ? '/admin'
+                  : '/dashboard',
+            userRole === 'customer' ? 'dashboard' : userRole,
+            userRole
+          );
+          
+          // Only ask customers to set location for delivery
+          if (userRole === 'customer') {
+            setIsLocationModalOpen(true);
           }
-          // Always ask logged in user to scan/set location for delivery
-          setIsLocationModalOpen(true);
         }}
       />
 

@@ -33,18 +33,20 @@ model User {
   name         String
   email        String       @unique
   phone        String?      @unique
-  password     String?      // Optional for Google OAuth users
-  googleId     String?      @unique
-  avatarUrl    String?
+  password     String?      @map("password_hash")
+  googleId     String?      @unique @map("google_id")
+  avatarUrl    String?      @map("avatar_url")
   provider     AuthProvider @default(LOCAL)
   role         Role         @default(CUSTOMER)
   location     String?
   lat          Float?
   lng          Float?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
   orders       Order[]
   feedbacks    Feedback[]
+
+  @@map("users")
 }
 
 model Meal {
