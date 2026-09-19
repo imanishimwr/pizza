@@ -418,7 +418,14 @@ export default function App() {
 
           {currentRole === 'kitchen' && <KitchenBoard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
           {currentRole === 'delivery' && <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
-          {currentRole === 'admin' && <AdminDashboard meals={meals} setMeals={setMeals} orders={orders} />}
+          {currentRole === 'admin' && (
+            <AdminDashboard
+              meals={meals}
+              setMeals={setMeals}
+              orders={orders}
+              onUpdateStatus={handleUpdateOrderStatus}
+            />
+          )}
         </div>
       </main>
 
