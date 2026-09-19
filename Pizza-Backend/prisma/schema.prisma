@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  KITCHEN
+  DELIVERY
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  phone        String?      @unique
+  password     String?      // Optional for Google OAuth users
+  googleId     String?      @unique
+  avatarUrl    String?
+  provider     AuthProvider @default(LOCAL)
+  role         Role         @default(CUSTOMER)
+  location     String?
+  lat          Float?
+  lng          Float?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  orders       Order[]
+  feedbacks    Feedback[]
+}
+
+model Meal {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  price       Float
+  rating      Float    @default(5.0)
+  reviewsCount Int     @default(1)
+  description String
+  image       String
+  spicy       Boolean  @default(false)
+  outOfStock  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  items       OrderItem[]
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id])
+  customerName String
+  phone        String
+  address      String
+  lat          Float?
+  lng          Float?
+  status       OrderStatus @default(PENDING)
+  totalRWF     Float
+  riderName    String?
+  paymentType  String      @default("MTN Mobile Money")
+  paymentStatus String     @default("PAID")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  items        OrderItem[]
+  feedback     Feedback?
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  orderId  String
+  mealId   String
+  name     String
+  qty      Int
+  price    Float
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  meal     Meal   @relation(fields: [mealId], references: [id])
+}
+
+model Voucher {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  discountPercent Int?
+  discountAmount  Float?
+  description     String
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  orderId   String   @unique
+  userId    String?
+  rating    Int
+  comment   String?
+  tipRWF    Float    @default(0)
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+}
