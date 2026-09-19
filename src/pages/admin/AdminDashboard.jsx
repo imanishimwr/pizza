@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
-import { Shield, TrendingUp, DollarSign, ShoppingBag, Users, Plus, UtensilsCrossed, Trash2, CheckCircle2, AlertCircle, Edit, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Shield, TrendingUp, DollarSign, ShoppingBag, Users, Plus, UtensilsCrossed, Trash2, CheckCircle2, AlertCircle, Edit, RefreshCw, MapPin, Bike, Navigation } from 'lucide-react';
+import L from 'leaflet';
 
 export default function AdminDashboard({ meals = [], setMeals, orders = [] }) {
   const [showAddMeal, setShowAddMeal] = useState(false);
+  const [selectedAdminTrackOrder, setSelectedAdminTrackOrder] = useState(null);
+  
+  const adminMapRef = useRef(null);
+  const adminMapInstanceRef = useRef(null);
+  const adminRiderMarkerRef = useRef(null);
+  const adminAnimFrameRef = useRef(null);
   
   // Form fields
   const [newMealName, setNewMealName] = useState('');
@@ -50,6 +57,83 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [] }) {
   const handleToggleStock = (id) => {
     setMeals(meals.map(m => m.id === id ? { ...m, outOfStock: !m.outOfStock } : m));
   };
+
+  // Hot Pot Kigali Store Coordinates (Exact Location)
+  const hotpotKigaliCoords = [-1.9702, 30.1250];
+  const clientDestCoords = [-1.9360, 30.0820];
+
+  useEffect(() => {
+    if (!selectedAdminTrackOrder) return;
+    if (!adminMapRef.current) return;
+
+    if (adminMapInstanceRef.current) {
+      adminMapInstanceRef.current.remove();
+      adminMapInstanceRef.current = null;
+    }
+
+    const map = L.map(adminMapRef.current).setView(hotpotKigaliCoords, 14);
+    adminMapInstanceRef.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Restaurant HQ Marker
+    const hqIcon = L.divIcon({
+      className: 'custom-leaflet-icon',
+      html: '<div style="background:#AE3200;color:white;padding:4px 8px;border-radius:15px;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5)">🍲 Hot Pot Kigali Store</div>'
+    });
+    L.marker(hotpotKigaliCoords, { icon: hqIcon }).addTo(map).bindPopup('<b>Hot Pot Kigali Store (-1.9702, 30.1250)</b>').openPopup();
+
+    // Client Destination Marker
+    const destIcon = L.divIcon({
+      className: 'custom-leaflet-icon',
+      html: '<div style="background:#128731;color:white;padding:4px 8px;border-radius:15px;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5)">🏠 Customer Spot</div>'
+    });
+    L.marker(clientDestCoords, { icon: destIcon }).addTo(map).bindPopup(`<b>${selectedAdminTrackOrder.address || 'Customer Location'}</b>`);
+
+    // Polyline Route
+    L.polyline([hotpotKigaliCoords, clientDestCoords], {
+      color: '#AE3200',
+      weight: 4,
+      dashArray: '8, 8'
+    }).addTo(map);
+
+    // Rider Icon
+    const riderIcon = L.divIcon({
+      className: 'custom-leaflet-icon',
+      html: '<div style="background:#2563eb;color:white;padding:4px 8px;border-radius:15px;font-size:11px;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,0.6);border:2px solid #60a5fa">🛵 Rider Eric (GPS Live)</div>'
+    });
+
+    adminRiderMarkerRef.current = L.marker(hotpotKigaliCoords, { icon: riderIcon }).addTo(map);
+
+    let step = 0.3;
+    let dir = 1;
+    const animateAdminRider = () => {
+      step += 0.0009 * dir;
+      if (step >= 0.95) dir = -1;
+      if (step <= 0.1) dir = 1;
+
+      const lat = hotpotKigaliCoords[0] + (clientDestCoords[0] - hotpotKigaliCoords[0]) * step;
+      const lng = hotpotKigaliCoords[1] + (clientDestCoords[1] - hotpotKigaliCoords[1]) * step;
+
+      if (adminRiderMarkerRef.current) {
+        adminRiderMarkerRef.current.setLatLng([lat, lng]);
+      }
+
+      adminAnimFrameRef.current = requestAnimationFrame(animateAdminRider);
+    };
+
+    adminAnimFrameRef.current = requestAnimationFrame(animateAdminRider);
+
+    return () => {
+      if (adminAnimFrameRef.current) cancelAnimationFrame(adminAnimFrameRef.current);
+      if (adminMapInstanceRef.current) {
+        adminMapInstanceRef.current.remove();
+        adminMapInstanceRef.current = null;
+      }
+    };
+  }, [selectedAdminTrackOrder]);
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -327,13 +411,23 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [] }) {
                       {(o.totalRWF || 0).toLocaleString()} RWF
                     </td>
                     <td className="p-3">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                        o.status === 'delivered' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' :
-                        o.status === 'cancelled' ? 'bg-red-950 text-red-400 border border-red-500/40' :
-                        'bg-amber-950 text-amber-300 border border-amber-500/40'
-                      }`}>
-                        {o.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          o.status === 'delivered' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' :
+                          o.status === 'cancelled' ? 'bg-red-950 text-red-400 border border-red-500/40' :
+                          'bg-amber-950 text-amber-300 border border-amber-500/40'
+                        }`}>
+                          {o.status}
+                        </span>
+
+                        <button
+                          onClick={() => setSelectedAdminTrackOrder(o)}
+                          className="px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-[10px] font-bold flex items-center gap-1 transition-all"
+                        >
+                          <Navigation className="w-3 h-3" />
+                          Track Rider GPS
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -341,6 +435,34 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [] }) {
             </tbody>
           </table>
         </div>
+
+        {/* Modal / Live Map Drawer for Admin Tracking */}
+        {selectedAdminTrackOrder && (
+          <div className="p-4 rounded-2xl bg-black/60 border border-blue-500/40 space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Bike className="w-4 h-4 text-blue-400" />
+                  Admin Rider Live GPS Monitor — Order #{selectedAdminTrackOrder.id}
+                </h4>
+                <p className="text-[11px] text-text-muted">
+                  Store Origin: Hot Pot Kigali (-1.9702, 30.1250) $\rightarrow$ Destination: {selectedAdminTrackOrder.address}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSelectedAdminTrackOrder(null)}
+                className="btn-secondary text-xs px-3 py-1 text-red-400 border-red-500/30"
+              >
+                Close Map
+              </button>
+            </div>
+
+            <div className="h-80 rounded-xl overflow-hidden border border-white/10 relative">
+              <div ref={adminMapRef} className="w-full h-full" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

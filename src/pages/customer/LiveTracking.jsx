@@ -24,9 +24,9 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
     return Math.max(0, 120 - elapsedSec);
   });
 
-  // Kigali Coordinates
-  const restaurantCoords = [-1.9441, 30.0619]; // HotPot Delights HQ
-  const deliveryCoords = [-1.9360, 30.0820];   // Nyarutarama Delivery Spot
+  // Exact Hot Pot Kigali Coordinates (Bing Maps Pin: -1.970212, 30.125015)
+  const restaurantCoords = [-1.9702, 30.1250]; // Hot Pot Kigali Store Location
+  const deliveryCoords = [-1.9360, 30.0820];   // Client Delivery Spot in Kigali
 
   // Reactive step calculation based on order status
   const currentStep = 
