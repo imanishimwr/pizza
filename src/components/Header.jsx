@@ -282,10 +282,11 @@ export default function Header({
                   </button>
                   <button
                     onClick={onLogout}
-                    className="p-2 text-text-muted hover:text-red-400 transition-colors"
-                    title="Log Out"
+                    className="px-3 py-1.5 rounded-xl bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                    title="Log Out of Account"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>{lang === 'RW' ? 'Gusohoka' : 'Logout'}</span>
                   </button>
                 </div>
               ) : (
@@ -319,10 +320,18 @@ export default function Header({
         )}
 
         {currentRole !== 'customer' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-[11px] sm:text-xs px-2.5 py-1 rounded-full bg-white/10 text-text-muted font-mono truncate max-w-[150px] sm:max-w-none">
-              User: {DEMO_USERS[currentRole]?.name}
+              Role: {currentRole.toUpperCase()}
             </span>
+            <button
+              onClick={() => onNavigate('/', 'menu', 'customer')}
+              className="px-3 py-1.5 rounded-xl bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-all"
+              title="Exit Console & Log Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Exit Console</span>
+            </button>
           </div>
         )}
       </div>
