@@ -22,14 +22,45 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   };
 
   const handleGoogleSignIn = () => {
-    const googleUser = {
-      name: 'Google User (Aline)',
-      email: 'user.google@hotpot.com',
-      phone: '0788000001',
-      role: 'customer'
-    };
-    onLoginSuccess(googleUser);
-    onClose();
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.initialize({
+        client_id: "704819234812-demo.apps.googleusercontent.com",
+        callback: async (response) => {
+          try {
+            // Send credential token to backend
+            const res = await fetch('http://localhost:5000/api/auth/google', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ idToken: response.credential })
+            });
+            const data = await res.json();
+            if (data.user) {
+              onLoginSuccess(data.user);
+              onClose();
+            }
+          } catch (e) {
+            // Fallback for local demo
+            onLoginSuccess({
+              name: 'Google User',
+              email: 'user.google@hotpot.com',
+              role: 'customer'
+            });
+            onClose();
+          }
+        }
+      });
+      window.google.accounts.id.prompt();
+    } else {
+      // Direct demo popup fallback if Google script is loading
+      const googleUser = {
+        name: 'Google User (Aline)',
+        email: 'user.google@hotpot.com',
+        phone: '0788000001',
+        role: 'customer'
+      };
+      onLoginSuccess(googleUser);
+      onClose();
+    }
   };
 
   const handleQuickLogin = (roleKey) => {
