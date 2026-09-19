@@ -49,55 +49,6 @@ export default function Header({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-surface-dark/95 backdrop-blur-md border-b border-white/10 shadow-lg">
-      <div className="bg-surface-card border-b border-white/5 py-1.5 px-3 sm:px-4 text-xs font-medium flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-text-muted text-[11px] sm:text-xs">
-          <span className="inline-block w-2 h-2 rounded-full bg-accent-green animate-pulse"></span>
-          <span>HotPot App Navigation & Roles:</span>
-        </div>
-
-        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10 overflow-x-auto max-w-full">
-          <button
-            onClick={() => navigateTo('/', 'menu', 'customer')}
-            className={`px-2.5 py-1 rounded-md text-[11px] sm:text-xs transition-all flex items-center gap-1 shrink-0 ${
-              currentRole === 'customer' ? 'bg-primary text-white font-semibold shadow-sm' : 'text-text-muted hover:text-white'
-            }`}
-          >
-            <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>Customer</span>
-          </button>
-
-          <button
-            onClick={() => navigateTo('/kitchen', 'kitchen', 'kitchen')}
-            className={`px-2.5 py-1 rounded-md text-[11px] sm:text-xs transition-all flex items-center gap-1 shrink-0 ${
-              currentRole === 'kitchen' ? 'bg-amber-600 text-white font-semibold shadow-sm' : 'text-text-muted hover:text-white'
-            }`}
-          >
-            <ChefHat className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>Kitchen</span>
-          </button>
-
-          <button
-            onClick={() => navigateTo('/delivery', 'delivery', 'delivery')}
-            className={`px-2.5 py-1 rounded-md text-[11px] sm:text-xs transition-all flex items-center gap-1 shrink-0 ${
-              currentRole === 'delivery' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-text-muted hover:text-white'
-            }`}
-          >
-            <Bike className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>Delivery</span>
-          </button>
-
-          <button
-            onClick={() => navigateTo('/admin', 'admin', 'admin')}
-            className={`px-2.5 py-1 rounded-md text-[11px] sm:text-xs transition-all flex items-center gap-1 shrink-0 ${
-              currentRole === 'admin' ? 'bg-purple-600 text-white font-semibold shadow-sm' : 'text-text-muted hover:text-white'
-            }`}
-          >
-            <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span>Admin</span>
-          </button>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         <div
           onClick={() => navigateTo('/', 'menu', 'customer')}

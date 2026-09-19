@@ -11,7 +11,9 @@ export default function Home({
   cart = [],
   wishlist = [],
   onToggleWishlist,
-  onOpenCustomBuilder
+  onOpenCustomBuilder,
+  onAddToCart,
+  onOpenCart
 }) {
   const [activeBanner, setActiveBanner] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -215,14 +217,16 @@ export default function Home({
       </section>
 
       <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-surface-card/60 p-4 rounded-2xl border border-white/5">
-          <div className="relative w-full sm:w-80">
+        {/* Search Bar & Taste Filter Bar */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-card border border-white/10 p-3 sm:p-4 rounded-2xl shadow-md">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
               value={searchKey}
               onChange={(e) => setSearchKey(e.target.value)}
-              placeholder="Search by keyword, ingredient, broth..."
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary transition-all"
+              placeholder="Search dishes by keyword, ingredient, broth..."
+              className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-8 py-2.5 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary transition-all"
             />
             {searchKey && (
               <button
@@ -234,42 +238,45 @@ export default function Home({
             )}
           </div>
 
-          {/* Quick Flavor / Spice Filter Pills */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted font-bold">Taste:</span>
+          {/* Spice & Dietary Filter Chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-text-muted font-bold mr-1">Filter:</span>
             <button
               onClick={() => setSpiceFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                spiceFilter === 'all' ? 'bg-primary text-white border-primary' : 'bg-black/40 text-text-muted border-white/10'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                spiceFilter === 'all' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-black/40 text-text-muted border-white/10 hover:text-white'
               }`}
             >
               All
             </button>
             <button
               onClick={() => setSpiceFilter('spicy')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                spiceFilter === 'spicy' ? 'bg-red-600 text-white border-red-500' : 'bg-black/40 text-text-muted border-white/10'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                spiceFilter === 'spicy' ? 'bg-red-600 text-white border-red-500 shadow-sm' : 'bg-black/40 text-text-muted border-white/10 hover:text-white'
               }`}
             >
               Spicy 🌶️
             </button>
             <button
               onClick={() => setSpiceFilter('mild')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                spiceFilter === 'mild' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-black/40 text-text-muted border-white/10'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                spiceFilter === 'mild' ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm' : 'bg-black/40 text-text-muted border-white/10 hover:text-white'
               }`}
             >
-              Mild / Non-Spicy 🥗
+              Mild 🥗
             </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
+        {/* Category Tabs Header */}
+        <div className="flex items-center justify-between pt-2">
+          <h2 className="text-lg font-extrabold text-text-main flex items-center gap-2">
             <Filter className="w-4 h-4 text-primary" />
-            Browse Food Catalog
+            Browse Food Categories
           </h2>
-          <span className="text-xs text-text-muted">{filteredMeals.length} food items available</span>
+          <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-1 rounded-full">
+            {filteredMeals.length} Dishes
+          </span>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -282,7 +289,7 @@ export default function Home({
                 className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border ${
                   isSelected
                     ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-105'
-                    : 'bg-surface-card text-text-muted border-white/5 hover:border-white/20 hover:text-white'
+                    : 'bg-surface-card text-text-muted border-white/10 hover:border-white/20 hover:text-white'
                 }`}
               >
                 <span>{category.name}</span>
@@ -398,24 +405,40 @@ export default function Home({
                       <p className="text-xs text-text-muted leading-relaxed line-clamp-3">{meal.description}</p>
                     </div>
 
-                    <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-[11px] text-text-subdued">
+                    <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-[11px] text-text-subdued">
                         <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span>{meal.rating}</span>
+                        <span className="font-bold text-white">{meal.rating}</span>
                         <span>•</span>
                         <span>{meal.reviews || 0} reviews</span>
                       </div>
 
-                      <button
-                        type="button"
-                        className="btn-primary text-[10px] px-3 py-2"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onSelectMeal(meal);
-                        }}
-                      >
-                        View
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {onAddToCart && (
+                          <button
+                            type="button"
+                            className="btn-primary text-[10px] px-2.5 py-1.5 bg-orange-600 hover:bg-orange-500 shadow-md flex items-center gap-1"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onAddToCart(meal);
+                              if (onOpenCart) onOpenCart();
+                            }}
+                          >
+                            + Quick Add
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          className="btn-secondary text-[10px] px-2.5 py-1.5"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSelectMeal(meal);
+                          }}
+                        >
+                          Details
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

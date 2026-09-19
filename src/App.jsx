@@ -383,6 +383,8 @@ export default function App() {
                   wishlist={wishlist}
                   onToggleWishlist={handleToggleWishlist}
                   onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
+                  onAddToCart={handleAddToCart}
+                  onOpenCart={() => setIsCartOpen(true)}
                 />
               )}
 
