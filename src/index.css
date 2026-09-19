@@ -4,24 +4,36 @@
 @theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   
-  --color-primary: #AE3200;
-  --color-primary-hover: #c93b00;
-  --color-primary-light: rgba(174, 50, 0, 0.15);
+  /* Strict 4-Color Palette: 1 Primary (Terracotta Red) + 2 Backgrounds (Dark/Surface) + 1 Text */
+  --color-primary: #C83200;
+  --color-primary-hover: #E03A00;
+  --color-primary-light: rgba(200, 50, 0, 0.15);
   
-  --color-bg-dark: #120F0E;
-  --color-surface-dark: #1A1716;
-  --color-surface-card: #231E1C;
-  --color-surface-card-hover: #2D2724;
+  --color-bg-dark: #121010;
+  --color-surface-dark: #1A1717;
+  --color-surface-card: #242020;
+  --color-surface-card-hover: #2E2929;
   
-  --color-text-main: #F7F4F2;
-  --color-text-muted: #A39B96;
-  --color-text-subdued: #736B66;
+  --color-text-main: #F7F5F5;
+  --color-text-muted: #A8A0A0;
+  --color-text-subdued: #7A7272;
+}
+
+/* Global Dark/Light Theme Switching */
+html.light-theme {
+  --color-bg-dark: #F5F3F2;
+  --color-surface-dark: #FFFFFF;
+  --color-surface-card: #EBE8E6;
+  --color-surface-card-hover: #E0DDD9;
+  --color-text-main: #1C1918;
+  --color-text-muted: #57524F;
+  --color-text-subdued: #8C8581;
 }
 
 html, body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  background-color: #120F0E;
-  color: #F7F4F2;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-main);
   min-height: 100vh;
   width: 100%;
   margin: 0;

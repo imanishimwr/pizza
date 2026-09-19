@@ -46,7 +46,19 @@ export default function App() {
   const [wishlist, setWishlist] = useState(() => apiService.getWishlist());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [lang, setLang] = useState('EN');
+  const [theme, setTheme] = useState('dark');
   const [toast, setToast] = useState(null);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    if (nextTheme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+  };
   const [selectedMeal, setSelectedMeal] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -345,9 +357,15 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={(tab) => handleNavigate(tab === 'dashboard' ? '/dashboard' : tab === 'orders' ? '/orders' : tab === 'tracking' ? '/tracking' : '/', tab, 'customer')}
         onNavigate={handleNavigate}
+        lang={lang}
+        setLang={setLang}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        meals={meals}
+        onSelectMeal={handleSelectMeal}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full relative">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 flex-1 w-full relative">
         <div key={activeTab + currentRole} className="animate-page-enter">
           {currentRole === 'customer' && (
             <>

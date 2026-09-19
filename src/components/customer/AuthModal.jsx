@@ -6,9 +6,20 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   if (!isOpen) return null;
 
   const [isRegister, setIsRegister] = useState(false);
+  const [isForgot, setIsForgot] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+
+  const handleResetSubmit = (e) => {
+    e.preventDefault();
+    setResetSent(true);
+    setTimeout(() => {
+      setResetSent(false);
+      setIsForgot(false);
+    }, 2500);
+  };
 
   const handleGoogleSignIn = () => {
     const googleUser = {
@@ -183,21 +194,33 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
           </button>
         </form>
 
-        <div className="text-center text-xs text-text-muted pt-2 border-t border-white/10">
+        <div className="text-center text-xs text-text-muted pt-2 border-t border-white/10 space-y-1">
           {isRegister ? (
-            <span>
+            <div>
               Already have an account?{' '}
-              <button type="button" onClick={() => setIsRegister(false)} className="text-primary font-bold hover:underline">
+              <button type="button" onClick={() => { setIsRegister(false); setIsForgot(false); }} className="text-primary font-bold hover:underline">
                 Sign In
               </button>
-            </span>
-          ) : (
-            <span>
-              Don't have an account?{' '}
-              <button type="button" onClick={() => setIsRegister(true)} className="text-primary font-bold hover:underline">
-                Register
+            </div>
+          ) : isForgot ? (
+            <div>
+              Remembered your password?{' '}
+              <button type="button" onClick={() => setIsForgot(false)} className="text-primary font-bold hover:underline">
+                Back to Sign In
               </button>
-            </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between px-2">
+              <button type="button" onClick={() => setIsForgot(true)} className="text-amber-400 hover:underline text-[11px]">
+                Forgot Password?
+              </button>
+              <span>
+                New user?{' '}
+                <button type="button" onClick={() => setIsRegister(true)} className="text-primary font-bold hover:underline">
+                  Register
+                </button>
+              </span>
+            </div>
           )}
         </div>
 
