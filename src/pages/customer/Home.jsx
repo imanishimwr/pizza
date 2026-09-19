@@ -11,6 +11,7 @@ export default function Home({
   cart = [],
   wishlist = [],
   onToggleWishlist,
+  onOpenCustomBuilder
 }) {
   const [activeBanner, setActiveBanner] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,12 +30,12 @@ export default function Home({
 
   const [searchKey, setSearchKey] = useState('');
   const [spiceFilter, setSpiceFilter] = useState('all');
+  const [dietaryFilter, setDietaryFilter] = useState('all');
 
   const filteredMeals = (meals || []).filter((meal) => {
     const activeSearch = searchQuery || searchKey;
     const matchesCategory = selectedCategory === 'all' || meal.category === selectedCategory;
     
-    // Keyword search matching name, description, category, tags, and broth choices
     const queryLower = activeSearch.toLowerCase().trim();
     const matchesSearch =
       !queryLower ||
@@ -49,7 +50,14 @@ export default function Home({
       : spiceFilter === 'spicy' ? meal.spicy === true 
       : meal.spicy !== true;
 
-    return matchesCategory && matchesSearch && matchesSpice;
+    const matchesDietary = dietaryFilter === 'all'
+      ? true
+      : dietaryFilter === 'veg' ? (meal.vegetarian || meal.category === 'vegetarian' || meal.name.toLowerCase().includes('veg'))
+      : dietaryFilter === 'vegan' ? (meal.vegan || meal.name.toLowerCase().includes('vegan'))
+      : dietaryFilter === 'halal' ? (meal.halal || true)
+      : true;
+
+    return matchesCategory && matchesSearch && matchesSpice && matchesDietary;
   });
 
   const recentFoods = [...(meals || []).slice(0, 6), ...(meals || []).slice(0, 6)];
@@ -88,11 +96,21 @@ export default function Home({
               </div>
               <button
                 onClick={() => setSelectedCategory('pizzas')}
-                className="px-6 py-3 rounded-xl bg-white text-primary font-black text-xs hover:bg-orange-100 transition-all shadow-xl flex items-center gap-2 hover:scale-105"
+                className="px-5 py-3 rounded-xl bg-white text-primary font-black text-xs hover:bg-orange-100 transition-all shadow-xl flex items-center gap-2 hover:scale-105"
               >
                 Claim Offer Now
                 <ChevronRight className="w-4 h-4" />
               </button>
+
+              {onOpenCustomBuilder && (
+                <button
+                  onClick={onOpenCustomBuilder}
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-xs hover:opacity-90 transition-all shadow-xl flex items-center gap-2 hover:scale-105 border border-amber-400/40"
+                >
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  Custom Pizza Studio
+                </button>
+              )}
             </div>
           </div>
 

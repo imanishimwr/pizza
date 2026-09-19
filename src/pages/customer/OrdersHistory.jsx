@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Clock, MapPin, CheckCircle2, ChevronRight, FileText } from 'lucide-react';
+import { ShoppingBag, Clock, MapPin, CheckCircle2, ChevronRight, FileText, RefreshCw } from 'lucide-react';
 import ReceiptModal from '../../components/customer/ReceiptModal';
 
-export default function OrdersHistory({ orders = [], onSelectOrder }) {
+export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart }) {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [reorderedId, setReorderedId] = useState(null);
+
+  const handleReorder = (e, order) => {
+    e.stopPropagation();
+    if (!onAddToCart) return;
+    order.items.forEach((item) => {
+      onAddToCart(item);
+    });
+    setReorderedId(order.id);
+    setTimeout(() => setReorderedId(null), 2000);
+  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -44,6 +55,15 @@ export default function OrdersHistory({ orders = [], onSelectOrder }) {
                   }`}>
                     {order.status}
                   </span>
+
+                  <button
+                    onClick={(e) => handleReorder(e, order)}
+                    className="p-1.5 px-3 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary font-bold transition-all flex items-center gap-1.5 text-[11px]"
+                    title="Reorder all items in this order"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${reorderedId === order.id ? 'animate-spin' : ''}`} />
+                    {reorderedId === order.id ? 'Added to Cart!' : '1-Click Reorder'}
+                  </button>
 
                   <button
                     onClick={(e) => {

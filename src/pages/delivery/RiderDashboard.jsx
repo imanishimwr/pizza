@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
-import { Bike, MapPin, Phone, CheckCircle2, Navigation, DollarSign, Clock, Shield } from 'lucide-react';
+import { Bike, MapPin, Phone, CheckCircle2, Navigation, DollarSign, Clock, Shield, PenTool, Camera, X, Check } from 'lucide-react';
 
 export default function RiderDashboard({ orders = [], onUpdateStatus }) {
   const activeDeliveries = orders.filter(o => o.status === 'ready' || o.status === 'delivery');
   const completedDeliveries = orders.filter(o => o.status === 'delivered');
 
   const [selectedOrder, setSelectedOrder] = useState(activeDeliveries[0] || null);
+  const [showProofModal, setShowProofModal] = useState(false);
+  const [signature, setSignature] = useState(false);
+  const [photoConfirmed, setPhotoConfirmed] = useState(false);
+
+  const handleConfirmDelivery = () => {
+    if (!selectedOrder) return;
+    onUpdateStatus(selectedOrder.id, 'delivered');
+    setShowProofModal(false);
+    setSignature(false);
+    setPhotoConfirmed(false);
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
@@ -60,7 +71,7 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
           </div>
         </div>
 
-        {/* Grid: Delivery Orders & Map */}
+        {/* Grid: Delivery Orders & Control */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Active Deliveries List */}
           <div className="space-y-4">
@@ -131,11 +142,11 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
 
                   <div className="flex items-center gap-2">
                     <a
-                      href={`tel:${selectedOrder.phone}`}
+                      href={`tel:${selectedOrder.phone || '0788000001'}`}
                       className="btn-secondary text-xs"
                     >
                       <Phone className="w-3.5 h-3.5 text-primary" />
-                      Call Customer ({selectedOrder.phone})
+                      Call Customer ({selectedOrder.phone || '0788000001'})
                     </a>
                   </div>
                 </div>
@@ -150,7 +161,7 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
 
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-1">
                     <span className="text-text-subdued uppercase font-bold block">Customer Drop-off</span>
-                    <div className="font-bold text-text-main">{selectedOrder.customerName}</div>
+                    <div className="font-bold text-text-main">{selectedOrder.customerName || 'Customer'}</div>
                     <div className="text-text-muted">{selectedOrder.address}</div>
                   </div>
                 </div>
@@ -172,13 +183,11 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
                     </button>
 
                     <button
-                      onClick={() => {
-                        onUpdateStatus(selectedOrder.id, 'delivered');
-                      }}
+                      onClick={() => setShowProofModal(true)}
                       className="btn-primary text-xs py-3 justify-center bg-emerald-600 hover:bg-emerald-700"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      2. Mark Delivered
+                      2. Complete & Capture Proof
                     </button>
                   </div>
                 </div>
@@ -191,6 +200,58 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
           </div>
         </div>
       </div>
+
+      {/* Proof of Delivery Modal */}
+      {showProofModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-white text-base">Proof of Delivery Confirmation</h3>
+              </div>
+              <button onClick={() => setShowProofModal(false)} className="text-text-muted hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-text-muted">
+              Order <strong className="text-white font-mono">#{selectedOrder.id}</strong> for <strong className="text-white">{selectedOrder.customerName}</strong>
+            </p>
+
+            <div className="space-y-3">
+              {/* Digital Signature */}
+              <div 
+                onClick={() => setSignature(true)}
+                className={`p-4 rounded-xl border text-center cursor-pointer transition-all ${
+                  signature ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300' : 'bg-black/40 border-dashed border-white/20 text-text-muted'
+                }`}
+              >
+                <PenTool className="w-6 h-6 mx-auto mb-1 text-amber-400" />
+                <span className="text-xs font-bold block">{signature ? '✓ Customer Signature Captured' : 'Tap to Record Customer Digital Signature'}</span>
+              </div>
+
+              {/* Photo Confirmation */}
+              <div 
+                onClick={() => setPhotoConfirmed(true)}
+                className={`p-4 rounded-xl border text-center cursor-pointer transition-all ${
+                  photoConfirmed ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300' : 'bg-black/40 border-dashed border-white/20 text-text-muted'
+                }`}
+              >
+                <Camera className="w-6 h-6 mx-auto mb-1 text-blue-400" />
+                <span className="text-xs font-bold block">{photoConfirmed ? '✓ Delivery Photo Verified' : 'Tap to Take Delivery Photo'}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleConfirmDelivery}
+              className="w-full btn-primary text-xs py-3 bg-emerald-600 hover:bg-emerald-700 justify-center"
+            >
+              Confirm Handover & Complete Order
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -345,40 +345,68 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
-            <div className="font-bold text-text-main flex items-center justify-between">
-              <span>Traffic Source</span>
-              <span className="text-emerald-400">84% Direct</span>
-            </div>
-            <div className="space-y-1.5 text-text-muted text-[11px]">
-              <div className="flex justify-between"><span>Google / Web Search:</span><span className="font-mono text-white">48%</span></div>
-              <div className="flex justify-between"><span>Direct URL / App:</span><span className="font-mono text-white">36%</span></div>
-              <div className="flex justify-between"><span>Social / Instagram:</span><span className="font-mono text-white">16%</span></div>
-            </div>
+        {/* Visual Revenue & Weekly Sales Chart */}
+        <div className="bg-black/50 p-5 rounded-2xl border border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Weekly Revenue Analytics (RWF)</span>
+            <span className="text-[11px] font-mono text-emerald-400 font-bold">+18.4% WoW Growth</span>
           </div>
 
-          <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
-            <div className="font-bold text-text-main flex items-center justify-between">
-              <span>Device Breakdown</span>
-              <span className="text-amber-400">Mobile First</span>
-            </div>
-            <div className="space-y-1.5 text-text-muted text-[11px]">
-              <div className="flex justify-between"><span>Mobile (iOS / Android):</span><span className="font-mono text-white">72%</span></div>
-              <div className="flex justify-between"><span>Desktop Browser:</span><span className="font-mono text-white">22%</span></div>
-              <div className="flex justify-between"><span>Tablet / iPad:</span><span className="font-mono text-white">6%</span></div>
-            </div>
+          <div className="h-44 flex items-end justify-between gap-3 pt-6 pb-2 px-4 border-b border-white/10">
+            {[
+              { day: 'Mon', rev: 45000, height: '45%' },
+              { day: 'Tue', rev: 62000, height: '62%' },
+              { day: 'Wed', rev: 58000, height: '58%' },
+              { day: 'Thu', rev: 74000, height: '74%' },
+              { day: 'Fri', rev: 98000, height: '98%' },
+              { day: 'Sat', rev: 110000, height: '100%' },
+              { day: 'Sun', rev: 89000, height: '89%' },
+            ].map((item, idx) => (
+              <div key={idx} className="flex-1 flex flex-col items-center gap-2 group">
+                <div className="text-[10px] font-mono text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
+                  {(item.rev / 1000).toFixed(0)}k
+                </div>
+                <div 
+                  className="w-full bg-gradient-to-t from-primary to-amber-400 rounded-t-lg group-hover:brightness-125 transition-all shadow-lg"
+                  style={{ height: item.height }}
+                />
+                <span className="text-[11px] font-bold text-text-muted">{item.day}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
-            <div className="font-bold text-text-main flex items-center justify-between">
-              <span>Top Kigali Sectors</span>
-              <span className="text-blue-400 font-mono">GPS Heatmap</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+              <div className="font-bold text-text-main flex items-center justify-between">
+                <span>Traffic Source</span>
+                <span className="text-emerald-400">84% Direct</span>
+              </div>
+              <div className="space-y-1 text-text-muted text-[11px]">
+                <div className="flex justify-between"><span>Search Engines:</span><span className="font-mono text-white">48%</span></div>
+                <div className="flex justify-between"><span>Direct Apps:</span><span className="font-mono text-white">36%</span></div>
+              </div>
             </div>
-            <div className="space-y-1.5 text-text-muted text-[11px]">
-              <div className="flex justify-between"><span>1. Nyarutarama:</span><span className="font-mono text-white">412 Sessions</span></div>
-              <div className="flex justify-between"><span>2. Kimironko:</span><span className="font-mono text-white">318 Sessions</span></div>
-              <div className="flex justify-between"><span>3. Kacyiru / Remera:</span><span className="font-mono text-white">285 Sessions</span></div>
+
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+              <div className="font-bold text-text-main flex items-center justify-between">
+                <span>Device Breakdown</span>
+                <span className="text-amber-400">Mobile First</span>
+              </div>
+              <div className="space-y-1 text-text-muted text-[11px]">
+                <div className="flex justify-between"><span>Mobile (iOS / Android):</span><span className="font-mono text-white">72%</span></div>
+                <div className="flex justify-between"><span>Desktop Browser:</span><span className="font-mono text-white">28%</span></div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+              <div className="font-bold text-text-main flex items-center justify-between">
+                <span>Top Kigali Sectors</span>
+                <span className="text-blue-400 font-mono">GPS Heatmap</span>
+              </div>
+              <div className="space-y-1 text-text-muted text-[11px]">
+                <div className="flex justify-between"><span>1. Nyarutarama:</span><span className="font-mono text-white">412 Sessions</span></div>
+                <div className="flex justify-between"><span>2. Kimironko:</span><span className="font-mono text-white">318 Sessions</span></div>
+              </div>
             </div>
           </div>
         </div>

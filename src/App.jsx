@@ -15,6 +15,8 @@ import LocationModal from './components/LocationModal';
 import ReferralModal from './components/customer/ReferralModal';
 import HelpModal from './components/customer/HelpModal';
 import ProfileModal from './components/customer/ProfileModal';
+import CustomPizzaBuilderModal from './components/customer/CustomPizzaBuilderModal';
+import MobileBottomNav from './components/MobileBottomNav';
 import { apiService } from './services/apiService';
 import { eventBus } from './services/eventBus';
 import { notificationService } from './services/notificationService';
@@ -82,6 +84,7 @@ export default function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isCustomBuilderOpen, setIsCustomBuilderOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState(null);
 
   const showToast = useCallback((message, title = 'Notification') => {
@@ -379,6 +382,7 @@ export default function App() {
                   cart={cart}
                   wishlist={wishlist}
                   onToggleWishlist={handleToggleWishlist}
+                  onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
                 />
               )}
 
@@ -416,6 +420,7 @@ export default function App() {
               {activeTab === 'orders' && (
                 <OrdersHistory
                   orders={orders}
+                  onAddToCart={handleAddToCart}
                   onSelectOrder={(order) => {
                     setTrackedOrder(order);
                     apiService.setTrackedOrderId(order.id);
@@ -510,6 +515,26 @@ export default function App() {
           showToast('Profile saved successfully!', 'Profile Saved');
         }}
       />
+
+      <CustomPizzaBuilderModal
+        isOpen={isCustomBuilderOpen}
+        onClose={() => setIsCustomBuilderOpen(false)}
+        onAddToCart={(customItem) => {
+          handleAddToCart(customItem);
+          showToast(`${customItem.name} added to cart!`, 'Custom Pizza Created');
+        }}
+      />
+
+      {currentRole === 'customer' && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          setActiveTab={(tab) => handleNavigate(tab === 'menu' ? '/' : `/${tab}`, tab, 'customer')}
+          cartCount={cart.reduce((sum, item) => sum + (item.qty || 1), 0)}
+          onOpenCart={() => setIsCartOpen(true)}
+          onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+        />
+      )}
 
       <footer className="border-t border-white/10 bg-surface-dark py-12 px-4 mt-auto">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
