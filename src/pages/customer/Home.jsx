@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Star, Clock, Sparkles, Filter, ChevronRight, Check, Heart } from 'lucide-react';
+import { Flame, Star, Clock, Sparkles, Filter, ChevronRight, Check, Heart, Search } from 'lucide-react';
 import { CATEGORIES, PROMO_BANNERS } from '../../data/mockData';
 
 export default function Home({
