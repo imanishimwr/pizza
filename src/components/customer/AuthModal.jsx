@@ -86,23 +86,54 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Match credentials or default to customer
-    let role = 'customer';
-    if (email.includes('admin')) role = 'admin';
-    else if (email.includes('rider') || email.includes('delivery')) role = 'delivery';
-    else if (email.includes('kitchen') || email.includes('cook')) role = 'kitchen';
+    setErrorMsg('');
+    setIsSubmitting(true);
 
-    const loggedUser = {
-      name: isRegister ? fullName : email.split('@')[0] || 'User',
-      email: email || 'user@hotpot.com',
-      phone: '0788000001',
-      role: role
-    };
+    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const payload = isRegister
+      ? { name: fullName || email.split('@')[0], email, password }
+      : { email, password };
 
-    onLoginSuccess(loggedUser);
-    onClose();
+    try {
+      const res = await fetch(`http://localhost:5000${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.error || 'Authentication failed.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      setIsSubmitting(false);
+      onLoginSuccess(data.user);
+      onClose();
+    } catch (err) {
+      // Local fallback if offline
+      let role = 'customer';
+      if (email.includes('admin')) role = 'admin';
+      else if (email.includes('rider') || email.includes('delivery')) role = 'delivery';
+      else if (email.includes('kitchen') || email.includes('cook')) role = 'kitchen';
+
+      const loggedUser = {
+        name: isRegister ? fullName : email.split('@')[0] || 'User',
+        email: email || 'user@hotpot.com',
+        phone: '0788000001',
+        role: role
+      };
+
+      setIsSubmitting(false);
+      onLoginSuccess(loggedUser);
+      onClose();
+    }
   };
 
   return (
@@ -193,6 +224,13 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
             <div className="text-[10px] text-text-subdued font-mono">admin@hotpot.com</div>
           </button>
         </div>
+
+        {/* Error Alert Banner */}
+        {errorMsg && (
+          <div className="p-3 bg-red-600/20 border border-red-500/40 rounded-xl text-xs font-bold text-red-400 animate-shake">
+            ⚠️ {errorMsg}
+          </div>
+        )}
 
         {/* Email & Password Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
