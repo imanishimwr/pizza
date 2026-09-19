@@ -269,7 +269,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
         <div className="lg:col-span-2 h-96 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
           <div ref={mapRef} className="w-full h-full" />
           
-          <div className="absolute top-4 left-4 z-[400] bg-surface-dark/95 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs space-y-1.5 shadow-xl">
+          <div className="absolute top-4 left-4 z-[400] bg-surface-dark/95 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs space-y-1.5 shadow-xl max-w-xs">
             <div className="font-bold text-text-main flex items-center justify-between gap-3">
               <span className="flex items-center gap-1.5">
                 <Bike className="w-4 h-4 text-primary animate-bounce" />
@@ -280,6 +280,18 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
               </span>
             </div>
             <div className="text-[11px] text-text-muted">Vehicle: Hero TVS • RAC 482B</div>
+            
+            <div className="pt-1.5 border-t border-white/10 space-y-1 text-[11px]">
+              <div className="flex items-center gap-1.5 text-orange-400 font-bold">
+                <span>📍 Origin Kitchen:</span>
+                <span className="text-white font-normal">HotPot Delights HQ (Nyarutarama)</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                <span>🏠 Client Destination:</span>
+                <span className="text-white font-normal truncate">{order?.address || 'KG 9 Ave, Nyarutarama, Kigali'}</span>
+              </div>
+            </div>
+
             <div className="pt-1 border-t border-white/10 flex items-center gap-3 text-[10px] font-mono text-amber-400">
               <span>Speed: {riderSpeed}</span>
               <span>Distance left: {riderDistanceRemaining}</span>
