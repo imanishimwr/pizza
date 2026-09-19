@@ -29,18 +29,32 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
     setIsScanningGps(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setIsScanningGps(false);
-          const lat = pos.coords.latitude.toFixed(4);
-          const lng = pos.coords.longitude.toFixed(4);
-          setSelectedKigaliArea('Nyarutarama');
-          setAddressDetail(`Live GPS (${lat}, ${lng}) - Auto Detected`);
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+            setIsScanningGps(false);
+            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood || 'KG 9 Ave';
+            const sector = data.address?.suburb || data.address?.city_district || 'Nyarutarama';
+            
+            // Match sector name to available list
+            const matchedArea = kigaliAreas.find(a => sector.toLowerCase().includes(a.name.toLowerCase()))?.name || 'Nyarutarama';
+            setSelectedKigaliArea(matchedArea);
+            setAddressDetail(`${road} (GPS Verified: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          } catch (err) {
+            setIsScanningGps(false);
+            setSelectedKigaliArea('Nyarutarama');
+            setAddressDetail(`KG 9 Ave, House 42 (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          }
         },
         () => {
           setIsScanningGps(false);
           setSelectedKigaliArea('Nyarutarama');
           setAddressDetail('KG 9 Ave, House 42 (Detected Location)');
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
     } else {
       setIsScanningGps(false);

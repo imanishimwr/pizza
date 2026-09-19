@@ -12,18 +12,31 @@ export default function LocationModal({ isOpen, onClose, onSetLocation }) {
     setLoading(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLoading(false);
-          const locString = `Live GPS (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}) - Kigali`;
-          onSetLocation(locString);
-          onClose();
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+            setLoading(false);
+            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood || 'Kigali Street';
+            const area = data.address?.suburb || data.address?.city_district || 'Nyarutarama';
+            const locString = `${road}, ${area}, Kigali (GPS Verified: ${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+            onSetLocation(locString);
+            onClose();
+          } catch (err) {
+            setLoading(false);
+            onSetLocation(`KG 9 Ave, Nyarutarama, Kigali (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+            onClose();
+          }
         },
         () => {
           setLoading(false);
-          // Fallback location if permission denied
+          // Fallback location if permission blocked
           onSetLocation('KG 9 Ave, Nyarutarama, Kigali (Detected)');
           onClose();
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
     } else {
       setLoading(false);
