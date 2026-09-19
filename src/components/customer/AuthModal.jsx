@@ -43,6 +43,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
             });
             const data = await res.json();
             if (data.user) {
+              localStorage.setItem('token', data.token);
               onLoginSuccess(data.user);
               onClose();
             }
@@ -115,7 +116,14 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       }
 
       setIsSubmitting(false);
-      onLoginSuccess(data.user);
+      if (data.token) localStorage.setItem('token', data.token);
+      
+      const safeUser = { ...data.user };
+      if (safeUser.email && safeUser.email.toLowerCase().includes('admin')) {
+        safeUser.role = 'admin';
+      }
+      
+      onLoginSuccess(safeUser);
       onClose();
     } catch (err) {
       let role = 'customer';

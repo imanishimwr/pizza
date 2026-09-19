@@ -1,5 +1,6 @@
 // HotPot Delights Persistent Data Service Layer
-import { MEALS as DEFAULT_MEALS, INITIAL_ORDERS as DEFAULT_ORDERS, API_BASE_URL } from '../data/mockData';
+import { MEALS as DEFAULT_MEALS, INITIAL_ORDERS as DEFAULT_ORDERS } from '../data/mockData';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const STORAGE_KEYS = {
   MEALS: 'hotpot_meals_v1',
@@ -13,39 +14,82 @@ const STORAGE_KEYS = {
 
 export const apiService = {
   // Meals Persistence
-  getMeals: () => {
+  getMeals: async () => {
     try {
+      const res = await fetch(`${API_BASE_URL}/meals`);
+      if (!res.ok) throw new Error('Failed to fetch meals');
+      const data = await res.json();
+      localStorage.setItem(STORAGE_KEYS.MEALS, JSON.stringify(data));
+      return data;
+    } catch (e) {
+      console.warn('Backend unavailable, using local cache', e);
       const saved = localStorage.getItem(STORAGE_KEYS.MEALS);
       return saved ? JSON.parse(saved) : DEFAULT_MEALS;
-    } catch (e) {
-      return DEFAULT_MEALS;
     }
   },
 
-  saveMeals: (meals) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.MEALS, JSON.stringify(meals));
-    } catch (e) {
-      console.error('Error saving meals:', e);
-    }
+  createMeal: async (mealData, token) => {
+    const res = await fetch(`${API_BASE_URL}/meals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(mealData)
+    });
+    if (!res.ok) throw new Error('Failed to create meal');
+    return res.json();
+  },
+
+  updateMeal: async (id, mealData, token) => {
+    const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(mealData)
+    });
+    if (!res.ok) throw new Error('Failed to update meal');
+    return res.json();
+  },
+
+  deleteMeal: async (id, token) => {
+    const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to delete meal');
+    return res.json();
   },
 
   // Orders Persistence
-  getOrders: () => {
+  getOrders: async () => {
     try {
+      const res = await fetch(`${API_BASE_URL}/orders`);
+      if (!res.ok) throw new Error('Failed to fetch orders');
+      const data = await res.json();
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(data));
+      return data;
+    } catch (e) {
+      console.warn('Backend unavailable, using local cache', e);
       const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
       return saved ? JSON.parse(saved) : DEFAULT_ORDERS;
-    } catch (e) {
-      return DEFAULT_ORDERS;
     }
   },
 
-  saveOrders: (orders) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-    } catch (e) {
-      console.error('Error saving orders:', e);
-    }
+  createOrder: async (orderData) => {
+    const res = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    });
+    if (!res.ok) throw new Error('Failed to create order');
+    return res.json();
+  },
+
+  updateOrderStatus: async (id, status, riderName, token) => {
+    const res = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ status, riderName })
+    });
+    if (!res.ok) throw new Error('Failed to update order status');
+    return res.json();
   },
 
   // User Session Persistence
@@ -128,19 +172,30 @@ export const apiService = {
     }
   },
 
-  // Sync to backend if endpoint available
-  syncOrderToBackend: async (order) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(order)
-      });
-      return await response.json();
-    } catch (e) {
-      console.log('Backend request saved locally.');
-      return { success: true, localOnly: true };
-    }
+  // Vouchers API
+  getVouchers: async () => {
+    const res = await fetch(`${API_BASE_URL}/vouchers`);
+    if (!res.ok) throw new Error('Failed to fetch vouchers');
+    return res.json();
+  },
+
+  createVoucher: async (voucherData, token) => {
+    const res = await fetch(`${API_BASE_URL}/vouchers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(voucherData)
+    });
+    if (!res.ok) throw new Error('Failed to create voucher');
+    return res.json();
+  },
+
+  // Admin Analytics API
+  getAdminAnalytics: async (token) => {
+    const res = await fetch(`${API_BASE_URL}/admin/analytics`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to fetch analytics');
+    return res.json();
   }
 };
 

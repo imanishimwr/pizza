@@ -288,7 +288,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
               </div>
               <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
                 <span>🏠 Client Destination:</span>
-                <span className="text-white font-normal truncate">{order?.address || 'KG 9 Ave, Nyarutarama, Kigali'}</span>
+                <span className="text-white font-normal truncate">{order?.address || 'Address pending'}</span>
               </div>
             </div>
 
@@ -332,7 +332,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
 
           <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-[11px] text-text-muted space-y-1">
             <div className="font-bold text-text-main">Delivery Address:</div>
-            <div>{order?.address || 'KG 9 Ave, Nyarutarama, Kigali'}</div>
+            <div>{order?.address || 'Address pending'}</div>
             {order?.specialInstruction && (
               <div className="text-amber-300 font-semibold pt-1">Note: "{order.specialInstruction}"</div>
             )}

@@ -43,30 +43,31 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
   const totalRevenue = orders.reduce((acc, o) => acc + (o.totalRWF || 0), 94000);
   const totalOrdersCount = orders.length + 18;
 
-  const handleAddMeal = (e) => {
+  const handleAddMeal = async (e) => {
     e.preventDefault();
     if (!newMealName || !newMealPrice) return;
 
     const newFoodItem = {
-      id: `hp-food-${Date.now()}`,
       name: newMealName,
       category: newMealCategory,
       price: parseInt(newMealPrice),
-      rating: 5.0,
-      reviews: 1,
       image: newMealImage || '/assets/1122x850_AO.png',
-      fallbackImage: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80',
       description: newMealDesc || 'Delicious hotpot & gourmet dish prepared fresh by our kitchen staff.',
       spicy: isSpicy,
-      prepTime: '15-20 min',
       outOfStock: false
     };
 
-    setMeals([newFoodItem, ...meals]);
-    setNewMealName('');
-    setNewMealPrice('');
-    setNewMealDesc('');
-    setShowAddMeal(false);
+    try {
+      const token = localStorage.getItem('token');
+      const created = await import('../../services/apiService').then(m => m.apiService.createMeal(newFoodItem, token));
+      setMeals([created, ...meals]);
+      setNewMealName('');
+      setNewMealPrice('');
+      setNewMealDesc('');
+      setShowAddMeal(false);
+    } catch (err) {
+      // Error handled silently
+    }
   };
 
   const handleOpenEdit = (meal) => {
@@ -77,42 +78,67 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
     setEditDesc(meal.description || '');
   };
 
-  const handleSaveEditMeal = (e) => {
+  const handleSaveEditMeal = async (e) => {
     e.preventDefault();
     if (!editingMeal) return;
 
-    setMeals(meals.map(m => m.id === editingMeal.id ? {
-      ...m,
-      name: editName,
-      price: parseInt(editPrice),
-      category: editCategory,
-      description: editDesc
-    } : m));
+    try {
+      const token = localStorage.getItem('token');
+      const updated = await import('../../services/apiService').then(m => m.apiService.updateMeal(editingMeal.id, {
+        name: editName,
+        price: parseInt(editPrice),
+        category: editCategory,
+        description: editDesc
+      }, token));
 
-    setEditingMeal(null);
-  };
-
-  const handleDeleteMeal = (id, name) => {
-    if (window.confirm(`Are you sure you want to remove "${name}" from the menu?`)) {
-      setMeals(meals.filter(m => m.id !== id));
+      setMeals(meals.map(m => m.id === editingMeal.id ? updated : m));
+      setEditingMeal(null);
+    } catch (err) {
+      // Error handled silently
     }
   };
 
-  const handleToggleStock = (id) => {
-    setMeals(meals.map(m => m.id === id ? { ...m, outOfStock: !m.outOfStock } : m));
+  const handleDeleteMeal = async (id, name) => {
+    if (window.confirm(`Are you sure you want to remove "${name}" from the menu?`)) {
+      try {
+        const token = localStorage.getItem('token');
+        await import('../../services/apiService').then(m => m.apiService.deleteMeal(id, token));
+        setMeals(meals.filter(m => m.id !== id));
+      } catch (err) {
+        // Error handled silently
+      }
+    }
   };
 
-  const handleAddVoucher = (e) => {
+  const handleToggleStock = async (id) => {
+    try {
+      const meal = meals.find(m => m.id === id);
+      const token = localStorage.getItem('token');
+      const updated = await import('../../services/apiService').then(m => m.apiService.updateMeal(id, { outOfStock: !meal.outOfStock }, token));
+      setMeals(meals.map(m => m.id === id ? updated : m));
+    } catch (err) {
+      // Error handled silently
+    }
+  };
+
+  const handleAddVoucher = async (e) => {
     e.preventDefault();
     if (!newVoucherCode || !newVoucherVal) return;
-    setVouchers([...vouchers, {
-      code: newVoucherCode.toUpperCase(),
-      type: 'Discount',
-      value: `${newVoucherVal} RWF Off`,
-      status: 'ACTIVE'
-    }]);
-    setNewVoucherCode('');
-    setNewVoucherVal('');
+    
+    try {
+      const token = localStorage.getItem('token');
+      const created = await import('../../services/apiService').then(m => m.apiService.createVoucher({
+        code: newVoucherCode.toUpperCase(),
+        discountAmount: parseFloat(newVoucherVal),
+        description: 'Discount Voucher'
+      }, token));
+      
+      setVouchers([created, ...vouchers]);
+      setNewVoucherCode('');
+      setNewVoucherVal('');
+    } catch (err) {
+      // Error handled silently
+    }
   };
 
   const handleExportCSV = () => {
@@ -143,6 +169,29 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
   // Hot Pot Kigali Store Coordinates (Exact Location)
   const hotpotKigaliCoords = [-1.9702, 30.1250];
   const clientDestCoords = [-1.9360, 30.0820];
+
+  // Load Vouchers & Analytics on mount
+  const [analytics, setAnalytics] = useState({ totalRevenueRWF: 0, totalOrdersCount: 0, activeOrdersCount: 0 });
+
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const api = await import('../../services/apiService').then(m => m.apiService);
+        
+        const [vouchs, stats] = await Promise.all([
+          api.getVouchers(),
+          api.getAdminAnalytics(token)
+        ]);
+        
+        setVouchers(vouchs);
+        setAnalytics(stats);
+      } catch (err) {
+        // Error handled silently
+      }
+    };
+    fetchAdminData();
+  }, []);
 
   useEffect(() => {
     if (!selectedAdminTrackOrder) return;
@@ -287,7 +336,7 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
             <DollarSign className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-black font-mono text-primary">
-            {totalRevenue.toLocaleString()} RWF
+            {Number(analytics.totalRevenueRWF).toLocaleString()} RWF
           </div>
           <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
             <TrendingUp className="w-3.5 h-3.5" /> +18.4% from last week
@@ -300,7 +349,7 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
             <ShoppingBag className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-black font-mono text-text-main">
-            {totalOrdersCount} Orders
+            {analytics.totalOrdersCount} Orders
           </div>
           <span className="text-[11px] text-text-muted">Avg basket: 18,500 RWF</span>
         </div>
@@ -311,7 +360,7 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
             <UtensilsCrossed className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-2xl font-black font-mono text-text-main">
-            {orders.filter(o => o.status === 'pending' || o.status === 'preparing').length} Active
+            {analytics.activeOrdersCount} Active
           </div>
           <span className="text-[11px] text-blue-400 font-semibold">Avg prep time: 18 min</span>
         </div>
@@ -661,10 +710,10 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
             <div key={i} className="p-3 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between">
               <div>
                 <div className="text-xs font-mono font-bold text-amber-400">{v.code}</div>
-                <div className="text-[10px] text-text-muted">{v.value}</div>
+                <div className="text-[10px] text-text-muted">{v.discountAmount} RWF Off</div>
               </div>
               <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                {v.status}
+                {v.active ? 'ACTIVE' : 'INACTIVE'}
               </span>
             </div>
           ))}
@@ -716,7 +765,7 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
                     <td className="p-3">
                       <div className="font-semibold text-text-main flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                        {o.address || 'KG 9 Ave, Nyarutarama, Kigali'}
+                        {o.address || 'Address not specified'}
                       </div>
                       <div className="text-[10px] text-emerald-400 font-mono">
                         GPS: {o.area ? `Sector: ${o.area}` : 'Kigali Live GPS Verified'}

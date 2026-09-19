@@ -19,29 +19,34 @@ export default function LocationModal({ isOpen, onClose, onSetLocation }) {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
             const data = await res.json();
             setLoading(false);
-            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood || 'Kigali Street';
-            const area = data.address?.suburb || data.address?.city_district || 'Nyarutarama';
-            const locString = `${road}, ${area}, Kigali (GPS Verified: ${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+            
+            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
+            const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county;
+            const country = data.address?.country;
+            
+            const parts = [road, city, country].filter(Boolean);
+            const locString = parts.length > 0 
+              ? `${parts.join(', ')} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
+              : `GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+              
             onSetLocation(locString);
             onClose();
           } catch (err) {
             setLoading(false);
-            onSetLocation(`KG 9 Ave, Nyarutarama, Kigali (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+            onSetLocation(`GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
             onClose();
           }
         },
         () => {
           setLoading(false);
-          // Fallback location if permission blocked
-          onSetLocation('KG 9 Ave, Nyarutarama, Kigali (Detected)');
-          onClose();
+          setShowManual(true);
+          // Don't auto-set fallback, ask user to enter manually
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } else {
       setLoading(false);
-      onSetLocation('KG 9 Ave, Nyarutarama, Kigali');
-      onClose();
+      setShowManual(true);
     }
   };
 

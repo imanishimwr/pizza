@@ -5,10 +5,10 @@ import { API_BASE_URL } from '../../data/mockData';
 export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPlaced }) {
   if (!isOpen || !checkoutData) return null;
 
-  const [selectedKigaliArea, setSelectedKigaliArea] = useState('Nyarutarama');
-  const [addressDetail, setAddressDetail] = useState('KG 9 Ave, House 42');
+  const [selectedKigaliArea, setSelectedKigaliArea] = useState('');
+  const [addressDetail, setAddressDetail] = useState('');
   const [isScanningGps, setIsScanningGps] = useState(false);
-  const [phone, setPhone] = useState('0788000001');
+  const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('momo'); // momo | airtel | card | cash
   const [momoNumber, setMomoNumber] = useState('0788000001');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +27,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
 
   const handleScanCurrentLocation = () => {
     setIsScanningGps(true);
+    setErrorMsg('');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
@@ -36,36 +37,46 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
             const data = await res.json();
             setIsScanningGps(false);
-            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood || 'KG 9 Ave';
-            const sector = data.address?.suburb || data.address?.city_district || 'Nyarutarama';
+            
+            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
+            const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county;
+            const sector = data.address?.suburb || data.address?.city_district || data.address?.city || '';
             
             // Match sector name to available list
-            const matchedArea = kigaliAreas.find(a => sector.toLowerCase().includes(a.name.toLowerCase()))?.name || 'Nyarutarama';
-            setSelectedKigaliArea(matchedArea);
-            setAddressDetail(`${road} (GPS Verified: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+            const matchedArea = kigaliAreas.find(a => sector.toLowerCase().includes(a.name.toLowerCase()))?.name || '';
+            if (matchedArea) {
+              setSelectedKigaliArea(matchedArea);
+            }
+            
+            const parts = [road, city].filter(Boolean);
+            if (parts.length > 0) {
+              setAddressDetail(`${parts.join(', ')} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+            } else {
+              setAddressDetail(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            }
           } catch (err) {
             setIsScanningGps(false);
-            setSelectedKigaliArea('Nyarutarama');
-            setAddressDetail(`KG 9 Ave, House 42 (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+            setAddressDetail(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            setErrorMsg('Could not fetch address details for coordinates.');
           }
         },
-        () => {
+        (error) => {
           setIsScanningGps(false);
-          setSelectedKigaliArea('Nyarutarama');
-          setAddressDetail('KG 9 Ave, House 42 (Detected Location)');
+          setErrorMsg(`Location access denied or unavailable (${error.message}). Please enter manually.`);
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     } else {
       setIsScanningGps(false);
-      setSelectedKigaliArea('Nyarutarama');
-      setAddressDetail('KG 9 Ave, House 42 (Default Location)');
+      setErrorMsg('Geolocation is not supported by your browser.');
     }
   };
 
   const currentAreaInfo = kigaliAreas.find((a) => a.name === selectedKigaliArea) || kigaliAreas[0];
   const dynamicEta = currentAreaInfo.estMin;
-  const fullDeliveryAddress = `${addressDetail}, ${selectedKigaliArea}, Kigali`;
+  const fullDeliveryAddress = selectedKigaliArea 
+    ? `${addressDetail} (${selectedKigaliArea})` 
+    : addressDetail;
 
   const validatePhone = (num) => {
     const rwandaRegex = /^(078|079|072|073)\d{7}$/;

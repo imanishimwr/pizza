@@ -7,12 +7,11 @@ export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
   const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
   const [saved, setSaved] = useState(false);
+  const [isScanningGps, setIsScanningGps] = useState(false);
+  const [gpsError, setGpsError] = useState('');
 
   // Saved Addresses Manager State
-  const [addresses, setAddresses] = useState([
-    { id: 1, label: 'Home', text: 'KG 9 Ave, Nyarutarama, Kigali' },
-    { id: 2, label: 'Work', text: 'KG 7 Ave, Heights Building, Kimihurura' }
-  ]);
+  const [addresses, setAddresses] = useState([]);
   const [newAddrLabel, setNewAddrLabel] = useState('');
   const [newAddrText, setNewAddrText] = useState('');
   const [showAddAddr, setShowAddAddr] = useState(false);
@@ -30,12 +29,53 @@ export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
     if (user) {
       setName(user.name || '');
       setPhone(user.phone || '');
-      setAddress(user.address || user.location || 'KG 9 Ave, Nyarutarama, Kigali');
+      setAddress(user.address || user.location || '');
       setEmail(user.email || '');
     }
   }, [user]);
 
   if (!isOpen || !user) return null;
+
+  const handleDetectLocation = () => {
+    setIsScanningGps(true);
+    setGpsError('');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+            setIsScanningGps(false);
+            
+            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
+            const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county;
+            const country = data.address?.country;
+            
+            const parts = [road, city, country].filter(Boolean);
+            const locString = parts.length > 0 
+              ? `${parts.join(', ')} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
+              : `GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+              
+            setAddress(locString);
+          } catch (err) {
+            setIsScanningGps(false);
+            setAddress(`GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            setGpsError('Could not fetch address details for coordinates.');
+          }
+        },
+        (error) => {
+          setIsScanningGps(false);
+          setGpsError(`Location access denied or unavailable. Please enter manually.`);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setIsScanningGps(false);
+      setGpsError('Geolocation is not supported by your browser.');
+    }
+  };
 
   const handleAddAddress = (e) => {
     e.preventDefault();
@@ -145,6 +185,38 @@ export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
                 className="w-full bg-surface-card border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-text-main focus:outline-none focus:border-primary"
               />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-text-muted block">Primary Delivery Address</label>
+              <button
+                type="button"
+                onClick={handleDetectLocation}
+                disabled={isScanningGps}
+                className="text-[10px] text-primary font-bold hover:underline flex items-center gap-1"
+              >
+                {isScanningGps ? (
+                  <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <MapPin className="w-3 h-3" />
+                )}
+                {isScanningGps ? 'Scanning...' : 'Detect Location'}
+              </button>
+            </div>
+            <div className="relative">
+              <MapPin className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="e.g. 123 Main St, City"
+                className="w-full bg-surface-card border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-text-main focus:outline-none focus:border-primary"
+              />
+            </div>
+            {gpsError && (
+              <p className="text-[10px] text-red-400 mt-1">{gpsError}</p>
+            )}
           </div>
 
           {/* Saved Addresses Manager */}
