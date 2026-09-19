@@ -27,13 +27,29 @@ export default function Home({
     };
   }, [selectedCategory, searchQuery]);
 
+  const [searchKey, setSearchKey] = useState('');
+  const [spiceFilter, setSpiceFilter] = useState('all');
+
   const filteredMeals = (meals || []).filter((meal) => {
+    const activeSearch = searchQuery || searchKey;
     const matchesCategory = selectedCategory === 'all' || meal.category === selectedCategory;
+    
+    // Keyword search matching name, description, category, tags, and broth choices
+    const queryLower = activeSearch.toLowerCase().trim();
     const matchesSearch =
-      !searchQuery ||
-      meal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meal.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+      !queryLower ||
+      meal.name.toLowerCase().includes(queryLower) ||
+      meal.description.toLowerCase().includes(queryLower) ||
+      meal.category.toLowerCase().includes(queryLower) ||
+      (meal.broths && meal.broths.some(b => b.toLowerCase().includes(queryLower))) ||
+      (meal.spiceLevels && meal.spiceLevels.some(s => s.toLowerCase().includes(queryLower)));
+
+    const matchesSpice = spiceFilter === 'all' 
+      ? true 
+      : spiceFilter === 'spicy' ? meal.spicy === true 
+      : meal.spicy !== true;
+
+    return matchesCategory && matchesSearch && matchesSpice;
   });
 
   const recentFoods = [...(meals || []).slice(0, 6), ...(meals || []).slice(0, 6)];
@@ -180,7 +196,56 @@ export default function Home({
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-surface-card/60 p-4 rounded-2xl border border-white/5">
+          <div className="relative w-full sm:w-80">
+            <input
+              type="text"
+              value={searchKey}
+              onChange={(e) => setSearchKey(e.target.value)}
+              placeholder="Search by keyword, ingredient, broth..."
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary transition-all"
+            />
+            {searchKey && (
+              <button
+                onClick={() => setSearchKey('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Quick Flavor / Spice Filter Pills */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-muted font-bold">Taste:</span>
+            <button
+              onClick={() => setSpiceFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                spiceFilter === 'all' ? 'bg-primary text-white border-primary' : 'bg-black/40 text-text-muted border-white/10'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setSpiceFilter('spicy')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                spiceFilter === 'spicy' ? 'bg-red-600 text-white border-red-500' : 'bg-black/40 text-text-muted border-white/10'
+              }`}
+            >
+              Spicy 🌶️
+            </button>
+            <button
+              onClick={() => setSpiceFilter('mild')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                spiceFilter === 'mild' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-black/40 text-text-muted border-white/10'
+              }`}
+            >
+              Mild / Non-Spicy 🥗
+            </button>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
             <Filter className="w-4 h-4 text-primary" />
