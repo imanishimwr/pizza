@@ -8,26 +8,57 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
   const [selectedOrder, setSelectedOrder] = useState(activeDeliveries[0] || null);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="p-6 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-lg">
-            <Bike className="w-7 h-7" />
+    <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+      {/* Rider Left Sidebar */}
+      <aside className="w-full lg:w-64 shrink-0 bg-surface-card border border-emerald-500/30 rounded-3xl p-5 space-y-6 h-fit sticky top-28 shadow-xl">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">
+            <Bike className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-white">Delivery Rider Dashboard</h2>
-            <p className="text-xs text-emerald-200/80">Rider: Eric Mugisha • Vehicle RAC 482B</p>
+            <div className="font-bold text-sm text-white">Rider Portal</div>
+            <div className="text-[10px] text-emerald-300 font-semibold">Eric Mugisha (RAC 482B)</div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-bold">
-          <div className="px-4 py-2 rounded-xl bg-black/40 border border-emerald-500/30 text-emerald-300 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-            Today's Earnings: 18,500 RWF
+        <nav className="space-y-1 text-xs">
+          <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 font-bold flex items-center justify-between">
+            <span>Active Rides:</span>
+            <span className="font-mono text-white">{activeDeliveries.length}</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-300 font-bold flex items-center justify-between">
+            <span>Completed Today:</span>
+            <span className="font-mono text-white">{completedDeliveries.length}</span>
+          </div>
+        </nav>
+
+        <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1 text-center">
+          <div className="text-[10px] uppercase font-bold text-text-subdued">Today's Earnings</div>
+          <div className="text-base font-mono font-extrabold text-emerald-400">18,500 RWF</div>
+        </div>
+      </aside>
+
+      {/* Main Rider Content */}
+      <div className="flex-1 space-y-6 min-w-0">
+        {/* Header */}
+        <div className="p-6 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-lg">
+              <Bike className="w-7 h-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-white">Delivery Rider Dashboard</h2>
+              <p className="text-xs text-emerald-200/80">Rider: Eric Mugisha • Vehicle RAC 482B</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs font-bold">
+            <div className="px-4 py-2 rounded-xl bg-black/40 border border-emerald-500/30 text-emerald-300 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+              Today's Earnings: 18,500 RWF
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Grid: Delivery Orders & Map */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

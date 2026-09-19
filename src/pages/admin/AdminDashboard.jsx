@@ -218,37 +218,66 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
   }, [selectedAdminTrackOrder]);
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      {/* Admin Header */}
-      <div className="p-6 rounded-2xl bg-purple-950/40 border border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-lg">
-            <Shield className="w-7 h-7" />
+    <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto pb-12">
+      {/* Admin Executive Sidebar */}
+      <aside className="w-full lg:w-64 shrink-0 bg-surface-card border border-purple-500/30 rounded-3xl p-5 space-y-6 h-fit sticky top-28 shadow-xl">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black">
+            <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-white">HotPot Executive Admin Portal</h2>
-            <p className="text-xs text-purple-200/80">Logged in as: admin@hotpot-delights.com</p>
+            <div className="font-bold text-sm text-white">Admin Portal</div>
+            <div className="text-[10px] text-purple-300 font-semibold">System Administrator</div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleExportCSV}
-            className="btn-secondary text-xs py-2.5 px-4 bg-emerald-950 hover:bg-emerald-900 border-emerald-500/40 text-emerald-300"
-          >
-            <Download className="w-4 h-4 text-emerald-400" />
-            Export CSV Report
+        <nav className="space-y-1">
+          <button onClick={() => setShowAddMeal(!showAddMeal)} className="w-full p-2.5 rounded-xl bg-purple-600/20 text-purple-300 border border-purple-500/40 font-bold text-xs flex items-center gap-2.5 transition-all">
+            <Plus className="w-4 h-4 text-purple-400" /> {showAddMeal ? 'Close Form' : 'Add Food Item'}
           </button>
+          <button onClick={handleExportCSV} className="w-full p-2.5 rounded-xl hover:bg-white/5 text-emerald-400 text-xs font-semibold flex items-center gap-2.5 transition-all">
+            <Download className="w-4 h-4" /> Export CSV Report
+          </button>
+        </nav>
 
-          <button
-            onClick={() => setShowAddMeal(!showAddMeal)}
-            className="btn-primary text-xs py-2.5 px-4 bg-purple-600 hover:bg-purple-700"
-          >
-            <Plus className="w-4 h-4" />
-            {showAddMeal ? 'Close Form' : 'Add New Food Item'}
-          </button>
+        <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1 text-center">
+          <div className="text-[10px] uppercase font-bold text-text-subdued">System Status</div>
+          <div className="text-xs font-bold text-emerald-400">● All Services Operational</div>
         </div>
-      </div>
+      </aside>
+
+      {/* Main Admin Portal Content */}
+      <div className="flex-1 space-y-8 min-w-0">
+        {/* Admin Header */}
+        <div className="p-6 rounded-2xl bg-purple-950/40 border border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-lg">
+              <Shield className="w-7 h-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-white">HotPot Executive Admin Portal</h2>
+              <p className="text-xs text-purple-200/80">Logged in as: admin@hotpot-delights.com</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleExportCSV}
+              className="btn-secondary text-xs py-2.5 px-4 bg-emerald-950 hover:bg-emerald-900 border-emerald-500/40 text-emerald-300"
+            >
+              <Download className="w-4 h-4 text-emerald-400" />
+              Export CSV Report
+            </button>
+
+            <button
+              onClick={() => setShowAddMeal(!showAddMeal)}
+              className="btn-primary text-xs py-2.5 px-4 bg-purple-600 hover:bg-purple-700"
+            >
+              <Plus className="w-4 h-4" />
+              {showAddMeal ? 'Close Form' : 'Add New Food Item'}
+            </button>
+          </div>
+        </div>
 
       {/* Analytics Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

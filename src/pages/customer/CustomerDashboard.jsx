@@ -35,46 +35,78 @@ export default function CustomerDashboard({
   const loyaltyPoints = user?.points || totalOrders * 120 + 450;
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12 animate-fade-in">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-950 via-surface-card to-surface-dark border border-primary/30 p-6 sm:p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-orange-500 flex items-center justify-center font-extrabold text-2xl text-white shadow-xl">
-              {user?.name ? user.name[0].toUpperCase() : 'C'}
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black text-white">
-                  Welcome back, {user?.name || 'Gourmet Lover'}!
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs font-bold flex items-center gap-1">
-                  <Award className="w-3.5 h-3.5" /> Gold VIP
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-text-muted flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" /> {user?.location || 'Nyarutarama, Kigali'}
-              </p>
-            </div>
+    <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto pb-12 animate-fade-in">
+      {/* Customer Dashboard Left Sidebar */}
+      <aside className="w-full lg:w-64 shrink-0 bg-surface-card border border-white/10 rounded-3xl p-5 space-y-6 h-fit sticky top-28 shadow-xl">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-black text-lg">
+            {user?.name ? user.name[0].toUpperCase() : 'C'}
           </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onExploreMenu}
-              className="px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primary-hover shadow-lg hover:shadow-primary/30 transition-all flex items-center gap-2"
-            >
-              <Flame className="w-4 h-4" /> Order Hotpot Now
-            </button>
-            <button
-              onClick={onOpenProfile}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs border border-white/10 transition-all"
-            >
-              Edit Profile
-            </button>
+          <div>
+            <div className="font-bold text-sm text-white truncate max-w-[130px]">{user?.name || 'Customer'}</div>
+            <div className="text-[10px] text-emerald-400 font-semibold">● Active Session</div>
           </div>
         </div>
-      </div>
+
+        <nav className="space-y-1">
+          <button onClick={onExploreMenu} className="w-full p-2.5 rounded-xl bg-primary/20 text-primary border border-primary/40 font-bold text-xs flex items-center gap-2.5 transition-all">
+            <Flame className="w-4 h-4" /> Browse Menu
+          </button>
+          <button onClick={onOpenProfile} className="w-full p-2.5 rounded-xl hover:bg-white/5 text-text-muted hover:text-white text-xs font-semibold flex items-center gap-2.5 transition-all">
+            <User className="w-4 h-4 text-blue-400" /> Account Settings
+          </button>
+          <button onClick={onOpenReferral} className="w-full p-2.5 rounded-xl hover:bg-white/5 text-text-muted hover:text-white text-xs font-semibold flex items-center gap-2.5 transition-all">
+            <Gift className="w-4 h-4 text-amber-400" /> Vouchers & Referral
+          </button>
+        </nav>
+
+        <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1 text-center">
+          <div className="text-[10px] uppercase font-bold text-text-subdued">VIP Points</div>
+          <div className="text-lg font-mono font-extrabold text-amber-400">{loyaltyPoints} Pts</div>
+        </div>
+      </aside>
+
+      {/* Main Dashboard Content */}
+      <div className="flex-1 space-y-8 min-w-0">
+        {/* Welcome Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-950 via-surface-card to-surface-dark border border-primary/30 p-6 sm:p-8 shadow-2xl">
+          <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-orange-500 flex items-center justify-center font-extrabold text-2xl text-white shadow-xl">
+                {user?.name ? user.name[0].toUpperCase() : 'C'}
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl sm:text-3xl font-black text-white">
+                    Welcome back, {user?.name || 'Gourmet Lover'}!
+                  </h1>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs font-bold flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5" /> Gold VIP
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-text-muted flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" /> {user?.location || 'Nyarutarama, Kigali'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onExploreMenu}
+                className="px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primary-hover shadow-lg hover:shadow-primary/30 transition-all flex items-center gap-2"
+              >
+                <Flame className="w-4 h-4" /> Order Hotpot Now
+              </button>
+              <button
+                onClick={onOpenProfile}
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs border border-white/10 transition-all"
+              >
+                Edit Profile
+              </button>
+            </div>
+          </div>
+        </div>
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -315,6 +347,7 @@ export default function CustomerDashboard({
         onClose={() => setSelectedReceipt(null)}
         order={selectedReceipt}
       />
+      </div>
     </div>
   );
 }

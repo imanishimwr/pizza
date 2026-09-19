@@ -7,31 +7,49 @@ export default function KitchenBoard({ orders = [], onUpdateStatus }) {
   const readyOrders = orders.filter(o => o.status === 'ready' || o.status === 'delivery');
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="p-6 rounded-2xl bg-amber-950/40 border border-amber-500/30 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-amber-600 flex items-center justify-center text-white shadow-lg">
-            <ChefHat className="w-7 h-7" />
+    <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+      {/* Kitchen Left Sidebar */}
+      <aside className="w-full lg:w-64 shrink-0 bg-surface-card border border-amber-500/30 rounded-3xl p-5 space-y-6 h-fit sticky top-28 shadow-xl">
+        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center font-black">
+            <ChefHat className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-white">Kitchen Order Dispatch Board</h2>
-            <p className="text-xs text-amber-200/80">HotPot Delights Preparation Queue</p>
+            <div className="font-bold text-sm text-white">Kitchen Board</div>
+            <div className="text-[10px] text-amber-300 font-semibold">Head Chef Console</div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-bold">
-          <div className="px-3 py-1.5 rounded-lg bg-black/40 border border-amber-500/30 text-amber-300">
-            Pending: {pendingOrders.length}
+        <nav className="space-y-1 text-xs">
+          <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 font-bold flex items-center justify-between">
+            <span>Pending Orders:</span>
+            <span className="font-mono text-white">{pendingOrders.length}</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg bg-black/40 border border-amber-500/30 text-amber-300">
-            In Prep: {preparingOrders.length}
+          <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-300 font-bold flex items-center justify-between">
+            <span>In Cooking:</span>
+            <span className="font-mono text-white">{preparingOrders.length}</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg bg-black/40 border border-amber-500/30 text-amber-300">
-            Ready: {readyOrders.length}
+          <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 font-bold flex items-center justify-between">
+            <span>Ready for Rider:</span>
+            <span className="font-mono text-white">{readyOrders.length}</span>
+          </div>
+        </nav>
+      </aside>
+
+      {/* Main Kitchen Content */}
+      <div className="flex-1 space-y-6 min-w-0">
+        {/* Header Banner */}
+        <div className="p-6 rounded-2xl bg-amber-950/40 border border-amber-500/30 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-amber-600 flex items-center justify-center text-white shadow-lg">
+              <ChefHat className="w-7 h-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-white">Kitchen Order Dispatch Board</h2>
+              <p className="text-xs text-amber-200/80">HotPot Delights Preparation Queue</p>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Kanban 3-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
