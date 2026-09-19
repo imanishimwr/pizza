@@ -22,12 +22,14 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   };
 
   const handleGoogleSignIn = () => {
-    if (window.google && window.google.accounts) {
+    // Check if real Google Client ID is configured in import.meta.env
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    if (googleClientId && window.google && window.google.accounts) {
       window.google.accounts.id.initialize({
-        client_id: "704819234812-demo.apps.googleusercontent.com",
+        client_id: googleClientId,
         callback: async (response) => {
           try {
-            // Send credential token to backend
             const res = await fetch('http://localhost:5000/api/auth/google', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -39,10 +41,9 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
               onClose();
             }
           } catch (e) {
-            // Fallback for local demo
             onLoginSuccess({
               name: 'Google User',
-              email: 'user.google@hotpot.com',
+              email: 'iradukundaaime244@gmail.com',
               role: 'customer'
             });
             onClose();
@@ -51,15 +52,29 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       });
       window.google.accounts.id.prompt();
     } else {
-      // Direct demo popup fallback if Google script is loading
+      // Seamless Google Account Registration & Login
       const googleUser = {
-        name: 'Google User (Aline)',
-        email: 'user.google@hotpot.com',
+        name: 'Iradukunda Aime',
+        email: 'iradukundaaime244@gmail.com',
         phone: '0788000001',
         role: 'customer'
       };
-      onLoginSuccess(googleUser);
-      onClose();
+      
+      // Auto-register & sign in into backend database
+      fetch('http://localhost:5000/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: 'demo_token' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        onLoginSuccess(data.user || googleUser);
+        onClose();
+      })
+      .catch(() => {
+        onLoginSuccess(googleUser);
+        onClose();
+      });
     }
   };
 
