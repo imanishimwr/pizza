@@ -226,25 +226,30 @@ export default function Header({
                 <div className="flex items-center gap-2 pl-2 border-l border-white/10">
                   <button
                     onClick={onOpenProfile}
-                    className="w-8 h-8 rounded-full bg-primary-light border border-primary/40 flex items-center justify-center font-bold text-xs text-primary hover:scale-105 transition-transform"
-                    title="Account Profile"
+                    className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-surface-card border border-white/10 hover:border-primary transition-all group"
+                    title="View & Edit Account Profile"
                   >
-                    {user.name ? user.name[0] : 'U'}
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-orange-500 text-white font-black text-[11px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                      {user.name ? user.name[0].toUpperCase() : 'U'}
+                    </div>
+                    <span className="text-xs font-bold text-white max-w-[100px] truncate hidden sm:inline-block">
+                      {user.name || 'Account'}
+                    </span>
                   </button>
+
                   <button
                     onClick={onLogout}
-                    className="px-3 py-1.5 rounded-xl bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                    className="p-2 rounded-xl bg-red-950/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-xs font-bold flex items-center justify-center transition-all shadow-sm"
                     title="Log Out of Account"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>{lang === 'RW' ? 'Gusohoka' : 'Logout'}</span>
                   </button>
                 </div>
               ) : (
                 onOpenAuth && (
-                  <button onClick={onOpenAuth} className="btn-primary text-xs py-2 px-4">
+                  <button onClick={onOpenAuth} className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 shadow-md hover:scale-105 transition-all">
                     <User className="w-3.5 h-3.5" />
-                    {lang === 'RW' ? 'Kwinjira' : 'Sign In'}
+                    <span>{lang === 'RW' ? 'Kwinjira' : 'Sign In'}</span>
                   </button>
                 )
               )}

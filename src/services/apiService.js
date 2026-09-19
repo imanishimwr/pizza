@@ -52,9 +52,9 @@ export const apiService = {
   getUser: () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.USER);
-      return saved ? JSON.parse(saved) : null;
+      return saved ? JSON.parse(saved) : { name: 'Gourmet Lover', email: 'user@hotpot.rw', address: 'KG 9 Ave, Nyarutarama, Kigali', points: 810 };
     } catch (e) {
-      return null;
+      return { name: 'Gourmet Lover', email: 'user@hotpot.rw', address: 'KG 9 Ave, Nyarutarama, Kigali', points: 810 };
     }
   },
 
