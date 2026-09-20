@@ -61,21 +61,45 @@ export default function KitchenBoard({
     return Array.isArray(orders) ? orders : [];
   }, [orders]);
 
-  // Order groupings
+  // Order groupings sorted chronologically (FIFO: earliest arrival first)
   const pendingOrders = useMemo(() => {
-    return displayOrders.filter(o => o.status === 'pending');
+    return displayOrders
+      .filter(o => o.status === 'pending')
+      .sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : (Number(a.id) || 0);
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : (Number(b.id) || 0);
+        return timeA - timeB;
+      });
   }, [displayOrders]);
 
   const preparingOrders = useMemo(() => {
-    return displayOrders.filter(o => o.status === 'preparing');
+    return displayOrders
+      .filter(o => o.status === 'preparing')
+      .sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : (Number(a.id) || 0);
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : (Number(b.id) || 0);
+        return timeA - timeB;
+      });
   }, [displayOrders]);
 
   const readyOrders = useMemo(() => {
-    return displayOrders.filter(o => o.status === 'ready');
+    return displayOrders
+      .filter(o => o.status === 'ready')
+      .sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : (Number(a.id) || 0);
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : (Number(b.id) || 0);
+        return timeA - timeB;
+      });
   }, [displayOrders]);
 
   const completedOrders = useMemo(() => {
-    return displayOrders.filter(o => o.status === 'delivery' || o.status === 'delivered');
+    return displayOrders
+      .filter(o => o.status === 'delivery' || o.status === 'delivered')
+      .sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : (Number(a.id) || 0);
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : (Number(b.id) || 0);
+        return timeB - timeA; // most recently completed first
+      });
   }, [displayOrders]);
 
   // Processing orders set to disable double-clicks: { [orderId]: boolean }
@@ -110,7 +134,7 @@ export default function KitchenBoard({
     }
   };
 
-  // Status progression action with immediate double-click guard
+  // Status progression action with immediate double-click guard and FIFO auto-advance
   const handleAdvanceStatus = async (orderId, nextStatus) => {
     if (processingMap[orderId]) return; // Guard: Cannot click twice
 
@@ -135,6 +159,20 @@ export default function KitchenBoard({
           ? `🛵 Order #${orderId} handed to rider & completed! Logged in Admin Sales Report.`
           : `Order #${orderId} updated to ${nextStatus}`
       );
+
+      // FIFO Algorithm: When an item is handed over to a rider, automatically move next pending order into cooking!
+      if (nextStatus === 'delivery') {
+        const remainingPending = pendingOrders.filter(o => o.id !== orderId);
+        if (remainingPending.length > 0) {
+          const nextOrderToCook = remainingPending[0]; // Earliest arrived order
+          setTimeout(async () => {
+            if (onUpdateStatus) {
+              await onUpdateStatus(nextOrderToCook.id, 'preparing');
+              triggerToast(`⚡ FIFO Auto-Queue: Order #${nextOrderToCook.id} automatically moved to Cooking!`);
+            }
+          }, 450);
+        }
+      }
     } catch (err) {
       console.error("Status update error:", err);
       triggerToast("⚠️ Failed to update order status");

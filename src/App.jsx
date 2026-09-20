@@ -21,6 +21,7 @@ import { apiService } from './services/apiService';
 import { eventBus } from './services/eventBus';
 import { notificationService } from './services/notificationService';
 import { Bell, Flame } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 function getRouteFromPath(pathname) {
   const path = (pathname || '/').toLowerCase();
@@ -154,6 +155,57 @@ export default function App() {
   }, [wishlist]);
 
   useEffect(() => {
+    // 1. Live Socket.IO connection for instant real-time synchronization
+    const backendUrl = 'http://localhost:5000';
+    let socket;
+    try {
+      socket = io(backendUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+      });
+
+      socket.on('new_order_placed', (newOrder) => {
+        if (!newOrder) return;
+        setOrders((prev) => {
+          const exists = prev.some(o => o.id === newOrder.id);
+          if (exists) return prev;
+          return [newOrder, ...prev];
+        });
+        eventBus.emit('NEW_ORDER', newOrder, true);
+      });
+
+      socket.on('order_status_updated', (updatedOrder) => {
+        if (!updatedOrder) return;
+        setOrders((prev) => {
+          return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
+        });
+        eventBus.emit('ORDER_STATUS_UPDATE', { orderId: updatedOrder.id, status: updatedOrder.status, order: updatedOrder }, true);
+      });
+
+      socket.on('order_cancelled', (cancelledOrder) => {
+        if (!cancelledOrder) return;
+        setOrders((prev) => {
+          return prev.map(o => o.id === cancelledOrder.id ? { ...o, status: 'cancelled' } : o);
+        });
+      });
+    } catch (e) {
+      console.warn('Socket.io connection initialization error:', e);
+    }
+
+    // 2. Background Heartbeat Polling every 3.5 seconds to guarantee 100% real-time data sync without user refresh
+    const pollInterval = setInterval(async () => {
+      try {
+        const freshOrders = await apiService.getOrders();
+        if (Array.isArray(freshOrders)) {
+          setOrders(freshOrders);
+        }
+      } catch (err) {
+        // quiet suppression on background poll
+      }
+    }, 3500);
+
     const unsubOrder = eventBus.on('NEW_ORDER', async (newOrder, isCrossTab) => {
       if (isCrossTab) {
         const freshOrders = await apiService.getOrders();
@@ -209,6 +261,8 @@ export default function App() {
     });
 
     return () => {
+      if (socket) socket.disconnect();
+      clearInterval(pollInterval);
       unsubOrder();
       unsubStatus();
     };
