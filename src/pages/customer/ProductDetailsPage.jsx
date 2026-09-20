@@ -211,7 +211,7 @@ export default function ProductDetailsPage({
 
             <div className="flex items-baseline gap-3 pt-1">
               <span className="text-2xl sm:text-3xl font-black font-mono text-primary">
-                {meal.price.toLocaleString()} RWF
+                {(meal.price ?? 0).toLocaleString()} RWF
               </span>
               <span className="text-xs text-text-muted uppercase font-bold tracking-wider">
                 Price incl. taxes
@@ -496,7 +496,7 @@ export default function ProductDetailsPage({
                     onError={(e) => { e.target.src = relMeal.fallbackImage; }}
                   />
                   <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/70 text-white">
-                    {relMeal.price.toLocaleString()} RWF
+                    {(relMeal.price ?? 0).toLocaleString()} RWF
                   </span>
                 </div>
                 <div>

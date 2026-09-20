@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Search, User, Flame, Shield, ChefHat, Bike, LogOut, MapPin, Gift, HelpCircle, History, Heart, Menu, X, Globe, Sun, Moon } from 'lucide-react';
-import { DEMO_USERS } from '../data/mockData';
 
 export default function Header({
   currentRole = 'customer',

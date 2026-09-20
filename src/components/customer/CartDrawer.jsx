@@ -7,7 +7,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
 
   if (!isOpen) return null;
 
-  const subtotal = cart.reduce((acc, item) => acc + item.meal.price * item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => acc + (item?.meal?.price ?? 0) * (item?.quantity ?? 1), 0);
   const deliveryFee = appliedVoucher?.code === 'KIGALIFREE' ? 0 : subtotal > 0 ? 1500 : 0;
   const discount = appliedVoucher?.code === 'BOGOPIZZA' ? 3000 : 0;
   const grandTotal = Math.max(0, subtotal + deliveryFee - discount);
@@ -59,7 +59,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
                 <button onClick={onClose} className="btn-secondary text-xs">Explore Menu</button>
               </div>
             ) : (
-              cart.map((item, index) => (
+              cart.filter((item) => item && item.meal).map((item, index) => (
                 <div key={index} className="p-3.5 rounded-xl bg-surface-card border border-white/5 space-y-2 relative group">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex gap-3">
@@ -96,7 +96,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
                     </div>
 
                     <span className="text-sm font-mono font-bold text-primary">
-                      {(item.meal.price * item.quantity).toLocaleString()} RWF
+                      {((item.meal?.price ?? 0) * (item.quantity ?? 1)).toLocaleString()} RWF
                     </span>
                   </div>
                 </div>
@@ -118,6 +118,16 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
                   />
                 </div>
                 <button type="submit" className="btn-secondary text-xs px-3">Apply</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onProceedCheckout({ cart, subtotal, deliveryFee, discount, grandTotal });
+                  }}
+                  className="btn-primary text-xs px-3 flex items-center gap-1.5 shadow-lg shadow-emerald-900/30"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" /> Place
+                </button>
               </form>
 
               {appliedVoucher && (
@@ -160,7 +170,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
                 }}
                 className="w-full btn-primary py-3 text-xs"
               >
-                Proceed to Checkout
+                Continue to customer information
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

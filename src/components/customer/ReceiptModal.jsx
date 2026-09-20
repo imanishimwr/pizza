@@ -21,7 +21,7 @@ Address: ${order.address}
 Payment: ${order.paymentMethod || 'MTN Mobile Money'}
 ----------------------------------------
 ITEMS:
-${order.items.map(item => `- ${item.name} (${item.spice || 'Regular'}) x${item.qty}: ${(item.qty * item.price).toLocaleString()} RWF`).join('\n')}
+${(order.items || []).map(item => `- ${item.name} (${item.spice || 'Regular'}) x${item.qty}: ${((item.qty ?? 1) * (item.price ?? 0)).toLocaleString()} RWF`).join('\n')}
 ----------------------------------------
 TOTAL PAID: ${order.totalRWF.toLocaleString()} RWF
 ========================================
@@ -121,16 +121,16 @@ Murakoze! Thank you for your order.
             </div>
 
             <div className="space-y-1.5">
-              {order.items.map((item, idx) => (
+              {(order.items || []).map((item, idx) => (
                 <div key={idx} className="flex justify-between text-text-muted print:text-black">
                   <div>
                     <div className="font-semibold text-text-main print:text-black">{item.name}</div>
                     {item.spice && <div className="text-[10px] text-orange-400 print:text-gray-700">Spice: {item.spice}</div>}
                   </div>
                   <div className="text-right">
-                    <div>{item.qty} x {item.price.toLocaleString()}</div>
+                    <div>{item.qty} x {(item.price ?? 0).toLocaleString()}</div>
                     <div className="font-bold text-text-main print:text-black">
-                      {(item.qty * item.price).toLocaleString()} RWF
+                      {((item.qty ?? 1) * (item.price ?? 0)).toLocaleString()} RWF
                     </div>
                   </div>
                 </div>

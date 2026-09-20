@@ -146,8 +146,8 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
       ['Order ID', 'Customer Name', 'Phone', 'Address', 'Distance (km)', 'ETA (min)', 'Total RWF', 'Status'],
       ...orders.map(o => [
         o.id,
-        `"${o.customerName || 'Aline Uwase'}"`,
-        o.phone || '0788000001',
+        `"${o.customerName || 'Unknown Customer'}"`,
+        o.phone || '',
         `"${o.address || 'Kigali'}"`,
         o.distanceKm || 3.5,
         o.etaMinutes || 20,
@@ -759,8 +759,8 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
                   <tr key={o.id} className="hover:bg-white/5">
                     <td className="p-3 font-mono font-bold text-amber-400">#{o.id}</td>
                     <td className="p-3">
-                      <div className="font-bold text-text-main">{o.customerName || 'Aline Uwase'}</div>
-                      <div className="text-[10px] text-text-subdued">{o.phone || '0788000001'}</div>
+                      <div className="font-bold text-text-main">{o.customerName || 'Unknown Customer'}</div>
+                      <div className="text-[10px] text-text-subdued">{o.phone || '—'}</div>
                     </td>
                     <td className="p-3">
                       <div className="font-semibold text-text-main flex items-center gap-1">
@@ -775,13 +775,14 @@ export default function AdminDashboard({ meals = [], setMeals, orders = [], onUp
                     {/* Rider Assign dropdown */}
                     <td className="p-3">
                       <select
-                        value={assignedRiders[o.id] || 'Eric Mugisha'}
+                        value={assignedRiders[o.id] || o.riderName || ''}
                         onChange={(e) => setAssignedRiders({ ...assignedRiders, [o.id]: e.target.value })}
                         className="bg-surface-dark border border-white/10 rounded px-2 py-1 text-[11px] text-white"
                       >
-                        <option value="Eric Mugisha">Eric Mugisha (Motorcycle)</option>
-                        <option value="Jean-Paul Nsengiyumva">Jean-Paul N. (Express)</option>
-                        <option value="Patrick Kamanzi">Patrick K. (Electric Bike)</option>
+                        <option value="">— Assign Rider —</option>
+                        <option value="Rider 1">Rider 1 (Motorcycle)</option>
+                        <option value="Rider 2">Rider 2 (Express)</option>
+                        <option value="Rider 3">Rider 3 (Electric Bike)</option>
                       </select>
                     </td>
 

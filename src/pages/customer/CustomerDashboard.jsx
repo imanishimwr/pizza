@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   User, ShoppingBag, Clock, MapPin, Gift, Heart, TrendingUp,
   CheckCircle2, ChevronRight, FileText, Sparkles, CreditCard,
@@ -97,7 +97,7 @@ export default function CustomerDashboard({
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                    Welcome back, {user?.name || "Gourmet Lover"}!
+                    Welcome back, {user?.name || 'Guest'}!
                   </h1>
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1" style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)", color: "#fbbf24" }}>
                     <Award className="w-3 h-3" /> Gold VIP Member
@@ -243,7 +243,7 @@ export default function CustomerDashboard({
                         </div>
 
                         <div className="space-y-1 mb-3">
-                          {order.items.map((item, idx) => (
+                          {(order.items || []).map((item, idx) => (
                             <div key={idx} className="flex justify-between text-xs">
                               <span style={{ color: "rgba(255,255,255,0.85)" }}>{item.qty}x {item.name}</span>
                               <span className="font-mono" style={{ color: "#A0A0B0" }}>{(item.price * item.qty).toLocaleString()} RWF</span>
@@ -300,7 +300,7 @@ export default function CustomerDashboard({
                         </div>
                       </div>
                       <div className="space-y-0.5 mb-2">
-                        {order.items.map((item, idx) => (
+                        {(order.items || []).map((item, idx) => (
                           <div key={idx} className="flex justify-between text-xs" style={{ color: "#A0A0B0" }}>
                             <span>{item.qty}x {item.name}</span>
                             <span className="font-mono">{(item.price || 0).toLocaleString()} RWF</span>

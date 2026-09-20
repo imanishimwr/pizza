@@ -273,7 +273,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
             <div className="font-bold text-text-main flex items-center justify-between gap-3">
               <span className="flex items-center gap-1.5">
                 <Bike className="w-4 h-4 text-primary animate-bounce" />
-                Eric Mugisha (Rider)
+                {order?.riderName || 'Your Rider'}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono font-bold">
                 GPS LIVE

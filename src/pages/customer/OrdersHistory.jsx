@@ -1,10 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Clock, MapPin, CheckCircle2, ChevronRight, FileText, RefreshCw } from 'lucide-react';
 import ReceiptModal from '../../components/customer/ReceiptModal';
 
 export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart }) {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [reorderedId, setReorderedId] = useState(null);
+  const [showButtons, setShowButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      if (scrollY > lastScrollY && scrollY > 100) {
+        // Scrolling down past 100px - hide buttons
+        setShowButtons(false);
+      } else if (scrollY < lastScrollY) {
+        // Scrolling up - show buttons
+        setShowButtons(true);
+      }
+      setLastScrollY(scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const handleReorder = (e, order) => {
     e.stopPropagation();
@@ -56,32 +75,36 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
                     {order.status}
                   </span>
 
-                  <button
-                    onClick={(e) => handleReorder(e, order)}
-                    className="p-1.5 px-3 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary font-bold transition-all flex items-center gap-1.5 text-[11px]"
-                    title="Reorder all items in this order"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${reorderedId === order.id ? 'animate-spin' : ''}`} />
-                    {reorderedId === order.id ? 'Added to Cart!' : '1-Click Reorder'}
-                  </button>
+                  {showButtons && (
+                    <>
+                      <button
+                        onClick={(e) => handleReorder(e, order)}
+                        className="p-1.5 px-3 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary font-bold transition-all flex items-center gap-1.5 text-[11px]"
+                        title="Reorder all items in this order"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${reorderedId === order.id ? 'animate-spin' : ''}`} />
+                        {reorderedId === order.id ? 'Added to Cart!' : '1-Click Reorder'}
+                      </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedReceipt(order);
-                    }}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors flex items-center gap-1 text-[11px]"
-                    title="View & Print Receipt"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-primary" />
-                    Receipt
-                  </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedReceipt(order);
+                        }}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors flex items-center gap-1 text-[11px]"
+                        title="View & Print Receipt"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-primary" />
+                        Receipt
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Items Summary */}
               <div className="space-y-1">
-                {order.items.map((item, idx) => (
+                {(order.items || []).map((item, idx) => (
                   <div key={idx} className="flex justify-between text-xs text-text-muted">
                     <span>{item.qty}x {item.name} {item.spice ? `(${item.spice})` : ''}</span>
                     <span className="font-mono">{(item.price || 0).toLocaleString()} RWF</span>

@@ -44,7 +44,12 @@ export default function App() {
   const [meals, setMeals] = useState([]);
   const [orders, setOrders] = useState([]);
   const [user, setUser] = useState(() => apiService.getUser());
-  const [cart, setCart] = useState(() => apiService.getCart());
+  // Sanitize cart on load — filter out any items with missing/malformed meal data
+  // (can happen when localStorage has stale mock data from a previous session)
+  const [cart, setCart] = useState(() => {
+    const raw = apiService.getCart();
+    return raw.filter((item) => item && item.meal && typeof item.meal.price === 'number');
+  });
   const [wishlist, setWishlist] = useState(() => apiService.getWishlist());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -61,18 +66,8 @@ export default function App() {
       document.documentElement.classList.remove('light-theme');
     }
   };
-  const [selectedMeal, setSelectedMeal] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      const initialMeals = apiService.getMeals();
-      if (id) {
-        const found = initialMeals.find((meal) => String(meal.id) === String(id));
-        if (found) return found;
-      }
-    }
-    return null;
-  });
+  // selectedMeal starts null; once meals are fetched we resolve by URL id (see loadData below)
+  const [selectedMeal, setSelectedMeal] = useState(null);
   const [trackedOrder, setTrackedOrder] = useState(() => {
     const savedId = apiService.getTrackedOrderId();
     return savedId ? { id: savedId } : null; // We will enrich this once orders load
@@ -96,6 +91,16 @@ export default function App() {
     const loadData = async () => {
       const fetchedMeals = await apiService.getMeals();
       setMeals(fetchedMeals);
+
+      // Resolve selectedMeal from URL after meals load (async-safe)
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        if (id) {
+          const found = fetchedMeals.find((m) => String(m.id) === String(id));
+          if (found) setSelectedMeal(found);
+        }
+      }
 
       const fetchedOrders = await apiService.getOrders();
       setOrders(fetchedOrders);
@@ -231,12 +236,26 @@ export default function App() {
   };
 
   const handleAddToCart = (cartItem) => {
+    // Normalize raw meal / order-line / custom-pizza payloads into a full
+    // cart item so every caller (Home quick-add, OrdersHistory reorder,
+    // CustomPizzaBuilderModal, ProductDetailsPage) resolves to { meal, quantity, ... }.
+    const item = cartItem && cartItem.meal
+      ? cartItem
+      : {
+          meal: { ...cartItem },
+          quantity: Number(cartItem?.qty) || 1,
+          selectedSpice: cartItem?.selectedSpice || null,
+          selectedBroth: cartItem?.selectedBroth || null,
+          specialNote: cartItem?.specialNote || null,
+          totalPrice: (Number(cartItem?.price) || 0) * (Number(cartItem?.qty) || 1),
+        };
+
     setCart((prev) => {
       const existingIndex = prev.findIndex(
-        (item) =>
-          item.meal.id === cartItem.meal.id &&
-          item.selectedSpice === cartItem.selectedSpice &&
-          item.selectedBroth === cartItem.selectedBroth
+        (cartEntry) =>
+          cartEntry.meal.id === item.meal.id &&
+          (cartEntry.selectedSpice || null) === (item.selectedSpice || null) &&
+          (cartEntry.selectedBroth || null) === (item.selectedBroth || null)
       );
 
       let next;
@@ -244,10 +263,10 @@ export default function App() {
         next = [...prev];
         next[existingIndex] = {
           ...next[existingIndex],
-          quantity: next[existingIndex].quantity + cartItem.quantity,
+          quantity: next[existingIndex].quantity + item.quantity,
         };
       } else {
-        next = [...prev, cartItem];
+        next = [...prev, item];
       }
 
       apiService.saveCart(next);
@@ -255,7 +274,7 @@ export default function App() {
     });
 
     setIsCartOpen(true);
-    showToast(`Added ${cartItem.meal.name} to order!`, 'Item Added');
+    showToast(`Added ${item.meal.name} to order!`, 'Item Added');
   };
 
   const handleUpdateQty = (index, newQty) => {
@@ -282,26 +301,24 @@ export default function App() {
 
   const handleOrderPlaced = async (newOrder) => {
     try {
-      const createdOrder = await apiService.createOrder({
-        ...newOrder,
-        userId: user ? user.id : null
-      });
+      // CheckoutModal already saved the order to the backend.
+      // newOrder is the merged backend+local object passed up from CheckoutModal.
+      if (!newOrder || !newOrder.id) {
+        showToast('Order data missing. Please try again.', 'Error');
+        return;
+      }
 
-      setOrders((prev) => {
-        const next = [createdOrder, ...prev];
-        return next;
-      });
-
+      setOrders((prev) => [newOrder, ...prev]);
       setCart([]);
-      setTrackedOrder(createdOrder);
-      apiService.setTrackedOrderId(createdOrder.id);
+      setTrackedOrder(newOrder);
+      apiService.setTrackedOrderId(newOrder.id);
 
-      eventBus.emit('NEW_ORDER', createdOrder);
+      eventBus.emit('NEW_ORDER', newOrder);
       notificationService.playChime('new_order');
-      showToast(`Order #${createdOrder.id} placed successfully! Kitchen is on it.`, 'Order Placed');
+      showToast(`Order #${newOrder.id} placed! Kitchen is on it 🔥`, 'Order Placed');
       handleNavigate('/tracking', 'tracking', 'customer');
     } catch (e) {
-      showToast('Failed to place order. Please try again.', 'Error');
+      showToast('Something went wrong. Please try again.', 'Error');
     }
   };
 
@@ -462,18 +479,35 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'tracking' && (
-                <LiveTracking
-                  order={trackedOrder || orders[0]}
-                  onCancelOrder={handleCancelOrder}
-                  onModifyOrder={handleModifyOrder}
-                />
-              )}
+              {activeTab === 'tracking' && (() => {
+                const trackOrder = trackedOrder || orders[0];
+                if (!trackOrder) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-24 space-y-4 text-center">
+                      <div className="w-16 h-16 rounded-full bg-surface-card border border-white/10 flex items-center justify-center">
+                        <span className="text-3xl">🛵</span>
+                      </div>
+                      <h2 className="text-xl font-bold text-text-main">No Active Order</h2>
+                      <p className="text-sm text-text-muted">Place an order first and your live tracking will appear here.</p>
+                      <button onClick={() => handleNavigate('/menu', 'menu', 'customer')} className="btn-primary text-sm px-6 py-2.5">
+                        Browse Menu
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <LiveTracking
+                    order={trackOrder}
+                    onCancelOrder={handleCancelOrder}
+                    onModifyOrder={handleModifyOrder}
+                  />
+                );
+              })()}
             </>
           )}
 
-          {currentRole === 'kitchen' && <KitchenBoard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
-          {currentRole === 'delivery' && <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
+          {currentRole === 'kitchen' && <KitchenBoard />}
+          {currentRole === 'delivery' && <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} user={user} />}
           {currentRole === 'admin' && (
             <AdminDashboard
               meals={meals}
@@ -491,7 +525,7 @@ export default function App() {
         cart={cart}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveCartItem}
-        onProceedCheckout={(data) => setCheckoutData(data)}
+        onProceedCheckout={(data) => setCheckoutData({ ...data, customerName: user?.name || 'Guest', user })}
       />
 
       <CheckoutModal
@@ -504,6 +538,11 @@ export default function App() {
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
+        onCustomerSelect={() => {
+          handleNavigate('/', 'menu', 'customer');
+          setIsAuthOpen(false);
+          setIsLocationModalOpen(true);
+        }}
         onLoginSuccess={(loggedInUser) => {
           setUser(loggedInUser);
           apiService.saveUser(loggedInUser);

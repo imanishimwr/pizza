@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bike, MapPin, Phone, CheckCircle2, Navigation, DollarSign, Clock, Shield, PenTool, Camera, X, Check } from 'lucide-react';
 
-export default function RiderDashboard({ orders = [], onUpdateStatus }) {
+export default function RiderDashboard({ orders = [], onUpdateStatus, user }) {
   const activeDeliveries = orders.filter(o => o.status === 'ready' || o.status === 'delivery');
   const completedDeliveries = orders.filter(o => o.status === 'delivered');
 
@@ -28,7 +28,7 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
           </div>
           <div>
             <div className="font-bold text-sm text-white">Rider Portal</div>
-            <div className="text-[10px] text-emerald-300 font-semibold">Eric Mugisha (RAC 482B)</div>
+            <div className="text-[10px] text-emerald-300 font-semibold">{user?.name || 'Rider'}</div>
           </div>
         </div>
 
@@ -59,7 +59,7 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-white">Delivery Rider Dashboard</h2>
-              <p className="text-xs text-emerald-200/80">Rider: Eric Mugisha • Vehicle RAC 482B</p>
+              <p className="text-xs text-emerald-200/80">Rider: {user?.name || 'Rider'}</p>
             </div>
           </div>
 
@@ -141,13 +141,17 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <a
-                      href={`tel:${selectedOrder.phone || '0788000001'}`}
-                      className="btn-secondary text-xs"
-                    >
-                      <Phone className="w-3.5 h-3.5 text-primary" />
-                      Call Customer ({selectedOrder.phone || '0788000001'})
-                    </a>
+                    {selectedOrder.phone ? (
+                      <a
+                        href={`tel:${selectedOrder.phone}`}
+                        className="btn-secondary text-xs"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-primary" />
+                        Call Customer ({selectedOrder.phone})
+                      </a>
+                    ) : (
+                      <span className="text-xs text-text-subdued italic">No phone on file</span>
+                    )}
                   </div>
                 </div>
 

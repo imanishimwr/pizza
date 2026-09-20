@@ -21,13 +21,7 @@ const googleLoginHandler = async (req, res, neonClient) => {
       });
       payload = ticket.getPayload();
     } catch (e) {
-      // Demo Google Token Fallback for local testing
-      payload = {
-        sub: `google_${Date.now()}`,
-        email: 'user.google@hotpot.com',
-        name: 'Google User (Aline)',
-        picture: 'https://lh3.googleusercontent.com/a/default-user'
-      };
+      return res.status(401).json({ error: 'Invalid Google authentication token.' });
     }
 
     const { sub: googleId, email, name, picture: avatarUrl } = payload;

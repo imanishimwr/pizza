@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Flame, Star, Clock, Sparkles, Filter, ChevronRight, Check, Heart, Search } from 'lucide-react';
-import { CATEGORIES, PROMO_BANNERS } from '../../data/mockData';
+import { apiService } from '../../services/apiService';
+
+const FALLBACK_BANNER = {
+  id: 0,
+  title: 'Royal HotPot & Gourmet Pizzas',
+  subtitle: 'Fresh hotpot combos & wood-fired pizzas delivered across Kigali, 24/7.',
+  code: 'HOTPOT',
+  tag: 'WELCOME',
+  bgGradient: 'linear-gradient(135deg, #AE3200 0%, #D97706 100%)'
+};
 
 export default function Home({
   meals = [],
@@ -17,18 +26,42 @@ export default function Home({
 }) {
   const [activeBanner, setActiveBanner] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [promos, setPromos] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(true);
+  const [promosLoading, setPromosLoading] = useState(true);
+
+  const banners = promos.length ? promos : [FALLBACK_BANNER];
+
+  useEffect(() => {
+    apiService
+      .getCategories()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        setCategories(list.some((c) => c.id === 'all') ? list : [{ id: 'all', name: 'All Items', icon: 'UtensilsCrossed' }, ...list]);
+      })
+      .finally(() => setCategoryLoading(false));
+
+    apiService
+      .getPromos()
+      .then((data) => setPromos(Array.isArray(data) ? data : []))
+      .finally(() => setPromosLoading(false));
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 400);
-    const bannerInterval = setInterval(() => {
-      setActiveBanner((prev) => (prev + 1) % PROMO_BANNERS.length);
-    }, 5000);
+    let bannerInterval;
+    if (promos.length > 1) {
+      bannerInterval = setInterval(() => {
+        setActiveBanner((prev) => (prev + 1) % promos.length);
+      }, 5000);
+    }
 
     return () => {
       clearTimeout(timer);
-      clearInterval(bannerInterval);
+      if (bannerInterval) clearInterval(bannerInterval);
     };
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, promos.length]);
 
   const [searchKey, setSearchKey] = useState('');
   const [spiceFilter, setSpiceFilter] = useState('all');
@@ -68,7 +101,7 @@ export default function Home({
     <div className="space-y-8 pb-16">
       <section
         className="relative overflow-hidden rounded-3xl p-6 sm:p-10 shadow-2xl transition-all border border-amber-500/30"
-        style={{ background: PROMO_BANNERS[activeBanner]?.bgGradient || 'linear-gradient(135deg, #AE3200 0%, #D97706 100%)' }}
+        style={{ background: banners[activeBanner]?.bgGradient || FALLBACK_BANNER.bgGradient }}
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
           <div className="lg:col-span-7 space-y-4">
@@ -84,17 +117,24 @@ export default function Home({
                 Welcome to the home of pizza 🍕
               </h2>
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-lg leading-tight">
-                {PROMO_BANNERS[activeBanner]?.title}
+                {banners[activeBanner]?.title}
               </h1>
             </div>
 
-            <p className="text-sm sm:text-base text-white/90 font-medium leading-relaxed max-w-lg">
-              {PROMO_BANNERS[activeBanner]?.subtitle} — Order your favorite hotpot combos & gourmet pizzas anytime, 24 hours a day, 7 days a week!
-            </p>
+            {promosLoading ? (
+              <div className="space-y-2">
+                <div className="h-4 w-3/4 skeleton-box rounded"></div>
+                <div className="h-4 w-1/2 skeleton-box rounded"></div>
+              </div>
+            ) : (
+              <p className="text-sm sm:text-base text-white/90 font-medium leading-relaxed max-w-lg">
+                {banners[activeBanner]?.subtitle} — Order your favorite hotpot combos & gourmet pizzas anytime, 24 hours a day, 7 days a week!
+              </p>
+            )}
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <div className="bg-black/50 px-4 py-2.5 rounded-xl border border-dashed border-white/40 text-xs font-mono font-bold text-white tracking-widest">
-                CODE: {PROMO_BANNERS[activeBanner]?.code}
+                CODE: {banners[activeBanner]?.code}
               </div>
               <button
                 onClick={() => setSelectedCategory('pizzas')}
@@ -156,7 +196,7 @@ export default function Home({
         </div>
 
         <div className="absolute bottom-4 left-6 sm:left-10 z-10 flex gap-2">
-          {PROMO_BANNERS.map((_, index) => (
+          {banners.map((_, index) => (
             <button
               key={index}
               onClick={() => setActiveBanner(index)}
@@ -198,7 +238,7 @@ export default function Home({
                   <div className="font-bold text-xs text-text-main line-clamp-1 group-hover:text-primary transition-colors">
                     {item.name}
                   </div>
-                  <div className="text-xs font-mono font-bold text-primary">{item.price.toLocaleString()} RWF</div>
+                  <div className="text-xs font-mono font-bold text-primary">{(item.price ?? 0).toLocaleString()} RWF</div>
                 </div>
               </div>
             ))}
@@ -270,23 +310,29 @@ export default function Home({
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {CATEGORIES.map((category) => {
-            const isSelected = selectedCategory === category.id;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border ${
-                  isSelected
-                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-105'
-                    : 'bg-surface-card text-text-muted border-white/10 hover:border-white/20 hover:text-white'
-                }`}
-              >
-                <span>{category.name}</span>
-                {isSelected && <Check className="w-3.5 h-3.5" />}
-              </button>
-            );
-          })}
+          {categoryLoading ? (
+            [1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="h-9 w-28 rounded-xl skeleton-box shrink-0"></div>
+            ))
+          ) : (
+            categories.map((category) => {
+              const isSelected = selectedCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border ${
+                    isSelected
+                      ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-105'
+                      : 'bg-surface-card text-text-muted border-white/10 hover:border-white/20 hover:text-white'
+                  }`}
+                >
+                  <span>{category.name}</span>
+                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                </button>
+              );
+            })
+          )}
         </div>
       </section>
 
@@ -389,7 +435,7 @@ export default function Home({
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-3">
                         <h3 className="font-bold text-text-main text-base leading-snug">{meal.name}</h3>
-                        <span className="font-mono font-extrabold text-primary text-sm">{meal.price.toLocaleString()} RWF</span>
+                        <span className="font-mono font-extrabold text-primary text-sm">{(meal.price ?? 0).toLocaleString()} RWF</span>
                       </div>
 
                       <p className="text-xs text-text-muted leading-relaxed line-clamp-3">{meal.description}</p>

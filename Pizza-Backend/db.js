@@ -1,5 +1,17 @@
 // Comprehensive Database Abstraction & Store Layer
 const bcrypt = require('bcryptjs');
+const orderFlow = require('./orderFlow');
+
+function formatTime(timestamp) {
+  if (!timestamp) return '—';
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return '—';
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const meridiem = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${meridiem}`;
+}
 
 let users = [
   {
@@ -57,12 +69,19 @@ let orders = [
     customerName: 'Aline Uwase',
     phone: '0788123456',
     address: 'KG 9 Ave, Nyarutarama, Kigali',
-    totalRWF: 22000,
+    totalRWF: 29000,
     status: 'pending',
-    riderName: 'Eric Mugisha',
-    paymentMethod: 'MTN Mobile Money',
+    riderName: null,
+    paymentType: 'MTN Mobile Money',
     paymentStatus: 'PAID',
-    createdAt: new Date(Date.now() - 5 * 60000).toISOString()
+    items: [
+      { id: 'oi-1', name: 'Royal Szechuan Hotpot Combo', qty: 1, price: 22000, spice: 'Medium Szechuan 🌶️🌶️', broth: 'Szechuan Chili Oil', specialNote: '' },
+      { id: 'oi-2', name: 'Iced Passionfruit Jasmine Tea', qty: 2, price: 3500, spice: null, broth: null, specialNote: '' }
+    ],
+    createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
+    preparedAt: null,
+    readyAt: null,
+    deliveredAt: null
   }
 ];
 
@@ -80,7 +99,7 @@ let riderLocations = {
   'Patrick Habimana': { lat: -1.9620, lng: 30.1100, status: 'AVAILABLE', vehicle: 'RAE 883K' }
 };
 
-module.exports = {
+const store = {
   // User Model Queries
   findUserByEmail: (email) => users.find(u => u.email.toLowerCase() === email.toLowerCase()),
   createUser: async ({ name, email, phone, password, role = 'CUSTOMER' }) => {
@@ -117,36 +136,102 @@ module.exports = {
   },
 
   // Order Model Queries
-  getOrders: () => orders,
+  serializeOrder: (o) => ({
+    id: o.id,
+    customerName: o.customerName,
+    phone: o.phone,
+    address: o.address,
+    lat: o.lat || null,
+    lng: o.lng || null,
+    status: String(o.status || 'pending').toLowerCase(),
+    totalRWF: Number(o.totalRWF) || 0,
+    riderName: o.riderName || null,
+    paymentMethod: o.paymentType || 'MTN Mobile Money',
+    paymentStatus: o.paymentStatus || 'PAID',
+    userId: o.userId || null,
+    createdAt: o.createdAt || o.created_at || null,
+    preparedAt: o.preparedAt || null,
+    readyAt: o.readyAt || null,
+    deliveredAt: o.deliveredAt || null,
+    orderTime: formatTime(o.createdAt || o.created_at),
+    items: Array.isArray(o.items) ? o.items.map((it) => ({ id: it.id || null, name: it.name, qty: Number(it.qty) || 1, price: Number(it.price) || 0, mealId: it.mealId || null, spice: it.spice || undefined, broth: it.broth || undefined, specialNote: it.specialNote || undefined })) : []
+  }),
+
+  getOrders: () => orders.map((o) => store.serializeOrder(o)),
+
+  getOrderById: (id) => {
+    const found = orders.find((o) => String(o.id) === String(id));
+    return found ? store.serializeOrder(found) : null;
+  },
+
+  getKitchenBoard: () => store.getOrders().filter((o) => ['pending', 'preparing', 'ready'].includes(o.status)),
+
+  getKitchenStats: () => {
+    const groups = { pending: 0, preparing: 0, ready: 0, delivery: 0, delivered: 0 };
+    orders.forEach((o) => { const s = String(o.status).toLowerCase(); if (s in groups) groups[s] += 1; });
+    const prepTimes = orders
+      .filter((o) => o.readyAt && o.preparedAt)
+      .map((o) => (new Date(o.readyAt).getTime() - new Date(o.preparedAt).getTime()) / 1000);
+    const avgPrepSeconds = prepTimes.length
+      ? Math.round(prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length)
+      : null;
+    return {
+      ...groups,
+      avgPrepSeconds,
+      avgPrepMinutes: avgPrepSeconds ? Math.round((avgPrepSeconds / 60) * 10) / 10 : null
+    };
+  },
+
   createOrder: (data) => {
     const newOrder = {
-      id: Math.floor(100000 + Math.random() * 900000).toString(),
+      id: `HP-${Math.floor(100000 + Math.random() * 900000)}`,
       status: 'pending',
+      paymentType: data.paymentMethod || 'MTN Mobile Money',
       paymentStatus: 'PAID',
+      items: Array.isArray(data.items) ? data.items.map((it, i) => ({ id: `oi-${Date.now()}-${i}`, ...it })) : [],
       createdAt: new Date().toISOString(),
-      ...data
+      preparedAt: null,
+      readyAt: null,
+      deliveredAt: null,
+      ...data,
+      totalRWF: Number(data.totalRWF) ||
+        (Array.isArray(data.items) ? data.items.reduce((sum, it) => sum + (Number(it.qty) || 1) * (Number(it.price) || 0), 0) : 0)
     };
     orders.unshift(newOrder);
-    return newOrder;
+    return store.serializeOrder(newOrder);
   },
-  updateOrderStatus: (id, status, riderName) => {
-    const idx = orders.findIndex(o => o.id === id);
+
+  updateOrderStatus: (id, status, riderName, role) => {
+    const idx = orders.findIndex((o) => String(o.id) === String(id));
     if (idx === -1) return null;
-    orders[idx].status = status;
+
+    const currentStatus = String(orders[idx].status).toLowerCase();
+    if (!orderFlow.canTransition(currentStatus, status, role)) {
+      const err = new Error(`Invalid status transition: "${currentStatus}" -> "${status}"`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    orders[idx].status = String(status).toLowerCase();
     if (riderName) orders[idx].riderName = riderName;
-    return orders[idx];
+    const now = new Date().toISOString();
+    if (String(status).toLowerCase() === 'preparing' && !orders[idx].preparedAt) orders[idx].preparedAt = now;
+    if (String(status).toLowerCase() === 'ready') orders[idx].readyAt = now;
+    if (String(status).toLowerCase() === 'delivered') orders[idx].deliveredAt = now;
+    return store.serializeOrder(orders[idx]);
   },
+
   cancelOrder: (id) => {
-    const idx = orders.findIndex(o => o.id === id);
+    const idx = orders.findIndex(o => String(o.id) === String(id));
     if (idx === -1) return null;
-    
+
     // Check 120-second grace period
     const elapsedSeconds = (Date.now() - new Date(orders[idx].createdAt).getTime()) / 1000;
     if (elapsedSeconds > 120) {
       return { error: 'Grace period expired. Order cannot be cancelled after 2 minutes.' };
     }
     orders[idx].status = 'cancelled';
-    return orders[idx];
+    return store.serializeOrder(orders[idx]);
   },
 
   // Voucher Verification Query
@@ -179,3 +264,5 @@ module.exports = {
     return riderLocations[riderName];
   }
 };
+
+module.exports = store;

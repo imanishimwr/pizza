@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { X, Lock, User, Mail, ChefHat, Bike, Shield, LogIn, ArrowRight, Flame } from 'lucide-react';
-import { DEMO_USERS } from '../../data/mockData';
 
-export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
+// Real-backend quick-login shortcuts for role switching (no fake user data)
+const QUICK_LOGIN_ROLES = {
+  kitchen: { email: 'kitchen@hotpot-delights.com', role: 'kitchen', name: 'Kitchen Staff' },
+  delivery: { email: 'rider@hotpot-delights.com', role: 'delivery', name: 'Rider' },
+  admin: { email: 'admin@hotpotdelights.rw', role: 'admin', name: 'Admin' }
+};
+
+export default function AuthModal({ isOpen, onClose, onLoginSuccess, onCustomerSelect }) {
   if (!isOpen) return null;
 
   const [isRegister, setIsRegister] = useState(false);
@@ -48,45 +54,23 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
               onClose();
             }
           } catch (e) {
-            onLoginSuccess({
-              name: 'Google User',
-              email: 'iradukundaaime244@gmail.com',
-              role: 'customer'
-            });
+            // Google token decode failed — let the user retry
+            alert('Google authentication failed. Please try again or use email/password.');
             onClose();
           }
         }
       });
       window.google.accounts.id.prompt();
     } else {
-      const googleUser = {
-        name: 'Iradukunda Aime',
-        email: 'iradukundaaime244@gmail.com',
-        phone: '0788000001',
-        role: 'customer'
-      };
-      
-      fetch('http://localhost:5000/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: 'demo_token' })
-      })
-      .then(res => res.json())
-      .then(data => {
-        onLoginSuccess(data.user || googleUser);
-        onClose();
-      })
-      .catch(() => {
-        onLoginSuccess(googleUser);
-        onClose();
-      });
+      // Google SDK not loaded — skip, show message
+      alert('Google Sign-In is not available right now. Please use email/password instead.');
     }
   };
 
   const handleQuickLogin = (roleKey) => {
-    const targetUser = DEMO_USERS[roleKey];
-    if (targetUser) {
-      onLoginSuccess(targetUser);
+    const target = QUICK_LOGIN_ROLES[roleKey];
+    if (target) {
+      onLoginSuccess(target);
       onClose();
     }
   };
@@ -126,16 +110,17 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       onLoginSuccess(safeUser);
       onClose();
     } catch (err) {
+      // Network offline fallback: use the name the user typed, never a fake one
       let role = 'customer';
       if (email.includes('admin')) role = 'admin';
       else if (email.includes('rider') || email.includes('delivery')) role = 'delivery';
       else if (email.includes('kitchen') || email.includes('cook')) role = 'kitchen';
 
       const loggedUser = {
-        name: isRegister ? fullName : email.split('@')[0] || 'User',
-        email: email || 'user@hotpot.com',
-        phone: '0788000001',
-        role: role
+        name: isRegister ? (fullName || email.split('@')[0]) : email.split('@')[0],
+        email: email,
+        phone: '',
+        role
       };
 
       setIsSubmitting(false);
@@ -272,42 +257,19 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
                   Quick 1-Click Demo Login
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('customer')}
-                    className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-primary text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5"
-                    title="Sign in as Customer"
-                  >
+                  <button type="button" onClick={onCustomerSelect || (() => handleQuickLogin('customer'))} className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-primary text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5" title="Continue as Customer">
                     <User className="w-3 h-3 text-primary shrink-0" />
                     <span className="font-semibold truncate">Customer</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('kitchen')}
-                    className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-amber-500 text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5"
-                    title="Sign in as Kitchen"
-                  >
+                  <button type="button" onClick={() => handleQuickLogin('kitchen')} className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-amber-500 text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5" title="Sign in as Kitchen">
                     <ChefHat className="w-3 h-3 text-amber-400 shrink-0" />
                     <span className="font-semibold truncate">Kitchen</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('delivery')}
-                    className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-emerald-500 text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5"
-                    title="Sign in as Rider"
-                  >
+                  <button type="button" onClick={() => handleQuickLogin('delivery')} className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-emerald-500 text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5" title="Sign in as Rider">
                     <Bike className="w-3 h-3 text-emerald-400 shrink-0" />
                     <span className="font-semibold truncate">Rider</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('admin')}
-                    className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-purple-500 text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5"
-                    title="Sign in as Admin"
-                  >
+                  <button type="button" onClick={() => handleQuickLogin('admin')} className="p-1.5 rounded-lg bg-surface-card border border-white/10 hover:border-purple-500 text-text-main flex items-center justify-center gap-1 transition-all hover:bg-white/5" title="Sign in as Admin">
                     <Shield className="w-3 h-3 text-purple-400 shrink-0" />
                     <span className="font-semibold truncate">Admin</span>
                   </button>
@@ -335,7 +297,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
-                      placeholder="e.g. Aline Uwase"
+                      placeholder="e.g. John Doe"
                       className="w-full bg-surface-card border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
                     />
                   </div>

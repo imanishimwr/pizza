@@ -49,7 +49,7 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
             <div className="text-center space-y-1">
               <span className="badge-tag badge-primary text-[10px]">ORDER COMPLETED</span>
               <h2 className="text-xl font-extrabold text-white">Rate Your Delivery</h2>
-              <p className="text-xs text-text-muted">Order #{order.id} • Eric Mugisha (Rider)</p>
+              <p className="text-xs text-text-muted">Order #{order.id} • {order?.riderName || 'Your Rider'}</p>
             </div>
 
             {/* Star Rating */}
