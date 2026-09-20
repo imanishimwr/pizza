@@ -72,7 +72,7 @@ export default function FoodDetailModal({ meal, onClose, onAddToCart }) {
           </div>
 
           {/* Spice Level Option */}
-          {meal.spiceLevels && (
+          {Array.isArray(meal.spiceLevels) && meal.spiceLevels.length > 0 && (
             <div className="space-y-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
                 <Flame className="w-4 h-4 text-primary" />
@@ -99,7 +99,7 @@ export default function FoodDetailModal({ meal, onClose, onAddToCart }) {
           )}
 
           {/* Broth Option */}
-          {meal.broths && (
+          {Array.isArray(meal.broths) && meal.broths.length > 0 && (
             <div className="space-y-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-text-muted">
                 Select Broth Base

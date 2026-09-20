@@ -9,7 +9,7 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
   const handleReorder = (e, order) => {
     e.stopPropagation();
     if (!onAddToCart) return;
-    order.items.forEach((item) => {
+    (order.items || []).forEach((item) => {
       onAddToCart(item);
     });
     setReorderedId(order.id);
@@ -81,7 +81,7 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
 
               {/* Items Summary */}
               <div className="space-y-1">
-                {order.items.map((item, idx) => (
+                {(order.items || []).map((item, idx) => (
                   <div key={idx} className="flex justify-between text-xs text-text-muted">
                     <span>{item.qty}x {item.name} {item.spice ? `(${item.spice})` : ''}</span>
                     <span className="font-mono">{(item.price || 0).toLocaleString()} RWF</span>

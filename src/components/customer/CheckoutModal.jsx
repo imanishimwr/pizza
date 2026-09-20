@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { X, MapPin, Phone, CreditCard, Smartphone, DollarSign, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
-import { API_BASE_URL } from '../../data/mockData';
+import { X, MapPin, Phone, CreditCard, Smartphone, DollarSign, CheckCircle2, ShieldCheck, AlertCircle, User } from 'lucide-react';
 
 export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPlaced }) {
   if (!isOpen || !checkoutData) return null;
@@ -8,9 +7,16 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
   const [selectedKigaliArea, setSelectedKigaliArea] = useState('');
   const [addressDetail, setAddressDetail] = useState('');
   const [isScanningGps, setIsScanningGps] = useState(false);
+  const [customerName, setCustomerName] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hotpot_user_v1');
+      const u = saved ? JSON.parse(saved) : null;
+      return u?.name || '';
+    } catch { return ''; }
+  });
   const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('momo'); // momo | airtel | card | cash
-  const [momoNumber, setMomoNumber] = useState('0788000001');
+  const [momoNumber, setMomoNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -87,8 +93,18 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
     e.preventDefault();
     setErrorMsg('');
 
+    if (!customerName.trim()) {
+      setErrorMsg('Please enter your name for the order.');
+      return;
+    }
+
     if (!validatePhone(phone)) {
       setErrorMsg('Use a valid Rwanda phone number (078/079/072/073 + 7 digits).');
+      return;
+    }
+
+    if (!addressDetail.trim()) {
+      setErrorMsg('Please enter your delivery address.');
       return;
     }
 
@@ -99,15 +115,15 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
     const etaTimeString = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const newOrder = {
-      id: `HP-${Math.floor(100000 + Math.random() * 900000)}`,
-      customerName: 'Aline Uwase',
+      customerName: customerName.trim(),
       phone: phone,
       items: checkoutData.cart.map((c) => ({
+        id: c.meal.id,
         name: c.meal.name,
         qty: c.quantity,
         price: c.meal.price,
-        spice: c.selectedSpice,
-        broth: c.selectedBroth,
+        spice: c.selectedSpice || null,
+        broth: c.selectedBroth || null,
         specialNote: c.specialNote || '',
       })),
       totalRWF: checkoutData.grandTotal,
@@ -117,7 +133,6 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
       distanceKm: currentAreaInfo.distKm,
       etaMinutes: dynamicEta,
       etaTime: etaTimeString,
-      createdAtTimestamp: Date.now(),
       orderTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       paymentMethod:
         paymentMethod === 'momo'
@@ -130,93 +145,99 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
       paymentStatus: paymentMethod === 'cash' ? 'PENDING' : 'PAID',
     };
 
-    // Try posting to live backend API, fallback smoothly
-    try {
-      await fetch(`${API_BASE_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder)
-      });
-    } catch (err) {
-      console.log('Live backend request sent or mocked successfully.');
-    }
-
+    // Order is created by App.jsx via onOrderPlaced -> apiService.createOrder
     setTimeout(() => {
       setIsSubmitting(false);
       onOrderPlaced(newOrder);
       onClose();
-    }, 1200);
+    }, 800);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-surface-dark border border-white/10 rounded-2xl sm:rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-xl w-full max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Header */}
-        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 border-b border-white/10 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-primary" />
+            <h2 className="text-sm sm:text-base font-bold text-text-main flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" />
               Complete Your Checkout
             </h2>
-            <p className="text-xs text-text-muted">Kigali Express Food & Hotpot Delivery</p>
+            <p className="text-[11px] text-text-muted">Kigali Express Food & Hotpot Delivery</p>
           </div>
-          <button onClick={onClose} className="p-2 text-text-muted hover:text-white">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1.5 text-text-muted hover:text-white rounded-lg hover:bg-white/5">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handlePlaceOrder} className="p-6 space-y-6">
+        {/* Form Body - Scrollable */}
+        <form onSubmit={handlePlaceOrder} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
+          {/* Customer Name */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
+              <User className="w-3.5 h-3.5 text-primary" />
+              Your Name
+            </label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              required
+              placeholder="Enter your full name"
+              className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
+            />
+          </div>
+
           {/* Delivery Address & Geocoding Sector Selector */}
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-primary" />
-                Kigali Sector / Delivery Geocoding
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                Kigali Sector & Address
               </label>
 
               <button
                 type="button"
                 onClick={handleScanCurrentLocation}
                 disabled={isScanningGps}
-                className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-xs font-bold flex items-center gap-1.5 transition-all"
+                className="px-2.5 py-1 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-[11px] font-bold flex items-center gap-1 transition-all"
               >
                 {isScanningGps ? (
                   <>
-                    <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                    <span className="w-2.5 h-2.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
                     Scanning GPS...
                   </>
                 ) : (
                   <>
-                    <MapPin className="w-3.5 h-3.5" />
-                    Scan Current Location
+                    <MapPin className="w-3 h-3" />
+                    Scan GPS Location
                   </>
                 )}
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {kigaliAreas.map((area) => (
                 <button
                   type="button"
                   key={area.name}
                   onClick={() => setSelectedKigaliArea(area.name)}
-                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                  className={`p-1.5 px-2 rounded-lg border text-left transition-all ${
                     selectedKigaliArea === area.name
                       ? 'bg-primary/20 border-primary text-white font-bold'
                       : 'bg-surface-card border-white/10 text-text-muted hover:border-white/20'
                   }`}
                 >
                   <div className="text-xs truncate">{area.name}</div>
-                  <div className="text-[10px] text-text-subdued font-mono">{area.estMin} min • {area.distKm}km</div>
+                  <div className="text-[9px] text-text-subdued font-mono">{area.estMin} min • {area.distKm}km</div>
                 </button>
               ))}
             </div>
@@ -227,14 +248,14 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
               onChange={(e) => setAddressDetail(e.target.value)}
               required
               placeholder="House Number, Street / Landmark (e.g. KG 9 Ave, House 42)"
-              className="w-full bg-surface-card border border-white/10 rounded-xl px-4 py-3 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
+              className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
             />
           </div>
 
           {/* Phone Number */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-              <Phone className="w-4 h-4 text-primary" />
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
+              <Phone className="w-3.5 h-3.5 text-primary" />
               Rwanda Contact Phone
             </label>
             <input
@@ -243,31 +264,31 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
               onChange={(e) => setPhone(e.target.value)}
               required
               placeholder="0788000001 (078/079/072/073 + 7 digits)"
-              className="w-full bg-surface-card border border-white/10 rounded-xl px-4 py-3 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
+              className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
             />
           </div>
 
           {/* Payment Method Selector */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-muted block">
-              Select Payment Method
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">
+              Payment Method
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               
               {/* MTN Mobile Money */}
               <button
                 type="button"
                 onClick={() => setPaymentMethod('momo')}
-                className={`p-3.5 rounded-xl border text-left transition-all flex items-center gap-3 ${
+                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
                   paymentMethod === 'momo'
-                    ? 'bg-amber-500/10 border-amber-500 text-amber-300 shadow-md'
+                    ? 'bg-amber-500/15 border-amber-500 text-amber-300 shadow-md'
                     : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
                 }`}
               >
-                <Smartphone className="w-5 h-5 text-amber-400" />
-                <div>
-                  <div className="text-xs font-bold">MTN MoMo</div>
-                  <div className="text-[10px] opacity-75">Instant Push Prompt</div>
+                <Smartphone className="w-4 h-4 text-amber-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate">MTN MoMo</div>
+                  <div className="text-[9px] opacity-75 truncate">Push Prompt</div>
                 </div>
               </button>
 
@@ -275,16 +296,16 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
               <button
                 type="button"
                 onClick={() => setPaymentMethod('airtel')}
-                className={`p-3.5 rounded-xl border text-left transition-all flex items-center gap-3 ${
+                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
                   paymentMethod === 'airtel'
-                    ? 'bg-red-500/10 border-red-500 text-red-400 shadow-md'
+                    ? 'bg-red-500/15 border-red-500 text-red-400 shadow-md'
                     : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
                 }`}
               >
-                <Smartphone className="w-5 h-5 text-red-500" />
-                <div>
-                  <div className="text-xs font-bold">Airtel Money</div>
-                  <div className="text-[10px] opacity-75">Mobile Wallet</div>
+                <Smartphone className="w-4 h-4 text-red-500 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate">Airtel</div>
+                  <div className="text-[9px] opacity-75 truncate">Mobile Wallet</div>
                 </div>
               </button>
 
@@ -292,16 +313,16 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
               <button
                 type="button"
                 onClick={() => setPaymentMethod('card')}
-                className={`p-3.5 rounded-xl border text-left transition-all flex items-center gap-3 ${
+                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
                   paymentMethod === 'card'
-                    ? 'bg-blue-500/10 border-blue-500 text-blue-400 shadow-md'
+                    ? 'bg-blue-500/15 border-blue-500 text-blue-400 shadow-md'
                     : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
                 }`}
               >
-                <CreditCard className="w-5 h-5 text-blue-400" />
-                <div>
-                  <div className="text-xs font-bold">Card Payment</div>
-                  <div className="text-[10px] opacity-75">Visa / Mastercard</div>
+                <CreditCard className="w-4 h-4 text-blue-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate">Card</div>
+                  <div className="text-[9px] opacity-75 truncate">Visa / MC</div>
                 </div>
               </button>
 
@@ -309,25 +330,24 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
               <button
                 type="button"
                 onClick={() => setPaymentMethod('cash')}
-                className={`p-3.5 rounded-xl border text-left transition-all flex items-center gap-3 ${
+                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
                   paymentMethod === 'cash'
-                    ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-md'
+                    ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-md'
                     : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
                 }`}
               >
-                <DollarSign className="w-5 h-5 text-emerald-400" />
-                <div>
-                  <div className="text-xs font-bold">Cash on Delivery</div>
-                  <div className="text-[10px] opacity-75">Pay to Rider</div>
+                <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate">Cash</div>
+                  <div className="text-[9px] opacity-75 truncate">On Delivery</div>
                 </div>
               </button>
-
             </div>
           </div>
 
           {(paymentMethod === 'momo' || paymentMethod === 'airtel') && (
-            <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
-              <label className="text-xs font-bold text-text-muted block">
+            <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+              <label className="text-[11px] font-bold text-text-muted block">
                 {paymentMethod === 'momo' ? 'MTN MoMo' : 'Airtel'} Phone Number for Payment Request
               </label>
               <input
@@ -335,7 +355,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
                 value={momoNumber}
                 onChange={(e) => setMomoNumber(e.target.value)}
                 placeholder="0788000001"
-                className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main"
+                className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-1.5 text-xs text-text-main"
               />
               <p className="text-[10px] text-amber-400/80">
                 ⚡ You will receive a USSD prompt on your phone to enter your PIN.
@@ -344,33 +364,33 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
           )}
 
           {/* Grand Total Bar */}
-          <div className="p-4 rounded-xl bg-surface-card border border-white/10 flex items-center justify-between">
+          <div className="p-3 rounded-xl bg-surface-card border border-white/10 flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-text-subdued uppercase font-bold block">Total Amount Due</span>
-              <span className="text-xl font-extrabold font-mono text-primary">
+              <span className="text-[9px] text-text-subdued uppercase font-bold block">Total Amount Due</span>
+              <span className="text-base font-extrabold font-mono text-primary">
                 {checkoutData.grandTotal.toLocaleString()} RWF
               </span>
             </div>
             <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-4 h-4" />
-              Secure 256-Bit Encrypted
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Secure 256-Bit
             </span>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary text-xs flex-1 py-3">
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose} className="btn-secondary text-xs flex-1 py-2.5">
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn-primary text-xs flex-[2] py-3"
+              className="btn-primary text-xs flex-[2] py-2.5 font-bold"
             >
               {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Processing Payment...
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Processing...
                 </span>
               ) : (
                 `Confirm & Pay ${checkoutData.grandTotal.toLocaleString()} RWF`

@@ -53,16 +53,27 @@ app.post('/api/auth/register', async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
     }
-    email = email.trim();
+    email = email.trim().toLowerCase();
+    name = name.trim();
+    phone = phone ? phone.trim() : null;
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
 
     // 1. Check if user already exists in Neon PostgreSQL
     const existingUser = await neonClient.findUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ error: 'An account with this email address already exists in Neon DB.' });
+      return res.status(400).json({ error: 'An account with this email address already exists. Please sign in.' });
     }
 
     // 2. Register user in Neon PostgreSQL
-    const newUser = await neonClient.registerUserInNeon({ name: name.trim(), email, phone, password, role: role || 'CUSTOMER' });
+    const assignedRole = role ? role.toUpperCase() : 'CUSTOMER';
+    const newUser = await neonClient.registerUserInNeon({ name, email, phone, password, role: assignedRole });
+
+    if (!newUser) {
+      return res.status(500).json({ error: 'Could not create account in database.' });
+    }
 
     // 3. Generate JWT Token
     const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -76,7 +87,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ User Registration Error:', err.message);
-    res.status(500).json({ error: 'Failed to create user account in Neon database.' });
+    res.status(500).json({ error: err.message || 'Failed to create user account in database.' });
   }
 });
 
@@ -86,7 +97,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
-    email = email.trim();
+    email = email.trim().toLowerCase();
 
     // 1. Authenticate against Neon PostgreSQL
     const user = await neonClient.verifyLoginInNeon(email, password);

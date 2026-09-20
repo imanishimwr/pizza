@@ -107,7 +107,7 @@ export default function KitchenBoard({ orders = [], onUpdateStatus }) {
                     </div>
 
                     <div className="space-y-1.5">
-                      {order.items.map((item, idx) => (
+                      {(order.items || []).map((item, idx) => (
                         <div key={idx} className="text-xs font-medium text-text-main flex justify-between items-center">
                           <span>{item.qty}x {item.name}</span>
                           {item.spice && <span className="text-red-400 font-bold text-[10px]">{item.spice}</span>}
@@ -153,7 +153,7 @@ export default function KitchenBoard({ orders = [], onUpdateStatus }) {
                     {/* Item Checklist for Packaging */}
                     <div className="space-y-1.5 bg-black/30 p-2.5 rounded-xl border border-white/5">
                       <span className="text-[10px] font-bold text-text-muted uppercase block">Item Checklist:</span>
-                      {order.items.map((item, idx) => {
+                      {(order.items || []).map((item, idx) => {
                         const isChecked = checkedItems[`${order.id}-${idx}`];
                         return (
                           <div 
@@ -208,7 +208,7 @@ export default function KitchenBoard({ orders = [], onUpdateStatus }) {
                     </div>
 
                     <div className="space-y-1">
-                      {order.items.map((item, idx) => (
+                      {(order.items || []).map((item, idx) => (
                         <div key={idx} className="text-xs text-text-muted">
                           {item.qty}x {item.name}
                         </div>

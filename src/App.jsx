@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import Home from './pages/customer/Home';
 import ProductDetailsPage from './pages/customer/ProductDetailsPage';
@@ -65,10 +65,15 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
-      const initialMeals = apiService.getMeals();
       if (id) {
-        const found = initialMeals.find((meal) => String(meal.id) === String(id));
-        if (found) return found;
+        try {
+          const cached = localStorage.getItem('hotpot_meals_v1');
+          const list = cached ? JSON.parse(cached) : [];
+          if (Array.isArray(list)) {
+            const found = list.find((meal) => String(meal.id) === String(id));
+            if (found) return found;
+          }
+        } catch (e) {}
       }
     }
     return null;
@@ -85,6 +90,24 @@ export default function App() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isCustomBuilderOpen, setIsCustomBuilderOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState(null);
+
+  // Client-specific orders filter (client sees ONLY their own orders, admin sees ALL orders)
+  const clientOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
+    if (!user) {
+      const savedTrackedId = apiService.getTrackedOrderId();
+      return savedTrackedId ? orders.filter(o => o.id === savedTrackedId) : [];
+    }
+    return orders.filter(o => {
+      const matchUserId = o.userId && user.id && String(o.userId) === String(user.id);
+      const matchEmail = (o.userEmail && user.email && o.userEmail.toLowerCase() === user.email.toLowerCase()) || 
+                         (o.email && user.email && o.email.toLowerCase() === user.email.toLowerCase());
+      const matchPhone = o.phone && user.phone && o.phone.trim() === user.phone.trim();
+      const matchName = o.customerName && user.name && o.customerName.toLowerCase().trim() === user.name.toLowerCase().trim();
+      const matchTracked = apiService.getTrackedOrderId() === o.id;
+      return matchUserId || matchEmail || matchPhone || matchName || matchTracked;
+    });
+  }, [orders, user]);
 
   const showToast = useCallback((message, title = 'Notification') => {
     setToast({ title, message });
@@ -131,9 +154,10 @@ export default function App() {
   }, [wishlist]);
 
   useEffect(() => {
-    const unsubOrder = eventBus.on('NEW_ORDER', (newOrder, isCrossTab) => {
+    const unsubOrder = eventBus.on('NEW_ORDER', async (newOrder, isCrossTab) => {
       if (isCrossTab) {
-        setOrders(apiService.getOrders());
+        const freshOrders = await apiService.getOrders();
+        setOrders(Array.isArray(freshOrders) ? freshOrders : []);
         showToast(`New Order #${newOrder.id} received!`, 'Incoming Order');
         notificationService.playChime('new_order');
         notificationService.sendDesktopNotification(`New Order #${newOrder.id}`, {
@@ -142,11 +166,32 @@ export default function App() {
       }
     });
 
-    const unsubStatus = eventBus.on('ORDER_STATUS_UPDATE', ({ orderId, status }, isCrossTab) => {
-      if (isCrossTab) {
-        setOrders(apiService.getOrders());
-        showToast(`Order #${orderId} status changed to ${status.toUpperCase()}`, 'Order Updated');
+    const unsubStatus = eventBus.on('ORDER_STATUS_UPDATE', async ({ orderId, status }, isCrossTab) => {
+      const freshOrders = await apiService.getOrders();
+      setOrders(Array.isArray(freshOrders) ? freshOrders : []);
+
+      const matchingOrder = Array.isArray(freshOrders) ? freshOrders.find(o => o.id === orderId) : null;
+      const isMyOrder = (trackedOrder && trackedOrder.id === orderId) || (user && matchingOrder && matchingOrder.userId === user.id);
+      const isAdmin = (user?.role || '').toUpperCase() === 'ADMIN' || currentRole === 'admin';
+
+      if (status === 'ready') {
+        notificationService.playChime('order_ready');
+        if (isAdmin) {
+          showToast(`Cooker confirmed Order #${orderId} is freshly prepared & packed! Ready for rider dispatch.`, '🍲 Kitchen Order Ready');
+          notificationService.sendDesktopNotification(`Order #${orderId} Ready!`, {
+            body: `Cooker has confirmed Order #${orderId} is ready for delivery dispatch.`
+          });
+        } else if (isMyOrder) {
+          showToast(`Your Order #${orderId} is freshly cooked and ready! Moto rider is preparing for pickup.`, '🎉 Your Meal is Ready!');
+          notificationService.sendDesktopNotification('Your Food is Ready! 🍲', {
+            body: `Order #${orderId} is cooked & packed! Watch the live tracking map.`
+          });
+        } else {
+          showToast(`Order #${orderId} is ready from the kitchen!`, 'Kitchen Update');
+        }
+      } else {
         notificationService.playChime('status_update');
+        showToast(`Order #${orderId} status updated to: ${status.toUpperCase()}`, 'Order Updated');
       }
     });
 
@@ -154,7 +199,7 @@ export default function App() {
       unsubOrder();
       unsubStatus();
     };
-  }, [showToast]);
+  }, [showToast, user, currentRole, trackedOrder]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -284,7 +329,10 @@ export default function App() {
     try {
       const createdOrder = await apiService.createOrder({
         ...newOrder,
-        userId: user ? user.id : null
+        userId: user ? user.id : null,
+        userEmail: user ? user.email : (newOrder.email || null),
+        customerName: user?.name || newOrder.customerName || 'Customer',
+        phone: user?.phone || newOrder.phone || ''
       });
 
       setOrders((prev) => {
@@ -319,9 +367,15 @@ export default function App() {
         setTrackedOrder(updatedOrder);
       }
 
-      eventBus.emit('ORDER_STATUS_UPDATE', { orderId, status: newStatus });
-      notificationService.playChime('status_update');
-      showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
+      eventBus.emit('ORDER_STATUS_UPDATE', { orderId, status: newStatus, order: updatedOrder });
+      
+      if (newStatus === 'ready') {
+        notificationService.playChime('order_ready');
+        showToast(`Order #${orderId} is confirmed READY by cooker! Ready for rider dispatch.`, '🍲 Kitchen Order Ready');
+      } else {
+        notificationService.playChime('status_update');
+        showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
+      }
     } catch (e) {
       showToast('Failed to update order status.', 'Error');
     }
@@ -436,23 +490,44 @@ export default function App() {
               )}
 
               {activeTab === 'dashboard' && (
-                <CustomerDashboard
-                  user={user}
-                  orders={orders}
-                  onSelectOrder={(order) => {
-                    setTrackedOrder(order);
-                    apiService.setTrackedOrderId(order.id);
-                    handleNavigate('/tracking', 'tracking', 'customer');
-                  }}
-                  onOpenReferral={() => setIsReferralOpen(true)}
-                  onOpenProfile={() => setIsProfileOpen(true)}
-                  onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
-                />
+                (user?.role || '').toUpperCase() === 'ADMIN' ? (
+                  <AdminDashboard
+                    meals={meals}
+                    setMeals={setMeals}
+                    orders={orders}
+                    onUpdateStatus={handleUpdateOrderStatus}
+                    user={user}
+                  />
+                ) : (user?.role || '').toUpperCase() === 'KITCHEN' ? (
+                  <KitchenBoard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />
+                ) : (user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER' ? (
+                  <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />
+                ) : (
+                  <CustomerDashboard
+                    user={user}
+                    orders={clientOrders}
+                    onOpenAuth={() => setIsAuthOpen(true)}
+                    onAddToCart={handleAddToCart}
+                    onOpenCart={() => setIsCartOpen(true)}
+                    onUpdateUser={(updatedUser) => {
+                      setUser(updatedUser);
+                      apiService.saveUser(updatedUser);
+                    }}
+                    onSelectOrder={(order) => {
+                      setTrackedOrder(order);
+                      apiService.setTrackedOrderId(order.id);
+                      handleNavigate('/tracking', 'tracking', 'customer');
+                    }}
+                    onOpenReferral={() => setIsReferralOpen(true)}
+                    onOpenProfile={() => setIsProfileOpen(true)}
+                    onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+                  />
+                )
               )}
 
               {activeTab === 'orders' && (
                 <OrdersHistory
-                  orders={orders}
+                  orders={clientOrders}
                   onAddToCart={handleAddToCart}
                   onSelectOrder={(order) => {
                     setTrackedOrder(order);
@@ -464,7 +539,7 @@ export default function App() {
 
               {activeTab === 'tracking' && (
                 <LiveTracking
-                  order={trackedOrder || orders[0]}
+                  order={trackedOrder || clientOrders[0]}
                   onCancelOrder={handleCancelOrder}
                   onModifyOrder={handleModifyOrder}
                 />
@@ -480,6 +555,7 @@ export default function App() {
               setMeals={setMeals}
               orders={orders}
               onUpdateStatus={handleUpdateOrderStatus}
+              user={user}
             />
           )}
         </div>

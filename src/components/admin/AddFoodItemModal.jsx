@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Plus, Upload, ImageIcon, Flame, UtensilsCrossed, Tag, CheckCircle2 } from "lucide-react";
 
 const CATEGORIES = [
@@ -17,8 +17,10 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
   const [desc,     setDesc]     = useState("");
   const [isSpicy,  setIsSpicy]  = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [saving,   setSaving]   = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const fileInputRef  = useRef(null);
   const firstInputRef = useRef(null);
@@ -26,7 +28,8 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
   useEffect(() => {
     if (isOpen) {
       setName(""); setPrice(""); setCategory("hotpot");
-      setDesc(""); setIsSpicy(false); setImagePreview(null); setSaving(false);
+      setDesc(""); setIsSpicy(false); setImagePreview(null);
+      setImageUrl(""); setSaving(false); setErrorMsg("");
       setTimeout(() => firstInputRef.current?.focus(), 80);
     }
   }, [isOpen]);
@@ -59,25 +62,42 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
     e.preventDefault();
     if (!name.trim() || !price) return;
     setSaving(true);
+    setErrorMsg("");
+
+    // Determine final image: URL input takes priority, then uploaded image preview (data URL), then default
+    const finalImage = imageUrl.trim() ||
+      imagePreview ||
+      "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80";
+
     const newFoodItem = {
       name:        name.trim(),
       category,
       price:       parseInt(price),
-      image:       imagePreview || "/assets/1122x850_AO.png",
+      image:       finalImage,
       description: desc.trim() || "Delicious dish prepared fresh by our kitchen.",
       spicy:       isSpicy,
       outOfStock:  false,
     };
     try {
       const token   = localStorage.getItem("token");
+      if (!token) {
+        setErrorMsg("You must be logged in as Admin to add menu items. Please log in first.");
+        setSaving(false);
+        return;
+      }
       const created = await import("../../services/apiService")
         .then(m => m.apiService.createMeal(newFoodItem, token));
       onSave(created);
-    } catch {
-      onSave({ ...newFoodItem, id: `hp-${Date.now()}`, rating: 5.0, reviews: 1 });
+      onClose();
+    } catch (err) {
+      const msg = err?.message || 'Unknown error';
+      if (msg.includes('401') || msg.includes('403') || msg.includes('Unauthorized') || msg.includes('denied') || msg.includes('token')) {
+        setErrorMsg("Access denied. Please log in as Admin (admin@hotpot.rw) and try again.");
+      } else {
+        setErrorMsg(`Failed to save: ${msg}`);
+      }
     } finally {
       setSaving(false);
-      onClose();
     }
   };
 
@@ -273,6 +293,25 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
                 )}
               </div>
             </div>
+
+            {/* Image URL input (alternative to upload) */}
+            <div className="mt-2">
+              <label className="block text-[10px] font-bold uppercase tracking-widest mb-1.5"
+                style={{ color: "#6b7280" }}>Or paste image URL</label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://images.unsplash.com/..."
+                className="w-full rounded-xl px-4 py-2 text-xs text-white placeholder-gray-600 transition-all outline-none"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.09)",
+                }}
+                onFocus={e => e.target.style.borderColor = "#7c3aed"}
+                onBlur={e  => e.target.style.borderColor = "rgba(255,255,255,0.09)"}
+              />
+            </div>
           </div>
 
           {/* Spicy Toggle */}
@@ -298,6 +337,12 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
         </form>
 
         {/* ─── Footer ─── */}
+        {errorMsg && (
+          <div className="mx-6 mb-0 px-4 py-2.5 rounded-xl text-xs font-medium"
+            style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>
+            ⚠️ {errorMsg}
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3 px-6 py-4"
           style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.25)" }}>
           <p className="text-xs" style={{ color: "#6b7280" }}>

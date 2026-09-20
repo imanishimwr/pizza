@@ -41,6 +41,17 @@ class NotificationService {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
         osc.start(now);
         osc.stop(now + 0.35);
+      } else if (type === 'order_ready') {
+        // Celebratory 4-note chime for cooked & ready meals (C5 -> E5 -> G5 -> C6)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
+        osc.frequency.setValueAtTime(1046.50, now + 0.24);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        osc.start(now);
+        osc.stop(now + 0.55);
       } else if (type === 'status_update') {
         // Success ascending chime
         osc.type = 'triangle';

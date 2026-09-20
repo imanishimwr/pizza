@@ -28,12 +28,13 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
   const restaurantCoords = [-1.9702, 30.1250]; // Hot Pot Kigali Store Location
   const deliveryCoords = [-1.9360, 30.0820];   // Client Delivery Spot in Kigali
 
-  // Reactive step calculation based on order status
+  // Reactive step calculation based on order status (5 full steps)
   const currentStep = 
     order?.status === 'cancelled' ? 0 :
     order?.status === 'pending' ? 1 :
     order?.status === 'preparing' ? 2 :
-    order?.status === 'delivery' ? 3 : 4;
+    order?.status === 'ready' ? 3 :
+    order?.status === 'delivery' || order?.status === 'delivering' ? 4 : 5;
 
   const canCancelOrModify = currentStep === 1 && secondsRemaining > 0;
 
@@ -128,9 +129,10 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
 
   const steps = [
     { num: 1, label: 'Order Received', desc: 'Payment confirmed & sent to kitchen' },
-    { num: 2, label: 'Kitchen Preparation', desc: 'Broth simmered & fresh hotpot packed' },
-    { num: 3, label: 'Out for Delivery', desc: 'Rider Eric is en route to your address' },
-    { num: 4, label: 'Delivered', desc: 'Enjoy your hot meal!' }
+    { num: 2, label: 'In Kitchen Cooking', desc: 'Cooker simmering broths & assembling items' },
+    { num: 3, label: 'Cooker Confirmed Ready', desc: 'Freshly prepared & packaged for pickup' },
+    { num: 4, label: 'Out for Delivery', desc: 'Kigali moto rider en route to your address' },
+    { num: 5, label: 'Delivered', desc: 'Enjoy your hot meal!' }
   ];
 
   const handleSaveNote = () => {

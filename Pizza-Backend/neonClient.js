@@ -52,7 +52,21 @@ module.exports = {
   // --- Meals Queries ---
   getMeals: async () => {
     if (!sql) return [];
-    return await sql`SELECT * FROM meals ORDER BY created_at DESC;`;
+    try {
+      const rows = await sql`SELECT * FROM meals ORDER BY created_at DESC;`;
+      return rows.map(m => ({
+        ...m,
+        price: Number(m.price) || 0,
+        rating: Number(m.rating) || 5.0,
+        reviews: Number(m.reviewsCount || m.reviews || 0),
+        spiceLevels: m.spiceLevels || ['Mild 🌶️', 'Medium 🌶️🌶️', 'Hot 🌶️🌶️🌶️'],
+        broths: m.broths || (m.category === 'hotpot' ? ['Szechuan Spicy', 'Mushroom Herb', 'Tomato', 'Bone Broth'] : []),
+        fallbackImage: m.fallbackImage || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80'
+      }));
+    } catch (err) {
+      console.error('Error in getMeals:', err.message);
+      return [];
+    }
   },
   
   createMeal: async (meal) => {
@@ -62,7 +76,16 @@ module.exports = {
       VALUES (${id}, ${meal.name}, ${meal.category}, ${meal.price}, ${meal.description || ''}, ${meal.image || ''}, ${meal.spicy || false}, ${meal.outOfStock || false})
       RETURNING *;
     `;
-    return rows[0];
+    const m = rows[0];
+    return {
+      ...m,
+      price: Number(m.price) || 0,
+      rating: Number(m.rating) || 5.0,
+      reviews: Number(m.reviewsCount || m.reviews || 0),
+      spiceLevels: m.spiceLevels || ['Mild 🌶️', 'Medium 🌶️🌶️', 'Hot 🌶️🌶️🌶️'],
+      broths: m.broths || (m.category === 'hotpot' ? ['Szechuan Spicy', 'Mushroom Herb', 'Tomato', 'Bone Broth'] : []),
+      fallbackImage: m.fallbackImage || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80'
+    };
   },
 
   updateMeal: async (id, updates) => {
@@ -78,7 +101,17 @@ module.exports = {
       WHERE id = ${id}
       RETURNING *;
     `;
-    return rows[0];
+    if (!rows[0]) return null;
+    const m = rows[0];
+    return {
+      ...m,
+      price: Number(m.price) || 0,
+      rating: Number(m.rating) || 5.0,
+      reviews: Number(m.reviewsCount || m.reviews || 0),
+      spiceLevels: m.spiceLevels || ['Mild 🌶️', 'Medium 🌶️🌶️', 'Hot 🌶️🌶️🌶️'],
+      broths: m.broths || (m.category === 'hotpot' ? ['Szechuan Spicy', 'Mushroom Herb', 'Tomato', 'Bone Broth'] : []),
+      fallbackImage: m.fallbackImage || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80'
+    };
   },
 
   deleteMeal: async (id) => {
@@ -89,18 +122,102 @@ module.exports = {
   // --- Orders Queries ---
   getOrders: async () => {
     if (!sql) return [];
-    return await sql`SELECT * FROM orders ORDER BY created_at DESC;`;
+    try {
+      const orders = await sql`SELECT * FROM orders ORDER BY created_at DESC;`;
+      let allItems = [];
+      try {
+        allItems = await sql`SELECT * FROM order_items;`;
+      } catch (e) {
+        console.warn('Could not query order_items:', e.message);
+      }
+
+      const itemsByOrder = {};
+      for (const item of allItems) {
+        const oId = item.orderId || item['order_id'];
+        if (!itemsByOrder[oId]) itemsByOrder[oId] = [];
+        itemsByOrder[oId].push({
+          id: item.id,
+          name: item.name,
+          qty: Number(item.qty) || 1,
+          price: Number(item.price) || 0,
+          spice: item.spice || null,
+          broth: item.broth || null,
+          specialNote: item.specialNote || ''
+        });
+      }
+
+      return orders.map(o => {
+        const dateObj = o.created_at ? new Date(o.created_at) : new Date();
+        return {
+          ...o,
+          id: o.id,
+          userId: o.userId || o.user_id || null,
+          customerName: o.customerName || o.customer_name || 'Customer',
+          phone: o.phone || '',
+          address: o.address || '',
+          status: o.status || 'pending',
+          totalRWF: Number(o.totalRWF || o.total_rwf || 0),
+          riderName: o.riderName || o.rider_name || null,
+          paymentMethod: o.paymentType || o.payment_method || 'MTN Mobile Money',
+          paymentStatus: o.paymentStatus || 'PAID',
+          orderTime: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          items: itemsByOrder[o.id] || []
+        };
+      });
+    } catch (err) {
+      console.error('Error in getOrders:', err.message);
+      return [];
+    }
   },
 
   createOrder: async (order) => {
-    const id = order.id || `order-${Date.now()}`;
+    const id = order.id || `HP-${Math.floor(100000 + Math.random() * 900000)}`;
     const rows = await sql`
       INSERT INTO orders (id, "customerName", phone, address, "totalRWF", status, "userId")
-      VALUES (${id}, ${order.customerName}, ${order.phone}, ${order.address}, ${order.totalRWF || 0}, 'pending', ${order.userId || null})
+      VALUES (${id}, ${order.customerName || 'Customer'}, ${order.phone || ''}, ${order.address || ''}, ${order.totalRWF || 0}, 'pending', ${order.userId || null})
       RETURNING *;
     `;
-    // We would insert order_items here in a real transaction, skipping for brevity of mockup
-    return rows[0];
+    const createdOrder = rows[0];
+
+    const orderItems = Array.isArray(order.items) ? order.items : [];
+    const insertedItems = [];
+    for (const item of orderItems) {
+      try {
+        const itemId = `${id}-${item.id || Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+        const inserted = await sql`
+          INSERT INTO order_items (id, "orderId", "mealId", name, qty, price, spice, broth, "specialNote")
+          VALUES (
+            ${itemId},
+            ${id},
+            ${item.id || item.mealId || ''},
+            ${item.name || 'Dish'},
+            ${Number(item.qty) || 1},
+            ${Number(item.price) || 0},
+            ${item.spice || null},
+            ${item.broth || null},
+            ${item.specialNote || null}
+          )
+          RETURNING *;
+        `;
+        if (inserted[0]) {
+          insertedItems.push({
+            ...inserted[0],
+            qty: Number(inserted[0].qty) || 1,
+            price: Number(inserted[0].price) || 0
+          });
+        }
+      } catch (err) {
+        console.warn('Could not insert order_item:', err.message);
+      }
+    }
+
+    const dateObj = createdOrder.created_at ? new Date(createdOrder.created_at) : new Date();
+    return {
+      ...createdOrder,
+      totalRWF: Number(createdOrder.totalRWF || order.totalRWF || 0),
+      orderTime: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      items: insertedItems.length > 0 ? insertedItems : orderItems
+    };
   },
 
   updateOrderStatus: async (id, status, riderName) => {
@@ -112,7 +229,23 @@ module.exports = {
       WHERE id = ${id}
       RETURNING *;
     `;
-    return rows[0];
+    if (!rows[0]) return null;
+    const o = rows[0];
+
+    let items = [];
+    try {
+      items = await sql`SELECT * FROM order_items WHERE "orderId" = ${id};`;
+    } catch (e) {}
+
+    return {
+      ...o,
+      totalRWF: Number(o.totalRWF || o.total_rwf || 0),
+      items: items.map(it => ({
+        ...it,
+        qty: Number(it.qty) || 1,
+        price: Number(it.price) || 0
+      }))
+    };
   },
 
   // --- Vouchers Queries ---

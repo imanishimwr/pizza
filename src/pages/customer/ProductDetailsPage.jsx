@@ -226,7 +226,7 @@ export default function ProductDetailsPage({
           {/* Customizations Section */}
           <div className="space-y-5 p-5 rounded-2xl bg-surface-card border border-white/10">
             {/* Spice Levels */}
-            {meal.spiceLevels && (
+            {Array.isArray(meal?.spiceLevels) && meal.spiceLevels.length > 0 && (
               <div className="space-y-2.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
                   <Flame className="w-4 h-4 text-primary" />
@@ -256,7 +256,7 @@ export default function ProductDetailsPage({
             )}
 
             {/* Broths */}
-            {meal.broths && (
+            {Array.isArray(meal?.broths) && meal.broths.length > 0 && (
               <div className="space-y-2.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-text-muted">
                   Choose Broth Base
@@ -496,7 +496,7 @@ export default function ProductDetailsPage({
                     onError={(e) => { e.target.src = relMeal.fallbackImage; }}
                   />
                   <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/70 text-white">
-                    {relMeal.price.toLocaleString()} RWF
+                    {(Number(relMeal.price) || 0).toLocaleString()} RWF
                   </span>
                 </div>
                 <div>

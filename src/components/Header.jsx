@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Search, User, Flame, Shield, ChefHat, Bike, LogOut, MapPin, Gift, HelpCircle, History, Heart, Menu, X, Globe, Sun, Moon } from 'lucide-react';
-import { DEMO_USERS } from '../data/mockData';
 
 export default function Header({
   currentRole = 'customer',
@@ -127,15 +126,41 @@ export default function Header({
                 {lang === 'RW' ? 'Ibiyo' : 'Menu'}
               </button>
 
-              <button
-                onClick={() => navigateTo('/dashboard', 'dashboard', 'customer')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  activeTab === 'dashboard' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:text-white'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                {lang === 'RW' ? 'Konte' : 'Dashboard'}
-              </button>
+              {user && (
+                <button
+                  onClick={() => {
+                    const r = (user.role || 'customer').toLowerCase();
+                    if (r === 'admin') navigateTo('/admin', 'admin', 'admin');
+                    else if (r === 'kitchen') navigateTo('/kitchen', 'kitchen', 'kitchen');
+                    else if (r === 'delivery' || r === 'rider') navigateTo('/delivery', 'delivery', 'delivery');
+                    else navigateTo('/dashboard', 'dashboard', 'customer');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    activeTab === 'dashboard' || currentRole === 'admin' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:text-white'
+                  }`}
+                >
+                  {(user.role || '').toLowerCase() === 'admin' ? (
+                    <Shield className="w-3.5 h-3.5 text-amber-400" />
+                  ) : (user.role || '').toLowerCase() === 'kitchen' ? (
+                    <ChefHat className="w-3.5 h-3.5 text-blue-400" />
+                  ) : (user.role || '').toLowerCase() === 'delivery' || (user.role || '').toLowerCase() === 'rider' ? (
+                    <Bike className="w-3.5 h-3.5 text-amber-400" />
+                  ) : (
+                    <User className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {lang === 'RW'
+                      ? 'Konte'
+                      : (user.role || '').toLowerCase() === 'admin'
+                      ? 'Admin'
+                      : (user.role || '').toLowerCase() === 'kitchen'
+                      ? 'Kitchen'
+                      : (user.role || '').toLowerCase() === 'delivery' || (user.role || '').toLowerCase() === 'rider'
+                      ? 'Rider'
+                      : 'Dashboard'}
+                  </span>
+                </button>
+              )}
 
               <button
                 onClick={() => navigateTo('/orders', 'orders', 'customer')}
@@ -286,17 +311,65 @@ export default function Header({
         )}
 
         {currentRole !== 'customer' && (
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] sm:text-xs px-2.5 py-1 rounded-full bg-white/10 text-text-muted font-mono truncate max-w-[150px] sm:max-w-none">
-              Role: {currentRole.toUpperCase()}
-            </span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* View Store Menu button */}
             <button
-              onClick={() => onNavigate('/', 'menu', 'customer')}
-              className="px-3 py-1.5 rounded-xl bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-all"
-              title="Exit Console & Log Out"
+              onClick={() => navigateTo('/', 'menu', 'customer')}
+              className="px-3 py-1.5 rounded-xl bg-surface-card border border-white/10 hover:border-primary text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+              title="Open Customer Store Menu"
+            >
+              <Flame className="w-3.5 h-3.5 text-primary" />
+              <span className="hidden sm:inline">Store Menu</span>
+            </button>
+
+            {/* Role Badge */}
+            <span className="text-[11px] sm:text-xs px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold flex items-center gap-1">
+              <Shield className="w-3 h-3" />
+              <span>{currentRole.toUpperCase()}</span>
+            </span>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-surface-card border border-white/10 text-text-main hover:border-amber-400 transition-all"
+              title="Toggle Dark / Light Theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-400" />}
+            </button>
+
+            {/* Language Switcher */}
+            <button
+              onClick={() => setLang && setLang(lang === 'EN' ? 'RW' : 'EN')}
+              className="px-2.5 py-1 rounded-xl bg-surface-card border border-white/10 text-xs font-bold text-text-main hover:border-primary flex items-center gap-1.5 transition-all"
+              title="Switch Language"
+            >
+              <Globe className="w-3.5 h-3.5 text-primary" />
+              <span>{lang}</span>
+            </button>
+
+            {/* User Avatar + Name */}
+            {user && (
+              <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-orange-500 text-white font-black text-xs flex items-center justify-center shadow-sm">
+                  {user.name ? user.name[0].toUpperCase() : 'A'}
+                </div>
+                <span className="text-xs font-bold text-white max-w-[100px] truncate hidden md:inline-block">
+                  {user.name || 'Admin'}
+                </span>
+              </div>
+            )}
+
+            {/* Logout / Exit */}
+            <button
+              onClick={() => {
+                if (onLogout) onLogout();
+                navigateTo('/', 'menu', 'customer');
+              }}
+              className="px-3 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              title="Log Out"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Exit Console</span>
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         )}
@@ -329,18 +402,20 @@ export default function Header({
               Menu
             </button>
 
-            <button
-              onClick={() => {
-                navigateTo('/dashboard', 'dashboard', 'customer');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                activeTab === 'dashboard' || activeTab === 'orders' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              Dashboard
-            </button>
+            {user && (
+              <button
+                onClick={() => {
+                  navigateTo('/dashboard', 'dashboard', 'customer');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                  activeTab === 'dashboard' || activeTab === 'orders' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Dashboard
+              </button>
+            )}
 
             <button
               onClick={() => {

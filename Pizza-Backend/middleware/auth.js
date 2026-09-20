@@ -14,8 +14,12 @@ const authMiddleware = (roles = []) => {
 
       req.user = decoded;
 
-      if (roles.length > 0 && !roles.includes(decoded.role)) {
-        return res.status(403).json({ error: 'Forbidden: Insufficient privileges.' });
+      if (roles.length > 0) {
+        const userRole = (decoded.role || '').toUpperCase();
+        const allowedRoles = roles.map(r => r.toUpperCase());
+        if (!allowedRoles.includes(userRole)) {
+          return res.status(403).json({ error: 'Forbidden: Insufficient privileges.' });
+        }
       }
 
       next();
