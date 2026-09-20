@@ -78,6 +78,9 @@ export default function KitchenBoard({
     return displayOrders.filter(o => o.status === 'delivery' || o.status === 'delivered');
   }, [displayOrders]);
 
+  // Processing orders set to disable double-clicks: { [orderId]: boolean }
+  const [processingMap, setProcessingMap] = useState({});
+
   // Filtered orders based on search query
   const filterBySearch = (list) => {
     if (!searchQuery.trim()) return list;
@@ -107,25 +110,42 @@ export default function KitchenBoard({
     }
   };
 
-  // Status progression action
+  // Status progression action with immediate double-click guard
   const handleAdvanceStatus = async (orderId, nextStatus) => {
-    if (soundEnabled) {
-      if (nextStatus === 'ready') {
-        notificationService.playChime('order_ready');
-      } else {
-        notificationService.playChime('status_update');
+    if (processingMap[orderId]) return; // Guard: Cannot click twice
+
+    setProcessingMap(prev => ({ ...prev, [orderId]: true }));
+    try {
+      if (soundEnabled) {
+        if (nextStatus === 'ready') {
+          notificationService.playChime('order_ready');
+        } else {
+          notificationService.playChime('status_update');
+        }
       }
+      if (onUpdateStatus) {
+        await onUpdateStatus(orderId, nextStatus);
+      }
+      triggerToast(
+        nextStatus === 'preparing'
+          ? `🔥 Order #${orderId} moved to Cooking station!`
+          : nextStatus === 'ready'
+          ? `✅ Cooker confirmed Order #${orderId} is READY for delivery!`
+          : `Order #${orderId} updated to ${nextStatus}`
+      );
+    } catch (err) {
+      console.error("Status update error:", err);
+      triggerToast("⚠️ Failed to update order status");
+    } finally {
+      // Delay releasing processing lock slightly to prevent bounce
+      setTimeout(() => {
+        setProcessingMap(prev => {
+          const copy = { ...prev };
+          delete copy[orderId];
+          return copy;
+        });
+      }, 500);
     }
-    if (onUpdateStatus) {
-      await onUpdateStatus(orderId, nextStatus);
-    }
-    triggerToast(
-      nextStatus === 'preparing'
-        ? `🔥 Order #${orderId} moved to Cooking station!`
-        : nextStatus === 'ready'
-        ? `✅ Cooker confirmed Order #${orderId} is READY for delivery!`
-        : `Order #${orderId} updated to ${nextStatus}`
-    );
   };
 
   // Manual refresh animation
@@ -557,12 +577,26 @@ export default function KitchenBoard({
                               <span>View</span>
                             </button>
                             <button
+                              disabled={!!processingMap[order.id]}
                               onClick={() => handleAdvanceStatus(order.id, 'preparing')}
-                              className="col-span-2 min-h-[44px] rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-600/20 active:scale-95"
+                              className={`col-span-2 min-h-[44px] rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${
+                                processingMap[order.id]
+                                  ? 'bg-amber-900/50 text-amber-300/60 cursor-not-allowed pointer-events-none'
+                                  : 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white shadow-amber-600/20'
+                              }`}
                             >
-                              <Flame className="w-4 h-4" />
-                              <span>Start Cooking 👨‍🍳</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
+                              {processingMap[order.id] ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+                                  <span>Starting Cook...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Flame className="w-4 h-4" />
+                                  <span>Start Cooking 👨‍🍳</span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -677,11 +711,25 @@ export default function KitchenBoard({
                               <span>View</span>
                             </button>
                             <button
+                              disabled={!!processingMap[order.id]}
                               onClick={() => handleAdvanceStatus(order.id, 'ready')}
-                              className="col-span-2 min-h-[44px] rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+                              className={`col-span-2 min-h-[44px] rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${
+                                processingMap[order.id]
+                                  ? 'bg-emerald-900/50 text-emerald-300/60 cursor-not-allowed pointer-events-none'
+                                  : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white shadow-emerald-600/20'
+                              }`}
                             >
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>Mark Cooker Ready ✅</span>
+                              {processingMap[order.id] ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                                  <span>Confirming Ready...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>Mark Cooker Ready ✅</span>
+                                </>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -760,10 +808,22 @@ export default function KitchenBoard({
                             <span>Details</span>
                           </button>
                           <button
+                            disabled={!!processingMap[order.id]}
                             onClick={() => handleAdvanceStatus(order.id, 'delivery')}
-                            className="min-h-[44px] rounded-xl bg-blue-600/80 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+                            className={`min-h-[44px] rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${
+                              processingMap[order.id]
+                                ? 'bg-blue-900/50 text-blue-300/60 cursor-not-allowed pointer-events-none'
+                                : 'bg-blue-600/80 hover:bg-blue-600 text-white'
+                            }`}
                           >
-                            <span>Hand to Rider 🛵</span>
+                            {processingMap[order.id] ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Handing over...</span>
+                              </>
+                            ) : (
+                              <span>Hand to Rider 🛵</span>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -1008,37 +1068,77 @@ export default function KitchenBoard({
             <div className="flex items-center gap-3 pt-2">
               {selectedOrder.status === 'pending' && (
                 <button
-                  onClick={() => {
-                    handleAdvanceStatus(selectedOrder.id, 'preparing');
+                  disabled={!!processingMap[selectedOrder.id]}
+                  onClick={async () => {
+                    await handleAdvanceStatus(selectedOrder.id, 'preparing');
                     setSelectedOrder(null);
                   }}
-                  className="w-full btn-primary py-3 text-xs bg-amber-600 hover:bg-amber-700"
+                  className={`w-full btn-primary py-3 text-xs flex items-center justify-center gap-2 ${
+                    processingMap[selectedOrder.id]
+                      ? 'bg-amber-900/50 text-amber-300/60 cursor-not-allowed pointer-events-none'
+                      : 'bg-amber-600 hover:bg-amber-700'
+                  }`}
                 >
-                  <Flame className="w-4 h-4" />
-                  Start Cooking Now
+                  {processingMap[selectedOrder.id] ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+                      <span>Starting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Flame className="w-4 h-4" />
+                      <span>Start Cooking Now</span>
+                    </>
+                  )}
                 </button>
               )}
               {selectedOrder.status === 'preparing' && (
                 <button
-                  onClick={() => {
-                    handleAdvanceStatus(selectedOrder.id, 'ready');
+                  disabled={!!processingMap[selectedOrder.id]}
+                  onClick={async () => {
+                    await handleAdvanceStatus(selectedOrder.id, 'ready');
                     setSelectedOrder(null);
                   }}
-                  className="w-full btn-primary py-3 text-xs bg-emerald-600 hover:bg-emerald-700"
+                  className={`w-full btn-primary py-3 text-xs flex items-center justify-center gap-2 ${
+                    processingMap[selectedOrder.id]
+                      ? 'bg-emerald-900/50 text-emerald-300/60 cursor-not-allowed pointer-events-none'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Mark Ready for Rider
+                  {processingMap[selectedOrder.id] ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                      <span>Confirming Ready...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Mark Ready for Rider</span>
+                    </>
+                  )}
                 </button>
               )}
               {selectedOrder.status === 'ready' && (
                 <button
-                  onClick={() => {
-                    handleAdvanceStatus(selectedOrder.id, 'delivery');
+                  disabled={!!processingMap[selectedOrder.id]}
+                  onClick={async () => {
+                    await handleAdvanceStatus(selectedOrder.id, 'delivery');
                     setSelectedOrder(null);
                   }}
-                  className="w-full btn-primary py-3 text-xs bg-blue-600 hover:bg-blue-700"
+                  className={`w-full btn-primary py-3 text-xs flex items-center justify-center gap-2 ${
+                    processingMap[selectedOrder.id]
+                      ? 'bg-blue-900/50 text-blue-300/60 cursor-not-allowed pointer-events-none'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  Hand to Delivery Courier 🛵
+                  {processingMap[selectedOrder.id] ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Handing over...</span>
+                    </>
+                  ) : (
+                    <span>Hand to Delivery Courier 🛵</span>
+                  )}
                 </button>
               )}
             </div>
