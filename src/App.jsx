@@ -499,7 +499,12 @@ export default function App() {
                     user={user}
                   />
                 ) : (user?.role || '').toUpperCase() === 'KITCHEN' ? (
-                  <KitchenBoard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />
+                  <KitchenBoard
+                    orders={orders}
+                    onUpdateStatus={handleUpdateOrderStatus}
+                    user={user}
+                    meals={meals}
+                  />
                 ) : (user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER' ? (
                   <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />
                 ) : (
@@ -547,7 +552,14 @@ export default function App() {
             </>
           )}
 
-          {currentRole === 'kitchen' && <KitchenBoard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
+          {currentRole === 'kitchen' && (
+            <KitchenBoard
+              orders={orders}
+              onUpdateStatus={handleUpdateOrderStatus}
+              user={user}
+              meals={meals}
+            />
+          )}
           {currentRole === 'delivery' && <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
           {currentRole === 'admin' && (
             <AdminDashboard
