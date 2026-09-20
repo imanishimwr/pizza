@@ -189,6 +189,19 @@ export default function App() {
         } else {
           showToast(`Order #${orderId} is ready from the kitchen!`, 'Kitchen Update');
         }
+      } else if (status === 'delivery') {
+        notificationService.playChime('status_update');
+        if (isAdmin) {
+          const rev = matchingOrder?.totalRWF ? `${Number(matchingOrder.totalRWF).toLocaleString()} RWF` : '';
+          showToast(`Order #${orderId} ${rev ? `(${rev}) ` : ''}sold & handed to rider! Logged in Sales Report.`, '💰 Order Sold & Dispatched');
+          notificationService.sendDesktopNotification(`Sale Recorded: #${orderId}`, {
+            body: `Order #${orderId} handed to courier. Sale saved in Admin Financial Report.`
+          });
+        } else if (isMyOrder) {
+          showToast(`Your Order #${orderId} has been handed to the rider and is on its way!`, '🛵 Out for Delivery');
+        } else {
+          showToast(`Order #${orderId} handed to delivery rider.`, 'Delivery Update');
+        }
       } else {
         notificationService.playChime('status_update');
         showToast(`Order #${orderId} status updated to: ${status.toUpperCase()}`, 'Order Updated');

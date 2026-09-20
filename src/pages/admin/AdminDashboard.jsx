@@ -52,6 +52,13 @@ export default function AdminDashboard({
   const [orderPage, setOrderPage] = useState(1);
   const ordersPerPage = 6;
 
+  // Sales & Transactions Report Filter States
+  const [salesSearch, setSalesSearch] = useState('');
+  const [salesPaymentFilter, setSalesPaymentFilter] = useState('all');
+  const [salesStatusFilter, setSalesStatusFilter] = useState('all');
+  const [salesPage, setSalesPage] = useState(1);
+  const salesPerPage = 8;
+
   // Active display orders (strictly live backend orders from Neon DB)
   const displayOrders = useMemo(() => {
     return Array.isArray(orders) ? orders : [];
@@ -60,6 +67,72 @@ export default function AdminDashboard({
   const readyOrders = useMemo(() => {
     return displayOrders.filter(o => o.status === 'ready');
   }, [displayOrders]);
+
+  // Sold orders (handed over to rider / out for delivery or delivered)
+  const soldOrders = useMemo(() => {
+    return displayOrders.filter(o => o.status === 'delivery' || o.status === 'delivered');
+  }, [displayOrders]);
+
+  const soldRevenue = useMemo(() => {
+    return soldOrders.reduce((acc, o) => acc + (Number(o.totalRWF) || 0), 0);
+  }, [soldOrders]);
+
+  const soldItemsCount = useMemo(() => {
+    return soldOrders.reduce((acc, o) => acc + (o.items || []).reduce((sum, it) => sum + (Number(it.qty) || 1), 0), 0);
+  }, [soldOrders]);
+
+  const filteredSoldOrders = useMemo(() => {
+    return soldOrders.filter(o => {
+      const matchSearch =
+        !salesSearch.trim() ||
+        String(o.id || '').toLowerCase().includes(salesSearch.toLowerCase()) ||
+        String(o.customerName || '').toLowerCase().includes(salesSearch.toLowerCase()) ||
+        String(o.phone || '').toLowerCase().includes(salesSearch.toLowerCase()) ||
+        (o.items || []).some(it => String(it.name || '').toLowerCase().includes(salesSearch.toLowerCase()));
+
+      const matchPay =
+        salesPaymentFilter === 'all' ||
+        String(o.paymentMethod || '').toLowerCase().includes(salesPaymentFilter.toLowerCase());
+
+      const matchStatus =
+        salesStatusFilter === 'all' || o.status === salesStatusFilter;
+
+      return matchSearch && matchPay && matchStatus;
+    });
+  }, [soldOrders, salesSearch, salesPaymentFilter, salesStatusFilter]);
+
+  const totalSalesPages = Math.ceil(filteredSoldOrders.length / salesPerPage) || 1;
+  const paginatedSoldOrders = useMemo(() => {
+    const start = (salesPage - 1) * salesPerPage;
+    return filteredSoldOrders.slice(start, start + salesPerPage);
+  }, [filteredSoldOrders, salesPage, salesPerPage]);
+
+  const handleExportSalesCSV = () => {
+    if (soldOrders.length === 0) {
+      alert("No sold transactions recorded yet.");
+      return;
+    }
+    const headers = ["Order ID", "Date", "Customer Name", "Phone", "Delivery Address", "Items Sold", "Payment Method", "Total RWF", "Status"];
+    const rows = soldOrders.map(o => [
+      `"${o.id}"`,
+      `"${o.orderTime || o.created_at || 'N/A'}"`,
+      `"${o.customerName || 'Customer'}"`,
+      `"${o.phone || ''}"`,
+      `"${o.deliveryAddress || ''}"`,
+      `"${(o.items || []).map(i => `${i.qty}x ${i.name}`).join('; ')}"`,
+      `"${o.paymentMethod || 'MTN MoMo'}"`,
+      o.totalRWF || 0,
+      `"${o.status}"`
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `HotPot_Sales_Report_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Vouchers state (loaded from Neon DB)
   const [vouchers, setVouchers] = useState([]);
@@ -617,6 +690,7 @@ export default function AdminDashboard({
           { id: 'overview', label: 'Overview & Analytics', icon: TrendingUp },
           { id: 'catalog', label: 'Menu Catalog', icon: UtensilsCrossed, badge: meals.length },
           { id: 'orders', label: 'Live Orders & Dispatch', icon: ShoppingBag, badge: displayOrders.length },
+          { id: 'sales', label: 'Sales & Financial Reports', icon: DollarSign, badge: soldOrders.length },
           { id: 'vouchers', label: 'Vouchers & Promos', icon: Tag, badge: vouchers.length },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -1328,6 +1402,243 @@ export default function AdminDashboard({
               <button
                 onClick={() => setOrderPage(p => Math.min(totalOrderPages, p + 1))}
                 disabled={orderPage === totalOrderPages}
+                className="p-2 rounded-xl bg-surface-card border border-white/10 disabled:opacity-30 text-white"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: SALES & FINANCIAL TRANSACTIONS REPORT              */}
+      {/* ======================================================== */}
+      {activeTab === 'sales' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Sales Top Financial Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-surface-card to-surface-card border border-emerald-500/30 shadow-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">Total Sales Revenue</span>
+                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono">
+                {soldRevenue.toLocaleString()} <span className="text-xs text-text-muted font-sans font-normal">RWF</span>
+              </div>
+              <div className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Handed to courier / Sold items</span>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-950/40 via-surface-card to-surface-card border border-blue-500/30 shadow-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-blue-300 uppercase tracking-wider">Sold Transactions</span>
+                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono">
+                {soldOrders.length}
+              </div>
+              <div className="text-[11px] text-blue-300 font-semibold flex items-center gap-1">
+                <Bike className="w-3.5 h-3.5" />
+                <span>Dispatched or Delivered</span>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-950/40 via-surface-card to-surface-card border border-purple-500/30 shadow-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">Dishes Delivered</span>
+                <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
+                  <UtensilsCrossed className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono">
+                {soldItemsCount}
+              </div>
+              <div className="text-[11px] text-purple-300 font-semibold flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5" />
+                <span>Cooked & Fulfilled</span>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-950/40 via-surface-card to-surface-card border border-amber-500/30 shadow-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Avg. Sale Ticket</span>
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-white font-mono">
+                {(soldOrders.length > 0 ? Math.round(soldRevenue / soldOrders.length) : 0).toLocaleString()} <span className="text-xs text-text-muted font-sans font-normal">RWF</span>
+              </div>
+              <div className="text-[11px] text-amber-300 font-semibold flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Per completed sale</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Sales Toolbar & Export */}
+          <div className="p-5 rounded-2xl bg-surface-card border border-white/10 shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3 flex-1">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={salesSearch}
+                  onChange={(e) => { setSalesSearch(e.target.value); setSalesPage(1); }}
+                  placeholder="Search sales by order #, customer, dish..."
+                  className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-text-subdued focus:outline-none focus:border-emerald-500"
+                />
+                {salesSearch && (
+                  <button onClick={() => setSalesSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-text-muted hover:text-white">✕</button>
+                )}
+              </div>
+
+              {/* Payment Filter */}
+              <select
+                value={salesPaymentFilter}
+                onChange={(e) => { setSalesPaymentFilter(e.target.value); setSalesPage(1); }}
+                className="bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white font-medium focus:outline-none focus:border-emerald-500"
+              >
+                <option value="all">All Payment Methods</option>
+                <option value="momo">MTN Mobile Money</option>
+                <option value="airtel">Airtel Money</option>
+                <option value="card">Credit / Debit Card</option>
+                <option value="cash">Cash on Delivery</option>
+              </select>
+
+              {/* Status Filter */}
+              <select
+                value={salesStatusFilter}
+                onChange={(e) => { setSalesStatusFilter(e.target.value); setSalesPage(1); }}
+                className="bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white font-medium focus:outline-none focus:border-emerald-500"
+              >
+                <option value="all">All Sold Statuses</option>
+                <option value="delivery">In Delivery (Rider Active)</option>
+                <option value="delivered">Delivered & Closed</option>
+              </select>
+            </div>
+
+            {/* Export CSV Button */}
+            <button
+              onClick={handleExportSalesCSV}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export Sales CSV Ledger</span>
+            </button>
+          </div>
+
+          {/* Sales Transaction Ledger Table */}
+          <div className="space-y-3">
+            {paginatedSoldOrders.length === 0 ? (
+              <div className="p-12 text-center bg-surface-card rounded-2xl border border-dashed border-white/10 text-xs text-text-subdued space-y-2">
+                <ShoppingBag className="w-10 h-10 mx-auto text-text-subdued opacity-40" />
+                <div className="font-bold text-white text-sm">No Sold Transactions Recorded</div>
+                <p className="text-text-muted">Orders handed to couriers by kitchen cookers will appear here in the live financial ledger.</p>
+              </div>
+            ) : (
+              paginatedSoldOrders.map(order => (
+                <div
+                  key={order.id}
+                  className="p-5 rounded-2xl bg-surface-card border border-white/10 hover:border-emerald-500/40 shadow-xl transition-all space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-black text-emerald-400 text-base">#{order.id}</span>
+                      <span className="text-sm font-bold text-white">{order.customerName || 'Customer'}</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        SOLD & PAID
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-text-muted font-mono">{order.orderTime || order.created_at || 'Today'}</span>
+                      <span className="text-base font-black text-white font-mono">
+                        {Number(order.totalRWF || 0).toLocaleString()} RWF
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    {/* Delivery & Customer Info */}
+                    <div className="space-y-1 bg-black/30 p-3 rounded-xl border border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-text-muted block">Customer & Delivery:</span>
+                      <div className="text-text-main font-semibold">{order.customerName || 'Customer'}</div>
+                      <div className="text-text-muted flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-amber-400" />
+                        <span>{order.phone || '+250 788 000 000'}</span>
+                      </div>
+                      <div className="text-text-muted truncate flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span>{order.deliveryAddress || 'Kigali'}</span>
+                      </div>
+                    </div>
+
+                    {/* Items Sold Breakdown */}
+                    <div className="space-y-1 bg-black/30 p-3 rounded-xl border border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-text-muted block">Items Purchased:</span>
+                      <div className="space-y-1">
+                        {(order.items || []).map((item, idx) => (
+                          <div key={idx} className="flex justify-between text-text-main text-[11px]">
+                            <span>{item.qty}x {item.name}</span>
+                            <span className="font-mono text-amber-400 font-bold">{Number(item.price || 0).toLocaleString()} RWF</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Financial / Courier Actions */}
+                    <div className="space-y-2 bg-black/30 p-3 rounded-xl border border-white/5 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-text-muted block">Payment & Fulfillment:</span>
+                        <div className="text-emerald-400 font-bold flex items-center gap-1 mt-1">
+                          <span>Payment Method:</span>
+                          <span className="text-white font-mono font-bold uppercase">{order.paymentMethod || 'MTN MoMo'}</span>
+                        </div>
+                        <div className="text-blue-400 font-semibold text-[11px] mt-0.5">
+                          Status: <span className="uppercase font-bold">{order.status === 'delivery' ? 'Out on Road (Rider Active)' : 'Delivered to Door'}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setTrackingOrder(order)}
+                        className="w-full py-2 rounded-lg bg-surface-card hover:bg-white/10 border border-white/10 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                      >
+                        <Navigation className="w-3.5 h-3.5 text-accent-gold" />
+                        <span>Inspect GPS & Live Courier Route</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Sales Pagination */}
+          {totalSalesPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => setSalesPage(p => Math.max(1, p - 1))}
+                disabled={salesPage === 1}
+                className="p-2 rounded-xl bg-surface-card border border-white/10 disabled:opacity-30 text-white"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-text-muted font-bold px-3">
+                Page {salesPage} of {totalSalesPages}
+              </span>
+              <button
+                onClick={() => setSalesPage(p => Math.min(totalSalesPages, p + 1))}
+                disabled={salesPage === totalSalesPages}
                 className="p-2 rounded-xl bg-surface-card border border-white/10 disabled:opacity-30 text-white"
               >
                 <ChevronRight className="w-4 h-4" />

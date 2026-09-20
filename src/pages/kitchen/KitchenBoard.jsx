@@ -131,6 +131,8 @@ export default function KitchenBoard({
           ? `🔥 Order #${orderId} moved to Cooking station!`
           : nextStatus === 'ready'
           ? `✅ Cooker confirmed Order #${orderId} is READY for delivery!`
+          : nextStatus === 'delivery'
+          ? `🛵 Order #${orderId} handed to rider & completed! Logged in Admin Sales Report.`
           : `Order #${orderId} updated to ${nextStatus}`
       );
     } catch (err) {
