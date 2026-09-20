@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Lock, User, Mail, LogIn, ArrowRight, Flame, Phone, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 
@@ -17,6 +17,41 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (isOpen && googleClientId && typeof window !== 'undefined' && window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            try {
+              const res = await fetch('http://localhost:5000/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: response.credential })
+              });
+              const data = await res.json();
+              if (data.user) {
+                if (data.token) localStorage.setItem('token', data.token);
+                onLoginSuccess(data.user);
+                onClose();
+              } else {
+                setErrorMsg(data.error || 'Google authentication failed.');
+              }
+            } catch (e) {
+              setErrorMsg('Google Sign-In server connection error.');
+            }
+          }
+        });
+
+        // Prompt One-Tap if allowed
+        window.google.accounts.id.prompt();
+      } catch (err) {
+        console.warn('Google Identity error:', err);
+      }
+    }
+  }, [isOpen]);
 
   const handleResetSubmit = (e) => {
     e.preventDefault();
@@ -50,6 +85,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
               if (data.token) localStorage.setItem('token', data.token);
               onLoginSuccess(data.user);
               onClose();
+            } else {
+              setErrorMsg(data.error || 'Google authentication failed.');
             }
           } catch (e) {
             setErrorMsg('Google Sign-In service unavailable. Please use email/password.');
@@ -58,7 +95,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       });
       window.google.accounts.id.prompt();
     } else {
-      setErrorMsg('Google Client ID not configured. Please use email and password to sign in or register.');
+      setErrorMsg('Google Client ID not loaded. Please ensure VITE_GOOGLE_CLIENT_ID is active.');
     }
   };
 
