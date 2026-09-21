@@ -36,7 +36,14 @@ const apiLimiter = rateLimit({
   max: 150,
   message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
 });
-app.use('/api/', apiLimiter);
+// Read polling (GET /api/meals, /api/orders, /api/kitchen/*) runs every ~3.5s for live
+// dashboard sync. If it counts against the strict per-IP quota, the app locks itself out
+// with 429 and order status updates ("Hand to Rider") stop working. Keep the limiter on
+// mutations & auth; let read polling pass through.
+app.use('/api/', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return apiLimiter(req, res, next);
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hotpot_kigali_jwt_secret_key_2026';
 
