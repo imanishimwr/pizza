@@ -10,8 +10,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 const neonClient = require('./neonClient');
-const orderFlow = require('./orderFlow');
-const { authMiddleware, optionalAuth, requireRole } = require('./middleware/auth');
+const authMiddleware = require('./middleware/auth');
 require('dotenv').config();
 
 const app = express();
@@ -50,24 +49,31 @@ app.post('/api/auth/google', (req, res) => googleLoginHandler(req, res, neonClie
 
 app.post('/api/auth/register', async (req, res) => {
   try {
-    let { name, email, phone, password } = req.body;
+    let { name, email, phone, password, role } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
     }
-    email = email.trim();
+    email = email.trim().toLowerCase();
+    name = name.trim();
+    phone = phone ? phone.trim() : null;
 
-    // Role is never client-controlled: public signups are always CUSTOMER.
-    // Staff roles (KITCHEN / DELIVERY) and ADMIN are provisioned via seeders.
-    const safeRole = 'CUSTOMER';
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
 
     // 1. Check if user already exists in Neon PostgreSQL
     const existingUser = await neonClient.findUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ error: 'An account with this email address already exists in Neon DB.' });
+      return res.status(400).json({ error: 'An account with this email address already exists. Please sign in.' });
     }
 
     // 2. Register user in Neon PostgreSQL
-    const newUser = await neonClient.registerUserInNeon({ name: name.trim(), email, phone, password, role: safeRole });
+    const assignedRole = role ? role.toUpperCase() : 'CUSTOMER';
+    const newUser = await neonClient.registerUserInNeon({ name, email, phone, password, role: assignedRole });
+
+    if (!newUser) {
+      return res.status(500).json({ error: 'Could not create account in database.' });
+    }
 
     // 3. Generate JWT Token
     const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -81,7 +87,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ User Registration Error:', err.message);
-    res.status(500).json({ error: 'Failed to create user account in Neon database.' });
+    res.status(500).json({ error: err.message || 'Failed to create user account in database.' });
   }
 });
 
@@ -91,7 +97,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
-    email = email.trim();
+    email = email.trim().toLowerCase();
 
     // 1. Authenticate against Neon PostgreSQL
     const user = await neonClient.verifyLoginInNeon(email, password);
@@ -116,28 +122,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// 2. Categories & Promos Routes
-// ----------------------------------------------------
-app.get('/api/categories', async (req, res) => {
-  try {
-    const categoriesList = await neonClient.getCategories();
-    res.json(categoriesList);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch categories' });
-  }
-});
-
-app.get('/api/promos', async (req, res) => {
-  try {
-    const promosList = await neonClient.getPromos();
-    res.json(promosList);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch promos' });
-  }
-});
-
-// ----------------------------------------------------
-// 3. Food Catalog Routes (/api/meals)
+// 2. Food Catalog Routes (/api/meals)
 // ----------------------------------------------------
 app.get('/api/meals', async (req, res) => {
   try {
@@ -180,27 +165,6 @@ app.delete('/api/meals/:id', authMiddleware(['ADMIN']), async (req, res) => {
 });
 
 // ----------------------------------------------------
-// 2b. Categories & Promo Banners (/api/categories, /api/promos)
-// ----------------------------------------------------
-app.get('/api/categories', async (req, res) => {
-  try {
-    const categories = await neonClient.getCategories();
-    res.json(categories);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch categories from DB' });
-  }
-});
-
-app.get('/api/promos', async (req, res) => {
-  try {
-    const promos = await neonClient.getPromos();
-    res.json(promos);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch promos from DB' });
-  }
-});
-
-// ----------------------------------------------------
 // 3. Order Management & Cancellation Routes (/api/orders)
 // ----------------------------------------------------
 app.get('/api/orders', async (req, res) => {
@@ -209,17 +173,6 @@ app.get('/api/orders', async (req, res) => {
     res.json(ordersList);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch orders from DB' });
-  }
-});
-
-// Single order with its line items (used by tracking + kitchen detail views)
-app.get('/api/orders/:id', async (req, res) => {
-  try {
-    const order = await neonClient.getOrderById(req.params.id);
-    if (!order) return res.status(404).json({ error: 'Order not found.' });
-    res.json(order);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch order from DB' });
   }
 });
 
@@ -232,118 +185,28 @@ app.post('/api/orders', async (req, res) => {
   try {
     const newOrder = await neonClient.createOrder(req.body);
     io.emit('new_order_placed', newOrder);
-    io.emit('kitchen_orders_updated', newOrder);
     res.status(201).json(newOrder);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create order in DB' });
   }
 });
 
-// Shared status update route (kitchen / rider / admin) — now validates the
-// state machine, stamps prep/ready/delivered timestamps, and returns the full
-// order (with items) so the UI can render immediately. Tokenless demo PATCHes
-// remain allowed for backward compatibility; authenticated roles are enforced.
-app.patch('/api/orders/:id/status',
-  optionalAuth,
-  requireRole('KITCHEN', 'DELIVERY', 'ADMIN'),
-  async (req, res) => {
+app.patch('/api/orders/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status, riderName } = req.body;
-  const actorRole = req.user ? req.user.role : undefined;
 
   try {
-    const updatedOrder = await neonClient.updateOrderStatus(id, status, riderName, actorRole);
+    const updatedOrder = await neonClient.updateOrderStatus(id, status, riderName);
     if (!updatedOrder) return res.status(404).json({ error: 'Order not found.' });
 
     io.emit('order_status_updated', updatedOrder);
-    io.emit('kitchen_orders_updated', updatedOrder);
     io.to(`order_${id}`).emit('live_order_status', updatedOrder);
 
     res.json(updatedOrder);
   } catch (err) {
-    const code = err.statusCode || 500;
-    res.status(code).json({ error: err.message || 'Failed to update order status in DB' });
+    res.status(500).json({ error: 'Failed to update order status in DB' });
   }
 });
-
-// ----------------------------------------------------
-// 3b. Kitchen Staff Board API (/api/kitchen)
-// ----------------------------------------------------
-
-// Kitchen queue feed: pending / preparing / ready orders with full item detail.
-app.get('/api/kitchen/queue',
-  optionalAuth, requireRole('KITCHEN', 'ADMIN'),
-  async (req, res) => {
-    try {
-      const queue = await neonClient.getKitchenOrders();
-      const stats = await neonClient.getKitchenStats();
-      res.json({ orders: queue, stats });
-    } catch (err) {
-      res.status(500).json({ error: 'Failed to fetch kitchen queue from DB' });
-    }
-  }
-);
-
-// Kitchen board metrics: per-column counts + average preparation time.
-app.get('/api/kitchen/stats',
-  optionalAuth, requireRole('KITCHEN', 'ADMIN'),
-  async (req, res) => {
-    try {
-      const stats = await neonClient.getKitchenStats();
-      res.json(stats);
-    } catch (err) {
-      res.status(500).json({ error: 'Failed to fetch kitchen stats from DB' });
-    }
-  }
-);
-
-// Kitchen-only status transitions (Start Cooking / Mark Ready for Pickup).
-app.patch('/api/kitchen/orders/:id/status',
-  optionalAuth, requireRole('KITCHEN', 'ADMIN'),
-  async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    const actorRole = req.user ? req.user.role : undefined;
-
-    if (!['preparing', 'ready'].includes(String(status || '').toLowerCase())) {
-      return res.status(400).json({ error: 'Kitchen can only advance orders to "preparing" or "ready".' });
-    }
-
-    try {
-      const updatedOrder = await neonClient.updateOrderStatus(id, status, null, actorRole);
-      if (!updatedOrder) return res.status(404).json({ error: 'Order not found.' });
-
-      io.emit('order_status_updated', updatedOrder);
-      io.emit('kitchen_orders_updated', updatedOrder);
-      io.to(`order_${id}`).emit('live_order_status', updatedOrder);
-
-      res.json({ order: updatedOrder, stats: await neonClient.getKitchenStats() });
-    } catch (err) {
-      const code = err.statusCode || 500;
-      res.status(code).json({ error: err.message || 'Failed to update order status in DB' });
-    }
-  }
-);
-
-// Kitchen walk-in / counter order creation.
-app.post('/api/kitchen/orders',
-  optionalAuth, requireRole('KITCHEN', 'ADMIN'),
-  async (req, res) => {
-    const { customerName, phone, items } = req.body;
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'At least one item is required.' });
-    }
-    try {
-      const newOrder = await neonClient.createWalkInOrder({ customerName, phone, items });
-      io.emit('new_order_placed', newOrder);
-      io.emit('kitchen_orders_updated', newOrder);
-      res.status(201).json(newOrder);
-    } catch (err) {
-      console.error('WALK-IN ORDER ERROR:', err);
-      res.status(500).json({ error: 'Failed to create walk-in order.', detail: err.message });
-    }
-  }
-);
 
 // Cancel order within 120s grace period
 app.delete('/api/orders/:id', (req, res) => {
@@ -468,14 +331,7 @@ app.get('/api/health', (req, res) => {
       '/api/auth/login',
       '/api/auth/register',
       '/api/meals',
-      '/api/categories',
-      '/api/promos',
       '/api/orders',
-      '/api/orders/:id',
-      '/api/kitchen/queue',
-      '/api/kitchen/stats',
-      '/api/kitchen/orders',
-      '/api/kitchen/orders/:id/status',
       '/api/payments/momo-checkout',
       '/api/vouchers/validate',
       '/api/riders/live-gps',

@@ -6,7 +6,7 @@ export default function MobileBottomNav({ activeTab, setActiveTab, cartCount, on
     <div className="mobile-bottom-nav" style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, height: '64px',
       backgroundColor: 'rgba(18, 18, 20, 0.95)', backdropFilter: 'blur(12px)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.1)', zIndex: 990,
+      borderTop: '1px solid rgba(255, 255, 255, 0.1)', zIndex: 40,
       display: 'flex', alignItems: 'center', justifyContent: 'space-around',
       padding: '0 8px'
     }}>

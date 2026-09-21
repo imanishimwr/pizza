@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Star, Clock, Sparkles, Filter, ChevronRight, Check, Heart, Search } from 'lucide-react';
-import { apiService } from '../../services/apiService';
-
-const FALLBACK_BANNER = {
-  id: 0,
-  title: 'Royal HotPot & Gourmet Pizzas',
-  subtitle: 'Fresh hotpot combos & wood-fired pizzas delivered across Kigali, 24/7.',
-  code: 'HOTPOT',
-  tag: 'WELCOME',
-  bgGradient: 'linear-gradient(135deg, #AE3200 0%, #D97706 100%)'
-};
+import { Flame, Star, Clock, Sparkles, Filter, ChevronRight, Check, Heart, Search, Plus } from 'lucide-react';
+import { CATEGORIES, PROMO_BANNERS } from '../../data/mockData';
 
 export default function Home({
   meals = [],
@@ -26,42 +17,18 @@ export default function Home({
 }) {
   const [activeBanner, setActiveBanner] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
-  const [promos, setPromos] = useState([]);
-  const [categoryLoading, setCategoryLoading] = useState(true);
-  const [promosLoading, setPromosLoading] = useState(true);
-
-  const banners = promos.length ? promos : [FALLBACK_BANNER];
-
-  useEffect(() => {
-    apiService
-      .getCategories()
-      .then((data) => {
-        const list = Array.isArray(data) ? data : [];
-        setCategories(list.some((c) => c.id === 'all') ? list : [{ id: 'all', name: 'All Items', icon: 'UtensilsCrossed' }, ...list]);
-      })
-      .finally(() => setCategoryLoading(false));
-
-    apiService
-      .getPromos()
-      .then((data) => setPromos(Array.isArray(data) ? data : []))
-      .finally(() => setPromosLoading(false));
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 400);
-    let bannerInterval;
-    if (promos.length > 1) {
-      bannerInterval = setInterval(() => {
-        setActiveBanner((prev) => (prev + 1) % promos.length);
-      }, 5000);
-    }
+    const bannerInterval = setInterval(() => {
+      setActiveBanner((prev) => (prev + 1) % PROMO_BANNERS.length);
+    }, 5000);
 
     return () => {
       clearTimeout(timer);
-      if (bannerInterval) clearInterval(bannerInterval);
+      clearInterval(bannerInterval);
     };
-  }, [selectedCategory, searchQuery, promos.length]);
+  }, [selectedCategory, searchQuery]);
 
   const [searchKey, setSearchKey] = useState('');
   const [spiceFilter, setSpiceFilter] = useState('all');
@@ -75,7 +42,7 @@ export default function Home({
     const matchesSearch =
       !queryLower ||
       meal.name.toLowerCase().includes(queryLower) ||
-      meal.description.toLowerCase().includes(queryLower) ||
+      (meal.description || '').toLowerCase().includes(queryLower) ||
       meal.category.toLowerCase().includes(queryLower) ||
       (meal.broths && meal.broths.some(b => b.toLowerCase().includes(queryLower))) ||
       (meal.spiceLevels && meal.spiceLevels.some(s => s.toLowerCase().includes(queryLower)));
@@ -101,7 +68,7 @@ export default function Home({
     <div className="space-y-8 pb-16">
       <section
         className="relative overflow-hidden rounded-3xl p-6 sm:p-10 shadow-2xl transition-all border border-amber-500/30"
-        style={{ background: banners[activeBanner]?.bgGradient || FALLBACK_BANNER.bgGradient }}
+        style={{ background: PROMO_BANNERS[activeBanner]?.bgGradient || 'linear-gradient(135deg, #AE3200 0%, #D97706 100%)' }}
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
           <div className="lg:col-span-7 space-y-4">
@@ -117,24 +84,17 @@ export default function Home({
                 Welcome to the home of pizza 🍕
               </h2>
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-lg leading-tight">
-                {banners[activeBanner]?.title}
+                {PROMO_BANNERS[activeBanner]?.title}
               </h1>
             </div>
 
-            {promosLoading ? (
-              <div className="space-y-2">
-                <div className="h-4 w-3/4 skeleton-box rounded"></div>
-                <div className="h-4 w-1/2 skeleton-box rounded"></div>
-              </div>
-            ) : (
-              <p className="text-sm sm:text-base text-white/90 font-medium leading-relaxed max-w-lg">
-                {banners[activeBanner]?.subtitle} — Order your favorite hotpot combos & gourmet pizzas anytime, 24 hours a day, 7 days a week!
-              </p>
-            )}
+            <p className="text-sm sm:text-base text-white/90 font-medium leading-relaxed max-w-lg">
+              {PROMO_BANNERS[activeBanner]?.subtitle} — Order your favorite hotpot combos & gourmet pizzas anytime, 24 hours a day, 7 days a week!
+            </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <div className="bg-black/50 px-4 py-2.5 rounded-xl border border-dashed border-white/40 text-xs font-mono font-bold text-white tracking-widest">
-                CODE: {banners[activeBanner]?.code}
+                CODE: {PROMO_BANNERS[activeBanner]?.code}
               </div>
               <button
                 onClick={() => setSelectedCategory('pizzas')}
@@ -196,7 +156,7 @@ export default function Home({
         </div>
 
         <div className="absolute bottom-4 left-6 sm:left-10 z-10 flex gap-2">
-          {banners.map((_, index) => (
+          {PROMO_BANNERS.map((_, index) => (
             <button
               key={index}
               onClick={() => setActiveBanner(index)}
@@ -238,7 +198,7 @@ export default function Home({
                   <div className="font-bold text-xs text-text-main line-clamp-1 group-hover:text-primary transition-colors">
                     {item.name}
                   </div>
-                  <div className="text-xs font-mono font-bold text-primary">{(item.price ?? 0).toLocaleString()} RWF</div>
+                  <div className="text-xs font-mono font-bold text-primary">{item.price.toLocaleString()} RWF</div>
                 </div>
               </div>
             ))}
@@ -310,29 +270,23 @@ export default function Home({
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {categoryLoading ? (
-            [1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="h-9 w-28 rounded-xl skeleton-box shrink-0"></div>
-            ))
-          ) : (
-            categories.map((category) => {
-              const isSelected = selectedCategory === category.id;
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border ${
-                    isSelected
-                      ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-105'
-                      : 'bg-surface-card text-text-muted border-white/10 hover:border-white/20 hover:text-white'
-                  }`}
-                >
-                  <span>{category.name}</span>
-                  {isSelected && <Check className="w-3.5 h-3.5" />}
-                </button>
-              );
-            })
-          )}
+          {CATEGORIES.map((category) => {
+            const isSelected = selectedCategory === category.id;
+            return (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border ${
+                  isSelected
+                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-105'
+                    : 'bg-surface-card text-text-muted border-white/10 hover:border-white/20 hover:text-white'
+                }`}
+              >
+                <span>{category.name}</span>
+                {isSelected && <Check className="w-3.5 h-3.5" />}
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -340,15 +294,23 @@ export default function Home({
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-              <div key={item} className="card-item overflow-hidden">
+              <div key={item} className="card-item overflow-hidden flex flex-col justify-between">
                 <div className="aspect-[4/3] skeleton-box"></div>
-                <div className="p-4 space-y-3">
-                  <div className="h-4 w-3/4 skeleton-box rounded"></div>
-                  <div className="h-3 w-full skeleton-box rounded mt-2"></div>
-                  <div className="h-3 w-5/6 skeleton-box rounded"></div>
-                  <div className="pt-3 border-t border-white/5 flex justify-between items-center mt-2">
+                <div className="p-3.5 sm:p-4 space-y-2 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="h-5 w-1/2 skeleton-box rounded"></div>
+                      <div className="h-5 w-1/4 skeleton-box rounded"></div>
+                    </div>
+                    <div className="h-3 w-full skeleton-box rounded mt-2"></div>
+                    <div className="h-3 w-4/5 skeleton-box rounded mt-1"></div>
+                  </div>
+                  <div className="pt-2.5 border-t border-white/5 flex justify-between items-center gap-2 mt-3">
                     <div className="h-4 w-1/3 skeleton-box rounded"></div>
-                    <div className="h-8 w-1/3 skeleton-box rounded-xl"></div>
+                    <div className="flex gap-1.5">
+                      <div className="h-7 w-12 skeleton-box rounded-lg"></div>
+                      <div className="h-7 w-12 skeleton-box rounded-lg"></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -376,7 +338,7 @@ export default function Home({
                   }`}
                   onClick={() => !meal.outOfStock && onSelectMeal(meal)}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-black/40">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-black/40 shrink-0">
                     <img
                       src={meal.image}
                       alt={meal.name}
@@ -431,42 +393,49 @@ export default function Home({
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-bold text-text-main text-base leading-snug">{meal.name}</h3>
-                        <span className="font-mono font-extrabold text-primary text-sm">{(meal.price ?? 0).toLocaleString()} RWF</span>
+                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between gap-2.5">
+                        <h3 className="font-bold text-text-main text-sm sm:text-base leading-snug line-clamp-2 min-h-[2.5rem] flex items-center">
+                          {meal.name}
+                        </h3>
+                        <span className="font-mono font-extrabold text-primary text-xs sm:text-sm whitespace-nowrap shrink-0 pt-0.5">
+                          {meal.price.toLocaleString()} RWF
+                        </span>
                       </div>
 
-                      <p className="text-xs text-text-muted leading-relaxed line-clamp-3">{meal.description}</p>
+                      <p className="text-xs text-text-muted leading-relaxed line-clamp-2 h-[2.5rem] overflow-hidden mt-1.5">
+                        {meal.description}
+                      </p>
                     </div>
 
-                    <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-[11px] text-text-subdued">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        <span className="font-bold text-white">{meal.rating}</span>
-                        <span>•</span>
-                        <span>{meal.reviews || 0} reviews</span>
+                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between gap-2 mt-3">
+                      <div className="flex items-center gap-1 text-xs text-text-subdued whitespace-nowrap shrink-0">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                        <span className="font-bold text-white text-xs">{meal.rating}</span>
+                        <span className="text-[11px] text-text-subdued font-mono">({meal.reviews || 0})</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {onAddToCart && (
                           <button
                             type="button"
-                            className="btn-primary text-[10px] px-2.5 py-1.5 bg-orange-600 hover:bg-orange-500 shadow-md flex items-center gap-1"
+                            className="btn-primary-sm"
+                            title="Add 1 to cart"
                             onClick={(event) => {
                               event.stopPropagation();
-                              onAddToCart(meal);
+                              onAddToCart({ meal, quantity: 1, selectedSpice: null, selectedBroth: null });
                               if (onOpenCart) onOpenCart();
                             }}
                           >
-                            + Quick Add
+                            <Plus className="w-3 h-3 shrink-0" />
+                            <span>Add</span>
                           </button>
                         )}
 
                         <button
                           type="button"
-                          className="btn-secondary text-[10px] px-2.5 py-1.5"
+                          className="btn-secondary-sm"
                           onClick={(event) => {
                             event.stopPropagation();
                             onSelectMeal(meal);

@@ -24,16 +24,33 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
     return Math.max(0, 120 - elapsedSec);
   });
 
-  // Exact Hot Pot Kigali Coordinates (Bing Maps Pin: -1.970212, 30.125015)
-  const restaurantCoords = [-1.9702, 30.1250]; // Hot Pot Kigali Store Location
-  const deliveryCoords = [-1.9360, 30.0820];   // Client Delivery Spot in Kigali
+  // Exact Hot Pot Kigali Coordinates from Google Maps (-1.97022762, 30.12498964)
+  const restaurantCoords = useMemo(() => [-1.97022762, 30.12498964], []);
 
-  // Reactive step calculation based on order status
+  // Dynamic Client Delivery Coordinates based on customer address
+  const deliveryCoords = useMemo(() => {
+    if (order?.lat && order?.lng) return [Number(order.lat), Number(order.lng)];
+    const addr = String(order?.deliveryAddress || order?.address || '').toLowerCase();
+    if (addr.includes('nyarutarama')) return [-1.9360, 30.0980];
+    if (addr.includes('kiyovu')) return [-1.9536, 30.0605];
+    if (addr.includes('kimihurura')) return [-1.9560, 30.0880];
+    if (addr.includes('kacyiru')) return [-1.9420, 30.0750];
+    if (addr.includes('remera')) return [-1.9580, 30.1150];
+    if (addr.includes('gisozi')) return [-1.9280, 30.0620];
+    if (addr.includes('kicukiro')) return [-1.9800, 30.0950];
+    if (addr.includes('gikondo')) return [-1.9750, 30.0680];
+    if (addr.includes('nyamirambo')) return [-1.9850, 30.0450];
+    if (addr.includes('kanombe')) return [-1.9750, 30.1450];
+    return [-1.9360, 30.0820]; // Default Kigali Delivery Destination
+  }, [order]);
+
+  // Reactive step calculation based on order status (5 full steps)
   const currentStep = 
     order?.status === 'cancelled' ? 0 :
     order?.status === 'pending' ? 1 :
     order?.status === 'preparing' ? 2 :
-    order?.status === 'delivery' ? 3 : 4;
+    order?.status === 'ready' ? 3 :
+    order?.status === 'delivery' || order?.status === 'delivering' ? 4 : 5;
 
   const canCancelOrModify = currentStep === 1 && secondsRemaining > 0;
 
@@ -48,7 +65,10 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
   // Leaflet Map & Live Rider GPS Tracking Simulation
   useEffect(() => {
     if (!mapRef.current) return;
-    if (mapInstanceRef.current) return; // already initialized
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
 
     const map = L.map(mapRef.current).setView(restaurantCoords, 14);
     mapInstanceRef.current = map;
@@ -57,32 +77,35 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Restaurant Marker
+    // Restaurant Marker (Hot Pot Kigali HQ)
     const restIcon = L.divIcon({
       className: 'custom-leaflet-icon',
-      html: '<div style="background:#AE3200;color:white;padding:5px 10px;border-radius:20px;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5)">🍲 HotPot HQ</div>'
+      html: '<div style="background:#AE3200;color:white;padding:5px 12px;border-radius:20px;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.6);white-space:nowrap">🍲 Hot Pot Kigali HQ</div>'
     });
-    L.marker(restaurantCoords, { icon: restIcon }).addTo(map).bindPopup('<b>HotPot Delights Kitchen</b>').openPopup();
+    L.marker(restaurantCoords, { icon: restIcon }).addTo(map).bindPopup('<b>Hot Pot Kigali Restaurant HQ</b><br/>Origin Kitchen: -1.970228, 30.124990').openPopup();
 
-    // Destination Marker
+    // Client Destination Marker
     const destIcon = L.divIcon({
       className: 'custom-leaflet-icon',
-      html: '<div style="background:#128731;color:white;padding:5px 10px;border-radius:20px;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5)">🏠 Delivery Spot</div>'
+      html: '<div style="background:#128731;color:white;padding:5px 12px;border-radius:20px;font-weight:bold;font-size:12px;border:2px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.6);white-space:nowrap">🏠 ' + (order?.customerName || 'Your Location') + '</div>'
     });
-    L.marker(deliveryCoords, { icon: destIcon }).addTo(map).bindPopup('<b>Your Delivery Address</b>');
+    L.marker(deliveryCoords, { icon: destIcon }).addTo(map).bindPopup('<b>' + (order?.deliveryAddress || 'Client Delivery Address') + '</b>');
 
-    // Route Polyline
+    // Route Polyline connecting Hot Pot Kigali to the Client
     L.polyline([restaurantCoords, deliveryCoords], {
       color: '#AE3200',
       weight: 4,
       dashArray: '8, 8',
-      opacity: 0.8
+      opacity: 0.85
     }).addTo(map);
+
+    // Automatically fit map view to show entire route
+    map.fitBounds([restaurantCoords, deliveryCoords], { padding: [40, 40] });
 
     // Rider Marker
     const riderIcon = L.divIcon({
       className: 'custom-leaflet-icon',
-      html: '<div class="pin-rider" style="background:#2563eb;color:white;padding:4px 8px;border-radius:15px;font-size:11px;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,0.6);border:2px solid #60a5fa">🛵 Rider Eric (GPS Live)</div>'
+      html: '<div class="pin-rider" style="background:#2563eb;color:white;padding:4px 10px;border-radius:15px;font-size:11px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.6);border:2px solid #60a5fa;white-space:nowrap">🛵 Moto Express Courier (GPS Live)</div>'
     });
 
     const startLat = restaurantCoords[0];
@@ -92,14 +115,16 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
 
     riderMarkerRef.current = L.marker([startLat, startLng], { icon: riderIcon }).addTo(map);
 
-    // Dynamic Live GPS Animation loop
-    let progress = 0.4;
+    // Dynamic Live GPS Animation loop from Hot Pot Kigali to Client
+    let progress = currentStep >= 4 ? 0.45 : 0.05;
     let direction = 1;
 
     const animateRider = () => {
-      progress += 0.0008 * direction;
-      if (progress >= 0.92) direction = -1;
-      if (progress <= 0.1) direction = 1;
+      if (currentStep >= 4) {
+        progress += 0.0008 * direction;
+        if (progress >= 0.95) direction = -1;
+        if (progress <= 0.05) direction = 1;
+      }
 
       const currentLat = startLat + (endLat - startLat) * progress;
       const currentLng = startLng + (endLng - startLng) * progress;
@@ -108,9 +133,9 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
         riderMarkerRef.current.setLatLng([currentLat, currentLng]);
       }
 
-      const distLeft = ((1 - progress) * (order?.distanceKm || 3.5)).toFixed(1);
+      const distLeft = ((1 - progress) * (order?.distanceKm || 3.8)).toFixed(1);
       setRiderDistanceRemaining(`${distLeft} km`);
-      setRiderSpeed(`${Math.floor(32 + Math.random() * 12)} km/h`);
+      setRiderSpeed(currentStep >= 4 ? `${Math.floor(34 + Math.random() * 10)} km/h` : '0 km/h (At Store)');
 
       animationFrameRef.current = requestAnimationFrame(animateRider);
     };
@@ -128,9 +153,10 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
 
   const steps = [
     { num: 1, label: 'Order Received', desc: 'Payment confirmed & sent to kitchen' },
-    { num: 2, label: 'Kitchen Preparation', desc: 'Broth simmered & fresh hotpot packed' },
-    { num: 3, label: 'Out for Delivery', desc: 'Rider Eric is en route to your address' },
-    { num: 4, label: 'Delivered', desc: 'Enjoy your hot meal!' }
+    { num: 2, label: 'In Kitchen Cooking', desc: 'Cooker simmering broths & assembling items' },
+    { num: 3, label: 'Cooker Confirmed Ready', desc: 'Freshly prepared & packaged for pickup' },
+    { num: 4, label: 'Out for Delivery', desc: 'Kigali moto rider en route to your address' },
+    { num: 5, label: 'Delivered', desc: 'Enjoy your hot meal!' }
   ];
 
   const handleSaveNote = () => {

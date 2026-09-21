@@ -6,3 +6,5 @@ dist-ssr
 .DS_Store
 *.log
 vite_log.txt
+.env
+.env.*

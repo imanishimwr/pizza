@@ -28,7 +28,7 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
   const handleReorder = (e, order) => {
     e.stopPropagation();
     if (!onAddToCart) return;
-    order.items.forEach((item) => {
+    (order.items || []).forEach((item) => {
       onAddToCart(item);
     });
     setReorderedId(order.id);

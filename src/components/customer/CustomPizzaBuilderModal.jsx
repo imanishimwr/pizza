@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, ShoppingBag } from 'lucide-react';
 import FocusTrap from 'focus-trap-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,6 +37,10 @@ const AVAILABLE_TOPPINGS = [
   { id: 'jalapenos', name: 'Hot Jalapeños', price: 1.0, category: 'veggie', color: '#15803d', icon: '🌶️' }
 ];
 
+/**
+ * Persist a custom pizza to the backend.
+ * @param {Object} customPizza - The pizza object to store.
+ */
 async function saveCustomPizza(customPizza) {
   try {
     const res = await fetch('/api/custom-pizzas', {
@@ -57,9 +61,10 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
   const [crust, setCrust] = useState(CRUST_OPTIONS[0]);
   const [sauce, setSauce] = useState(SAUCE_OPTIONS[0]);
   const [cheese, setCheese] = useState(CHEESE_LEVELS[1]);
-  const [selectedToppings, setSelectedToppings] = useState([]);
+  const [selectedToppings, setSelectedToppings] = useState([]); // {toppingId, side}
   const [pizzaName, setPizzaName] = useState('My Custom Masterpiece');
 
+  // Close on Escape key
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === 'Escape') onClose();
@@ -72,30 +77,31 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
   const crustPrice = crust.price;
   const cheesePrice = cheese.price;
   const toppingsPrice = selectedToppings.reduce((sum, item) => {
-    const topping = AVAILABLE_TOPPINGS.find((t) => t.id === item.toppingId);
+    const topping = AVAILABLE_TOPPINGS.find(t => t.id === item.toppingId);
     const multiplier = item.side === 'whole' ? 1.0 : 0.6;
     return sum + (topping ? topping.price * multiplier : 0);
   }, 0);
   const totalPrice = (basePrice + crustPrice + cheesePrice + toppingsPrice).toFixed(2);
 
   const handleToggleTopping = (toppingId, side = 'whole') => {
-    setSelectedToppings((prev) => {
-      const existingIndex = prev.findIndex((t) => t.toppingId === toppingId);
+    setSelectedToppings(prev => {
+      const existingIndex = prev.findIndex(t => t.toppingId === toppingId);
       if (existingIndex > -1) {
         const existing = prev[existingIndex];
         if (existing.side === side) {
-          return prev.filter((t) => t.toppingId !== toppingId);
+          return prev.filter(t => t.toppingId !== toppingId);
+        } else {
+          const updated = [...prev];
+          updated[existingIndex] = { toppingId, side };
+          return updated;
         }
-        const updated = [...prev];
-        updated[existingIndex] = { toppingId, side };
-        return updated;
       }
       return [...prev, { toppingId, side }];
     });
   };
 
   const getToppingPlacement = (toppingId) => {
-    const found = selectedToppings.find((t) => t.toppingId === toppingId);
+    const found = selectedToppings.find(t => t.toppingId === toppingId);
     return found ? found.side : null;
   };
 
@@ -113,7 +119,6 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
       image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
       isCustom: true
     };
-
     await saveCustomPizza(customPizza);
     onAddToCart(customPizza);
     onClose();
@@ -132,7 +137,7 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
           >
             <motion.div
               className={styles.modalCard}
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
               aria-labelledby="custom-pizza-modal-title"
@@ -140,6 +145,7 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
               animate={{ scale: 1, opacity: 1, transition: { duration: 0.2 } }}
               exit={{ scale: 0.9, opacity: 0, transition: { duration: 0.15 } }}
             >
+              {/* Header */}
               <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ background: 'linear-gradient(135deg, #f97316, #ef4444)', padding: '10px', borderRadius: '12px' }}>
@@ -155,8 +161,11 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                 </button>
               </div>
 
+              {/* Modal Body */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-6">
+                {/* Left Column: Pizza Visual */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  {/* Pizza Graphic */}
                   <div style={{
                     position: 'relative',
                     width: size === 'Small' ? '200px' : size === 'Medium' ? '240px' : '270px',
@@ -168,13 +177,17 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                     transition: 'all 0.3s ease',
                     border: `6px solid ${crust.id === 'garlic' ? '#fde047' : crust.id === 'stuffed' ? '#f59e0b' : '#92400e'}`
                   }}>
+                    {/* Sauce */}
                     <div style={{ position: 'absolute', width: '82%', height: '82%', borderRadius: '50%', backgroundColor: sauce.color, opacity: 0.85 }} />
+                    {/* Cheese */}
                     <div style={{ position: 'absolute', width: '74%', height: '74%', borderRadius: '50%', backgroundColor: '#fef08a', opacity: cheese.id === 'light' ? 0.6 : cheese.id === 'extra' ? 0.9 : 0.8 }} />
-                    {selectedToppings.some((t) => t.side !== 'whole') && (
+                    {/* Half split line */}
+                    {selectedToppings.some(t => t.side !== 'whole') && (
                       <div style={{ position: 'absolute', width: '2px', height: '74%', background: 'rgba(0,0,0,0.4)', borderStyle: 'dashed' }} />
                     )}
-                    {selectedToppings.map((tItem) => {
-                      const topping = AVAILABLE_TOPPINGS.find((t) => t.id === tItem.toppingId);
+                    {/* Toppings */}
+                    {selectedToppings.map(tItem => {
+                      const topping = AVAILABLE_TOPPINGS.find(t => t.id === tItem.toppingId);
                       if (!topping) return null;
                       return (
                         <div key={tItem.toppingId} style={{
@@ -190,12 +203,11 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                       );
                     })}
                   </div>
-
                   <div style={{ marginTop: '20px', width: '100%', textAlign: 'center' }}>
                     <input
                       type="text"
                       value={pizzaName}
-                      onChange={(e) => setPizzaName(e.target.value)}
+                      onChange={e => setPizzaName(e.target.value)}
                       style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: '10px', padding: '8px 12px', textAlign: 'center', fontWeight: 600, width: '100%' }}
                       placeholder="Name your pizza..."
                     />
@@ -205,11 +217,13 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                   </div>
                 </div>
 
+                {/* Right Column: Controls */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Size */}
                   <div>
                     <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#d4d4d8', marginBottom: '8px', display: 'block' }}>1. Choose Size</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                      {['Small', 'Medium', 'Large'].map((s) => (
+                      {['Small', 'Medium', 'Large'].map(s => (
                         <button
                           key={s}
                           onClick={() => setSize(s)}
@@ -225,10 +239,11 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                     </div>
                   </div>
 
+                  {/* Crust */}
                   <div>
                     <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#d4d4d8', marginBottom: '8px', display: 'block' }}>2. Crust Style</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {CRUST_OPTIONS.map((c) => (
+                      {CRUST_OPTIONS.map(c => (
                         <div
                           key={c.id}
                           onClick={() => setCrust(c)}
@@ -251,42 +266,44 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                     </div>
                   </div>
 
+                  {/* Sauce & Cheese */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {/* Sauce */}
                     <div>
                       <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#d4d4d8', marginBottom: '6px', display: 'block' }}>3. Sauce</label>
                       <select
                         value={sauce.id}
-                        onChange={(e) => setSauce(SAUCE_OPTIONS.find((s) => s.id === e.target.value))}
+                        onChange={e => setSauce(SAUCE_OPTIONS.find(s => s.id === e.target.value))}
                         style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '10px', borderRadius: '10px' }}
                       >
-                        {SAUCE_OPTIONS.map((s) => (
+                        {SAUCE_OPTIONS.map(s => (
                           <option key={s.id} value={s.id} style={{ background: '#18181b', color: '#fff' }}>{s.name}</option>
                         ))}
                       </select>
                     </div>
-
+                    {/* Cheese */}
                     <div>
                       <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#d4d4d8', marginBottom: '6px', display: 'block' }}>4. Cheese</label>
                       <select
                         value={cheese.id}
-                        onChange={(e) => setCheese(CHEESE_LEVELS.find((ch) => ch.id === e.target.value))}
+                        onChange={e => setCheese(CHEESE_LEVELS.find(ch => ch.id === e.target.value))}
                         style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '10px', borderRadius: '10px' }}
                       >
-                        {CHEESE_LEVELS.map((ch) => (
+                        {CHEESE_LEVELS.map(ch => (
                           <option key={ch.id} value={ch.id} style={{ background: '#18181b', color: '#fff' }}>{ch.name} {ch.price > 0 ? `(+$${ch.price})` : ''}</option>
                         ))}
                       </select>
                     </div>
                   </div>
 
+                  {/* Toppings */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#d4d4d8' }}>5. Select Toppings</label>
                       <span style={{ fontSize: '0.75rem', color: '#f97316' }}>Click side (Whole/Left/Right)</span>
                     </div>
-
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
-                      {AVAILABLE_TOPPINGS.map((top) => {
+                      {AVAILABLE_TOPPINGS.map(top => {
                         const placement = getToppingPlacement(top.id);
                         return (
                           <div
@@ -302,9 +319,8 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                               <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{top.icon} {top.name}</span>
                               <span style={{ fontSize: '0.75rem', color: '#a1a1aa' }}>+${top.price}</span>
                             </div>
-
                             <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
-                              {['left', 'whole', 'right'].map((side) => (
+                              {['left', 'whole', 'right'].map(side => (
                                 <button
                                   key={side}
                                   onClick={() => handleToggleTopping(top.id, side)}
@@ -326,6 +342,7 @@ export default function CustomPizzaBuilderModal({ isOpen, onClose, onAddToCart }
                 </div>
               </div>
 
+              {/* Footer */}
               <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)' }}>
                 <div>
                   <span style={{ fontSize: '0.85rem', color: '#a1a1aa' }}>Total Custom Price:</span>
