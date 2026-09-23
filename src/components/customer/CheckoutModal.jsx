@@ -1,12 +1,31 @@
 import React, { useState } from 'react';
 import { X, MapPin, Phone, CreditCard, Smartphone, DollarSign, CheckCircle2, ShieldCheck, AlertCircle, User } from 'lucide-react';
+import { getDeviceLocation, distanceKmBetween } from '../../services/gpsService';
+
+// Exact Hot Pot Kigali Restaurant origin (Google Maps: -1.97022762, 30.12498964)
+const RESTAURANT_COORDS = { lat: -1.97022762, lng: 30.12498964 };
 
 export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPlaced }) {
   if (!isOpen || !checkoutData) return null;
 
-  const [selectedKigaliArea, setSelectedKigaliArea] = useState('');
-  const [addressDetail, setAddressDetail] = useState('');
+  const [detectedPlace, setDetectedPlace] = useState(''); // real city/province from the device GPS reverse-address
+  // Prefill from the real location saved at login (from the post-login location scan)
+  const [addressDetail, setAddressDetail] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hotpot_user_v1');
+      const u = saved ? JSON.parse(saved) : null;
+      return u?.location || '';
+    } catch { return ''; }
+  });
   const [isScanningGps, setIsScanningGps] = useState(false);
+  const [gpsFix, setGpsFix] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hotpot_user_v1');
+      const u = saved ? JSON.parse(saved) : null;
+      if (u && u.lat != null && u.lng != null) return { lat: Number(u.lat), lng: Number(u.lng) };
+    } catch {}
+    return null;
+  }); // { lat, lng } of the exact scanned device location
   const [customerName, setCustomerName] = useState(() => {
     try {
       const saved = localStorage.getItem('hotpot_user_v1');
@@ -20,69 +39,37 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const kigaliAreas = [
-    { name: 'Nyarutarama', distKm: 3.5, estMin: 18 },
-    { name: 'Kimironko', distKm: 5.2, estMin: 22 },
-    { name: 'Kacyiru', distKm: 4.1, estMin: 20 },
-    { name: 'Remera', distKm: 4.8, estMin: 21 },
-    { name: 'Kiyovu (CBD)', distKm: 6.5, estMin: 28 },
-    { name: 'Gikondo', distKm: 7.1, estMin: 30 },
-    { name: 'Kanombe', distKm: 9.4, estMin: 35 },
-    { name: 'Nyamirambo', distKm: 8.3, estMin: 32 },
-  ];
-
-  const handleScanCurrentLocation = () => {
+  const handleScanCurrentLocation = async () => {
     setIsScanningGps(true);
     setErrorMsg('');
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-            const data = await res.json();
-            setIsScanningGps(false);
-            
-            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
-            const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county;
-            const sector = data.address?.suburb || data.address?.city_district || data.address?.city || '';
-            
-            // Match sector name to available list
-            const matchedArea = kigaliAreas.find(a => sector.toLowerCase().includes(a.name.toLowerCase()))?.name || '';
-            if (matchedArea) {
-              setSelectedKigaliArea(matchedArea);
-            }
-            
-            const parts = [road, city].filter(Boolean);
-            if (parts.length > 0) {
-              setAddressDetail(`${parts.join(', ')} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-            } else {
-              setAddressDetail(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-            }
-          } catch (err) {
-            setIsScanningGps(false);
-            setAddressDetail(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-            setErrorMsg('Could not fetch address details for coordinates.');
-          }
-        },
-        (error) => {
-          setIsScanningGps(false);
-          setErrorMsg(`Location access denied or unavailable (${error.message}). Please enter manually.`);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
+    try {
+      // Real location straight from the device GPS + live reverse geocoding (no hardcoded districts/areas)
+      const { lat, lng, data, address, accuracy } = await getDeviceLocation();
+      setGpsFix({ lat, lng, accuracy: Math.round(accuracy || 0) });
+
+      const a = data?.address || {};
+      const place = a.city || a.town || a.village || a.state || a.province || a.suburb || a.county || a.country || '';
+      setDetectedPlace(place);
+
+      setAddressDetail(address
+        ? `${address} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
+        : `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    } catch (err) {
+      setErrorMsg(err.message || 'Could not detect your location. Please turn on Location and try again.');
+    } finally {
       setIsScanningGps(false);
-      setErrorMsg('Geolocation is not supported by your browser.');
     }
   };
 
-  const currentAreaInfo = kigaliAreas.find((a) => a.name === selectedKigaliArea) || kigaliAreas[0];
-  const dynamicEta = currentAreaInfo.estMin;
-  const fullDeliveryAddress = selectedKigaliArea 
-    ? `${addressDetail} (${selectedKigaliArea})` 
-    : addressDetail;
+  // Real distance & ETA computed from the restaurant to the actual scanned device GPS
+  const gpsDistKm = gpsFix ? distanceKmBetween(RESTAURANT_COORDS.lat, RESTAURANT_COORDS.lng, gpsFix.lat, gpsFix.lng) : null;
+  const dynamicEta = gpsDistKm != null
+    ? Math.max(15, Math.round(15 + gpsDistKm * 4))
+    : 20;
+  const deliveryDistanceKm = gpsDistKm != null ? gpsDistKm : 3.8;
+  const deliveryAreaLabel = detectedPlace
+    || (gpsFix ? `GPS ${gpsFix.lat.toFixed(4)}, ${gpsFix.lng.toFixed(4)}` : '');
+  const fullDeliveryAddress = addressDetail;
 
   const validatePhone = (num) => {
     const rwandaRegex = /^(078|079|072|073)\d{7}$/;
@@ -129,8 +116,10 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
       totalRWF: checkoutData.grandTotal,
       status: 'pending',
       address: fullDeliveryAddress,
-      area: selectedKigaliArea,
-      distanceKm: currentAreaInfo.distKm,
+      area: deliveryAreaLabel,
+      distanceKm: deliveryDistanceKm,
+      lat: gpsFix ? gpsFix.lat : null,
+      lng: gpsFix ? gpsFix.lng : null,
       etaMinutes: dynamicEta,
       etaTime: etaTimeString,
       orderTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -196,12 +185,12 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
             />
           </div>
 
-          {/* Delivery Address & Geocoding Sector Selector */}
+          {/* Delivery Address & GPS Scan */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-1.5">
               <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-primary" />
-                Kigali Sector & Address
+                Delivery Address
               </label>
 
               <button
@@ -224,30 +213,27 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-              {kigaliAreas.map((area) => (
-                <button
-                  type="button"
-                  key={area.name}
-                  onClick={() => setSelectedKigaliArea(area.name)}
-                  className={`p-1.5 px-2 rounded-lg border text-left transition-all ${
-                    selectedKigaliArea === area.name
-                      ? 'bg-primary/20 border-primary text-white font-bold'
-                      : 'bg-surface-card border-white/10 text-text-muted hover:border-white/20'
-                  }`}
-                >
-                  <div className="text-xs truncate">{area.name}</div>
-                  <div className="text-[9px] text-text-subdued font-mono">{area.estMin} min • {area.distKm}km</div>
-                </button>
-              ))}
-            </div>
+            {!gpsFix && (
+              <p className="text-[10px] text-text-muted leading-relaxed">
+                For your exact address, turn on Location on this device and tap <span className="text-primary font-bold">Scan GPS Location</span>. Otherwise type your address below.
+              </p>
+            )}
+
+            {gpsFix && (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded-lg px-2 py-1.5">
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="truncate">
+                  Real location locked: {gpsFix.lat.toFixed(4)}, {gpsFix.lng.toFixed(4)}{gpsFix.accuracy ? ` (±${gpsFix.accuracy} m)` : ''}{detectedPlace ? ` • ${detectedPlace}` : ''}
+                </span>
+              </div>
+            )}
 
             <input
               type="text"
               value={addressDetail}
               onChange={(e) => setAddressDetail(e.target.value)}
               required
-              placeholder="House Number, Street / Landmark (e.g. KG 9 Ave, House 42)"
+              placeholder="Full address (House No., Street, Sector, City / Landmark)"
               className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
             />
           </div>

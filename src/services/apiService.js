@@ -10,6 +10,22 @@ const STORAGE_KEYS = {
   TRACKED_ORDER_ID: 'hotpot_tracked_order_id_v1'
 };
 
+// Every per-user slice of data (cart, wishlist, orders cache) is namespaced by
+// account id so one browser never leaks a user's items to another user.
+const scopeKey = (base, user) => {
+  const id = user && user.id ? String(user.id) : 'guest';
+  return `${base}:${id}`;
+};
+
+// Attach the JWT so the server can scope responses to the logged-in account.
+const authHeaders = (extra = {}) => {
+  let token = null;
+  try {
+    token = typeof window !== 'undefined' ? window.localStorage.getItem('token') : null;
+  } catch (e) {}
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+};
+
 export const apiService = {
   // Meals Persistence
   getMeals: async () => {
@@ -74,21 +90,26 @@ export const apiService = {
     return res.json();
   },
 
-  // Orders Persistence
-  getOrders: async () => {
+  // Orders Persistence (server scopes results to the requesting user)
+  getOrders: async (user) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/orders`);
+      const trackedId = apiService.getTrackedOrderId();
+      const params = new URLSearchParams();
+      if (trackedId) params.set('orderId', trackedId);
+      const qs = params.toString();
+      const url = `${API_BASE_URL}/orders${qs ? `?${qs}` : ''}`;
+      const res = await fetch(url, { headers: authHeaders() });
       if (!res.ok) throw new Error('Failed to fetch orders');
       const data = await res.json();
       if (Array.isArray(data)) {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(data));
+        localStorage.setItem(scopeKey(STORAGE_KEYS.ORDERS, user), JSON.stringify(data));
         return data;
       }
       return [];
     } catch (e) {
       console.warn('Backend unavailable, checking local cache', e);
       try {
-        const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
+        const saved = localStorage.getItem(scopeKey(STORAGE_KEYS.ORDERS, user));
         const parsed = saved ? JSON.parse(saved) : null;
         return Array.isArray(parsed) ? parsed : [];
       } catch (err) {
@@ -97,10 +118,18 @@ export const apiService = {
     }
   },
 
+  saveOrders: (orders, user) => {
+    try {
+      localStorage.setItem(scopeKey(STORAGE_KEYS.ORDERS, user), JSON.stringify(orders));
+    } catch (e) {
+      console.error('Error saving orders:', e);
+    }
+  },
+
   createOrder: async (orderData) => {
     const res = await fetch(`${API_BASE_URL}/orders`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(orderData)
     });
     if (!res.ok) throw new Error('Failed to create order');
@@ -165,37 +194,37 @@ export const apiService = {
     return data;
   },
 
-  // Cart Persistence across all MPA pages
-  getCart: () => {
+  // Cart Persistence is scoped per account (guests use their own guest cart)
+  getCart: (user) => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CART);
+      const saved = localStorage.getItem(scopeKey(STORAGE_KEYS.CART, user));
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
     }
   },
 
-  saveCart: (cart) => {
+  saveCart: (cart, user) => {
     try {
-      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
+      localStorage.setItem(scopeKey(STORAGE_KEYS.CART, user), JSON.stringify(cart));
     } catch (e) {
       console.error('Error saving cart:', e);
     }
   },
 
-  // Wishlist Persistence
-  getWishlist: () => {
+  // Wishlist Persistence is scoped per account too
+  getWishlist: (user) => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.WISHLIST);
+      const saved = localStorage.getItem(scopeKey(STORAGE_KEYS.WISHLIST, user));
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
     }
   },
 
-  saveWishlist: (wishlist) => {
+  saveWishlist: (wishlist, user) => {
     try {
-      localStorage.setItem(STORAGE_KEYS.WISHLIST, JSON.stringify(wishlist));
+      localStorage.setItem(scopeKey(STORAGE_KEYS.WISHLIST, user), JSON.stringify(wishlist));
     } catch (e) {
       console.error('Error saving wishlist:', e);
     }

@@ -11,6 +11,7 @@ const bcrypt = require('bcryptjs');
 const db = require('./db');
 const neonClient = require('./neonClient');
 const authMiddleware = require('./middleware/auth');
+const { optionalAuth } = authMiddleware;
 require('dotenv').config();
 
 const app = express();
@@ -174,24 +175,57 @@ app.delete('/api/meals/:id', authMiddleware(['ADMIN']), async (req, res) => {
 // ----------------------------------------------------
 // 3. Order Management & Cancellation Routes (/api/orders)
 // ----------------------------------------------------
-app.get('/api/orders', async (req, res) => {
+// Privacy-first order read: customers are served ONLY their own orders.
+// Staff (ADMIN/KITCHEN/DELIVERY) read the full board. Anonymous guests may
+// only fetch the single order they are actively tracking via ?orderId=.
+app.get('/api/orders', optionalAuth, async (req, res) => {
   try {
-    const ordersList = await neonClient.getOrders();
+    const { orderId } = req.query;
+    const role = String(req.user?.role || '').toUpperCase();
+    const isStaff = ['ADMIN', 'KITCHEN', 'DELIVERY', 'RIDER'].includes(role);
+
+    let ordersList;
+    if (req.user && isStaff) {
+      ordersList = await neonClient.getOrders();
+    } else if (req.user) {
+      // Fetch fresh profile so legacy (non-userId) orders can be linked by phone
+      let phone = null;
+      try {
+        const profile = await neonClient.findUserById(req.user.id);
+        phone = profile?.phone || null;
+      } catch (e) {}
+      ordersList = await neonClient.getOrders({ userId: req.user.id, phone });
+    } else if (orderId) {
+      ordersList = await neonClient.getOrders({ orderId });
+    } else {
+      ordersList = [];
+    }
+
     res.json(ordersList);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch orders from DB' });
   }
 });
 
-app.post('/api/orders', async (req, res) => {
-  const { customerName, phone, address } = req.body;
+app.post('/api/orders', optionalAuth, async (req, res) => {
+  // Ownership is enforced from the authenticated token: a logged-in user's
+  // order is always bound to their account id (client cannot spoof another id).
+  const orderData = { ...req.body };
+  if (req.user) {
+    orderData.userId = req.user.id;
+  }
+
+  const { customerName, phone, address } = orderData;
   if (!customerName || !phone || !address) {
     return res.status(400).json({ error: 'Missing required order details.' });
   }
 
   try {
-    const newOrder = await neonClient.createOrder(req.body);
-    io.emit('new_order_placed', newOrder);
+    const newOrder = await neonClient.createOrder(orderData);
+    // Only staff (kitchen/rider/admin) teams see the new order board entry,
+    // plus the order owner's own tracking room. Never broadcast to all clients.
+    io.to('staff').emit('new_order_placed', newOrder);
+    io.to(`order_${newOrder.id}`).emit('order_status_updated', newOrder);
     res.status(201).json(newOrder);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create order in DB' });
@@ -206,7 +240,9 @@ app.patch('/api/orders/:id/status', async (req, res) => {
     const updatedOrder = await neonClient.updateOrderStatus(id, status, riderName);
     if (!updatedOrder) return res.status(404).json({ error: 'Order not found.' });
 
-    io.emit('order_status_updated', updatedOrder);
+    // Route status updates ONLY to the staff board + the order owner's room.
+    io.to('staff').emit('order_status_updated', updatedOrder);
+    io.to(`order_${id}`).emit('order_status_updated', updatedOrder);
     io.to(`order_${id}`).emit('live_order_status', updatedOrder);
 
     res.json(updatedOrder);
@@ -221,7 +257,11 @@ app.delete('/api/orders/:id', (req, res) => {
   if (result.error) {
     return res.status(400).json({ error: result.error });
   }
-  io.emit('order_cancelled', result);
+  // Notify only the staff board and the order owner (never all clients).
+  io.to('staff').emit('order_cancelled', result);
+  if (result && result.id) {
+    io.to(`order_${result.id}`).emit('order_cancelled', result);
+  }
   res.json({ message: 'Order successfully cancelled within grace period', order: result });
 });
 
@@ -311,8 +351,37 @@ app.get('/api/admin/analytics', authMiddleware(['ADMIN']), async (req, res) => {
 // ----------------------------------------------------
 // 7. WebSockets Event Streams
 // ----------------------------------------------------
+const STAFF_ROLES = ['ADMIN', 'KITCHEN', 'DELIVERY', 'RIDER'];
+
+// Optional JWT auth on socket handshake so the server can classify a client
+// (staff vs customer/guest) and only route order payloads to those entitled.
+// Invalid/missing tokens simply become anonymous (staff never sees them as staff).
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth && socket.handshake.auth.token;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      socket.user = {
+        id: decoded.id,
+        email: decoded.email,
+        role: String(decoded.role || '').toUpperCase()
+      };
+    }
+  } catch (e) {
+    // ignore invalid/expired tokens; socket acts as anonymous
+  }
+  next();
+});
+
 io.on('connection', (socket) => {
-  console.log(`🔌 Client connected to WebSocket: ${socket.id}`);
+  console.log(`🔌 Client connected to WebSocket: ${socket.id}${socket.user ? ` (${socket.user.role})` : ''}`);
+
+  // Staff join the shared "staff" room, the ONLY room that receives the full
+  // order board. Customers/guests never join it, so they never receive other
+  // people's order payloads over the wire.
+  if (socket.user && STAFF_ROLES.includes(socket.user.role)) {
+    socket.join('staff');
+  }
 
   socket.on('join_order_room', (orderId) => {
     socket.join(`order_${orderId}`);
@@ -320,7 +389,7 @@ io.on('connection', (socket) => {
 
   socket.on('stream_rider_gps', ({ orderId, lat, lng }) => {
     io.to(`order_${orderId}`).emit('rider_gps_updated', { orderId, lat, lng });
-    io.emit('admin_rider_gps_updated', { orderId, lat, lng });
+    io.to('staff').emit('admin_rider_gps_updated', { orderId, lat, lng });
   });
 
   socket.on('disconnect', () => {

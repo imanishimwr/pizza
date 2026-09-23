@@ -45,8 +45,10 @@ export default function App() {
   const [meals, setMeals] = useState([]);
   const [orders, setOrders] = useState([]);
   const [user, setUser] = useState(() => apiService.getUser());
-  const [cart, setCart] = useState(() => apiService.getCart());
-  const [wishlist, setWishlist] = useState(() => apiService.getWishlist());
+  // Cart & wishlist are namespaced per account so a user only ever sees
+  // what THEY added (never a previous user on the same device).
+  const [cart, setCart] = useState(() => apiService.getCart(user));
+  const [wishlist, setWishlist] = useState(() => apiService.getWishlist(user));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [lang, setLang] = useState('EN');
@@ -92,7 +94,10 @@ export default function App() {
   const [isCustomBuilderOpen, setIsCustomBuilderOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState(null);
 
-  // Client-specific orders filter (client sees ONLY their own orders, admin sees ALL orders)
+  // Client-specific orders filter: a client only ever sees data that matches
+  // their OWN account (userId), or legacy orders bound to their phone, or an
+  // order they are actively tracking. Name/email matching is dropped because
+  // it leaks other users' orders (shared names/emails are not stored on orders).
   const clientOrders = useMemo(() => {
     if (!Array.isArray(orders)) return [];
     if (!user) {
@@ -101,19 +106,47 @@ export default function App() {
     }
     return orders.filter(o => {
       const matchUserId = o.userId && user.id && String(o.userId) === String(user.id);
-      const matchEmail = (o.userEmail && user.email && o.userEmail.toLowerCase() === user.email.toLowerCase()) || 
-                         (o.email && user.email && o.email.toLowerCase() === user.email.toLowerCase());
-      const matchPhone = o.phone && user.phone && o.phone.trim() === user.phone.trim();
-      const matchName = o.customerName && user.name && o.customerName.toLowerCase().trim() === user.name.toLowerCase().trim();
+      const matchPhone = o.phone && user.phone && String(o.phone).trim() === String(user.phone).trim();
       const matchTracked = apiService.getTrackedOrderId() === o.id;
-      return matchUserId || matchEmail || matchPhone || matchName || matchTracked;
+      return matchUserId || matchPhone || matchTracked;
     });
   }, [orders, user]);
+
+  // True when an order belongs to the current view: staff see everything,
+  // customers only their own orders, guests only the order they track.
+  const belongsToCurrentUser = (order) => {
+    if (!order) return false;
+    if (!user) return apiService.getTrackedOrderId() === order.id;
+    const role = String(user.role || '').toUpperCase();
+    if (['ADMIN', 'KITCHEN', 'DELIVERY', 'RIDER'].includes(role)) return true;
+    const matchUserId = order.userId && user.id && String(order.userId) === String(user.id);
+    const matchPhone = order.phone && user.phone && String(order.phone).trim() === String(user.phone).trim();
+    const matchTracked = apiService.getTrackedOrderId() === order.id;
+    return matchUserId || matchPhone || matchTracked;
+  };
 
   const showToast = useCallback((message, title = 'Notification') => {
     setToast({ title, message });
     setTimeout(() => setToast(null), 4000);
   }, []);
+
+  // When the signed-in account changes (login/logout) switch to THAT user's
+  // cart & wishlist, and drop any tracked order that no longer belongs to them.
+  useEffect(() => {
+    setCart(apiService.getCart(user));
+    setWishlist(apiService.getWishlist(user));
+
+    const trackedId = apiService.getTrackedOrderId();
+    if (trackedId) {
+      const mine = Array.isArray(orders) ? orders.find(o => String(o.id) === String(trackedId)) : null;
+      if (mine) {
+        setTrackedOrder(mine);
+      } else {
+        setTrackedOrder(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Load Initial Data from Backend
   useEffect(() => {
@@ -121,7 +154,7 @@ export default function App() {
       const fetchedMeals = await apiService.getMeals();
       setMeals(fetchedMeals);
 
-      const fetchedOrders = await apiService.getOrders();
+      const fetchedOrders = await apiService.getOrders(user);
       setOrders(fetchedOrders);
 
       const trackedId = apiService.getTrackedOrderId();
@@ -131,7 +164,7 @@ export default function App() {
       }
     };
     loadData();
-  }, []);
+  }, [user]);
 
   // Sync state to local storage is no longer primary for meals/orders, but keeping it for offline fallback if needed.
   useEffect(() => {
@@ -139,7 +172,7 @@ export default function App() {
   }, [meals]);
 
   useEffect(() => {
-    if (orders.length > 0) apiService.saveOrders?.(orders);
+    if (orders.length > 0) apiService.saveOrders(orders, user);
   }, [orders]);
 
   useEffect(() => {
@@ -147,16 +180,19 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
-    apiService.saveCart(cart);
+    apiService.saveCart(cart, user);
   }, [cart]);
 
   useEffect(() => {
-    apiService.saveWishlist(wishlist);
+    apiService.saveWishlist(wishlist, user);
   }, [wishlist]);
 
   useEffect(() => {
-    // 1. Live Socket.IO connection for instant real-time synchronization
+    // 1. Live Socket.IO connection for instant real-time synchronization.
+    // The JWT is supplied on the handshake so the server can route each order
+    // event ONLY to staff + the order owner's room (never to all clients).
     const backendUrl = 'http://localhost:5000';
+    const token = typeof window !== 'undefined' ? window.localStorage.getItem('token') : null;
     let socket;
     try {
       socket = io(backendUrl, {
@@ -164,10 +200,21 @@ export default function App() {
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
+        auth: token ? { token } : undefined,
       });
+
+      // Listen for the owner's own order updates in their private room.
+      const joinTrackedRoom = () => {
+        const trackedId = apiService.getTrackedOrderId();
+        if (trackedId && socket) socket.emit('join_order_room', trackedId);
+      };
+      socket.on('connect', joinTrackedRoom);
+      joinTrackedRoom();
 
       socket.on('new_order_placed', (newOrder) => {
         if (!newOrder) return;
+        // Customers must not ingest other people's orders into their app state.
+        if (!belongsToCurrentUser(newOrder)) return;
         setOrders((prev) => {
           const exists = prev.some(o => o.id === newOrder.id);
           if (exists) return prev;
@@ -179,6 +226,10 @@ export default function App() {
       socket.on('order_status_updated', (updatedOrder) => {
         if (!updatedOrder) return;
         setOrders((prev) => {
+          const known = prev.some(o => o.id === updatedOrder.id);
+          if (!known) {
+            return belongsToCurrentUser(updatedOrder) ? [updatedOrder, ...prev] : prev;
+          }
           return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
         });
         eventBus.emit('ORDER_STATUS_UPDATE', { orderId: updatedOrder.id, status: updatedOrder.status, order: updatedOrder }, true);
@@ -187,6 +238,8 @@ export default function App() {
       socket.on('order_cancelled', (cancelledOrder) => {
         if (!cancelledOrder) return;
         setOrders((prev) => {
+          const known = prev.some(o => o.id === cancelledOrder.id);
+          if (!known && !belongsToCurrentUser(cancelledOrder)) return prev;
           return prev.map(o => o.id === cancelledOrder.id ? { ...o, status: 'cancelled' } : o);
         });
       });
@@ -197,7 +250,7 @@ export default function App() {
     // 2. Background Heartbeat Polling every 3.5 seconds to guarantee 100% real-time data sync without user refresh
     const pollInterval = setInterval(async () => {
       try {
-        const freshOrders = await apiService.getOrders();
+        const freshOrders = await apiService.getOrders(user);
         if (Array.isArray(freshOrders)) {
           setOrders(freshOrders);
         }
@@ -208,7 +261,7 @@ export default function App() {
 
     const unsubOrder = eventBus.on('NEW_ORDER', async (newOrder, isCrossTab) => {
       if (isCrossTab) {
-        const freshOrders = await apiService.getOrders();
+        const freshOrders = await apiService.getOrders(user);
         setOrders(Array.isArray(freshOrders) ? freshOrders : []);
         showToast(`New Order #${newOrder.id} received!`, 'Incoming Order');
         notificationService.playChime('new_order');
@@ -219,7 +272,7 @@ export default function App() {
     });
 
     const unsubStatus = eventBus.on('ORDER_STATUS_UPDATE', async ({ orderId, status }, isCrossTab) => {
-      const freshOrders = await apiService.getOrders();
+      const freshOrders = await apiService.getOrders(user);
       setOrders(Array.isArray(freshOrders) ? freshOrders : []);
 
       const matchingOrder = Array.isArray(freshOrders) ? freshOrders.find(o => o.id === orderId) : null;
@@ -333,7 +386,7 @@ export default function App() {
         ? prev.filter((item) => (typeof item === 'string' ? item !== meal.id : item.id !== meal.id))
         : [...prev, meal];
 
-      apiService.saveWishlist(next);
+      apiService.saveWishlist(next, user);
       showToast(
         exists ? `Removed ${meal.name} from wishlist` : `Added ${meal.name} to wishlist!`,
         exists ? 'Wishlist Updated' : 'Saved to Wishlist'
@@ -362,7 +415,7 @@ export default function App() {
         next = [...prev, cartItem];
       }
 
-      apiService.saveCart(next);
+      apiService.saveCart(next, user);
       return next;
     });
 
@@ -379,7 +432,7 @@ export default function App() {
     setCart((prev) => {
       const next = [...prev];
       next[index].quantity = newQty;
-      apiService.saveCart(next);
+      apiService.saveCart(next, user);
       return next;
     });
   };
@@ -387,7 +440,7 @@ export default function App() {
   const handleRemoveCartItem = (index) => {
     setCart((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      apiService.saveCart(next);
+      apiService.saveCart(next, user);
       return next;
     });
   };
@@ -451,7 +504,7 @@ export default function App() {
   const handleCancelOrder = (orderId) => {
     setOrders((prev) => {
       const next = prev.map((order) => (order.id === orderId ? { ...order, status: 'cancelled' } : order));
-      apiService.saveOrders(next);
+      apiService.saveOrders(next, user);
       return next;
     });
 
@@ -465,7 +518,7 @@ export default function App() {
   const handleModifyOrder = (orderId, updatedFields) => {
     setOrders((prev) => {
       const next = prev.map((order) => (order.id === orderId ? { ...order, ...updatedFields } : order));
-      apiService.saveOrders(next);
+      apiService.saveOrders(next, user);
       return next;
     });
 
@@ -687,11 +740,11 @@ export default function App() {
       <LocationModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
-        onSetLocation={(loc) => {
-          const updated = { ...(user || {}), location: loc };
+        onSetLocation={({ location, lat, lng }) => {
+          const updated = { ...(user || {}), location, lat, lng };
           setUser(updated);
           apiService.saveUser(updated);
-          showToast(`Location set to: ${loc}`, 'Location Updated');
+          showToast(`Location set to: ${location}`, 'Location Updated');
         }}
       />
 

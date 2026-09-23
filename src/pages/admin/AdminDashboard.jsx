@@ -228,22 +228,14 @@ export default function AdminDashboard({
   // Exact Hot Pot Kigali Google Maps Coordinates (-1.97022762, 30.12498964)
   const restaurantCoords = useMemo(() => [-1.97022762, 30.12498964], []);
 
-  // Dynamic Client Delivery Destination based on order address
+  // Dynamic Client Delivery Coordinates: real GPS from the scanned order,
+  // otherwise the exact GPS embedded in the delivery address
   const deliveryCoords = useMemo(() => {
     if (trackingOrder?.lat && trackingOrder?.lng) return [Number(trackingOrder.lat), Number(trackingOrder.lng)];
-    const addr = String(trackingOrder?.deliveryAddress || trackingOrder?.address || '').toLowerCase();
-    if (addr.includes('nyarutarama')) return [-1.9360, 30.0980];
-    if (addr.includes('kiyovu')) return [-1.9536, 30.0605];
-    if (addr.includes('kimihurura')) return [-1.9560, 30.0880];
-    if (addr.includes('kacyiru')) return [-1.9420, 30.0750];
-    if (addr.includes('remera')) return [-1.9580, 30.1150];
-    if (addr.includes('gisozi')) return [-1.9280, 30.0620];
-    if (addr.includes('kicukiro')) return [-1.9800, 30.0950];
-    if (addr.includes('gikondo')) return [-1.9750, 30.0680];
-    if (addr.includes('nyamirambo')) return [-1.9850, 30.0450];
-    if (addr.includes('kanombe')) return [-1.9750, 30.1450];
-    return [-1.9360, 30.0820]; // Default Kigali Destination
-  }, [trackingOrder]);
+    const gpsMatch = String(trackingOrder?.deliveryAddress || trackingOrder?.address || '').match(/GPS:\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)/i);
+    if (gpsMatch) return [Number(gpsMatch[1]), Number(gpsMatch[2])];
+    return restaurantCoords; // no real location on record; keep map centered on origin
+  }, [trackingOrder, restaurantCoords]);
 
   // Leaflet Map for Admin Tracking Modal
   useEffect(() => {

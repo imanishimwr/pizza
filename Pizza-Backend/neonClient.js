@@ -15,6 +15,12 @@ module.exports = {
     return rows[0] || null;
   },
 
+  findUserById: async (id) => {
+    if (!sql || !id) return null;
+    const rows = await sql`SELECT id, name, email, phone, avatar_url, role FROM users WHERE id = ${id} LIMIT 1;`;
+    return rows[0] || null;
+  },
+
   registerUserInNeon: async ({ name, email, phone, password, googleId, avatarUrl, role = 'CUSTOMER' }) => {
     const salt = password ? await bcrypt.genSalt(10) : null;
     const passwordHash = password ? await bcrypt.hash(password, salt) : null;
@@ -120,10 +126,24 @@ module.exports = {
   },
 
   // --- Orders Queries ---
-  getOrders: async () => {
+  // Security: always filter by the requesting user. A customer only ever sees
+  // their own orders (by userId, or legacy orders linked through their phone).
+  // Staff (ADMIN/KITCHEN/DELIVERY) may pass no filter to read all orders.
+  getOrders: async ({ userId, phone, orderId } = {}) => {
     if (!sql) return [];
     try {
-      const orders = await sql`SELECT * FROM orders ORDER BY created_at DESC;`;
+      let orders;
+      if (orderId) {
+        orders = await sql`SELECT * FROM orders WHERE id = ${orderId} ORDER BY created_at DESC;`;
+      } else if (userId) {
+        if (phone) {
+          orders = await sql`SELECT * FROM orders WHERE "userId" = ${userId} OR ("userId" IS NULL AND phone = ${phone}) ORDER BY created_at DESC;`;
+        } else {
+          orders = await sql`SELECT * FROM orders WHERE "userId" = ${userId} ORDER BY created_at DESC;`;
+        }
+      } else {
+        orders = await sql`SELECT * FROM orders ORDER BY created_at DESC;`;
+      }
       let allItems = [];
       try {
         allItems = await sql`SELECT * FROM order_items;`;
@@ -173,8 +193,8 @@ module.exports = {
   createOrder: async (order) => {
     const id = order.id || `HP-${Math.floor(100000 + Math.random() * 900000)}`;
     const rows = await sql`
-      INSERT INTO orders (id, "customerName", phone, address, "totalRWF", status, "userId")
-      VALUES (${id}, ${order.customerName || 'Customer'}, ${order.phone || ''}, ${order.address || ''}, ${order.totalRWF || 0}, 'pending', ${order.userId || null})
+      INSERT INTO orders (id, "customerName", phone, address, lat, lng, "totalRWF", status, "userId", "paymentType")
+      VALUES (${id}, ${order.customerName || 'Customer'}, ${order.phone || ''}, ${order.address || ''}, ${order.lat ?? null}, ${order.lng ?? null}, ${order.totalRWF || 0}, 'pending', ${order.userId || null}, ${order.paymentMethod || order.paymentType || 'MTN Mobile Money'})
       RETURNING *;
     `;
     const createdOrder = rows[0];

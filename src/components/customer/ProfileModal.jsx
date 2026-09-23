@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Phone, MapPin, Mail, CreditCard, Plus, Trash2, Check, ShieldCheck } from 'lucide-react';
+import { getDeviceLocation } from '../../services/gpsService';
 
 export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
   const [name, setName] = useState('');
@@ -36,44 +37,18 @@ export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
 
   if (!isOpen || !user) return null;
 
-  const handleDetectLocation = () => {
+  const handleDetectLocation = async () => {
     setIsScanningGps(true);
     setGpsError('');
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-            const data = await res.json();
-            setIsScanningGps(false);
-            
-            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
-            const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county;
-            const country = data.address?.country;
-            
-            const parts = [road, city, country].filter(Boolean);
-            const locString = parts.length > 0 
-              ? `${parts.join(', ')} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
-              : `GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-              
-            setAddress(locString);
-          } catch (err) {
-            setIsScanningGps(false);
-            setAddress(`GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-            setGpsError('Could not fetch address details for coordinates.');
-          }
-        },
-        (error) => {
-          setIsScanningGps(false);
-          setGpsError(`Location access denied or unavailable. Please enter manually.`);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
+    try {
+      const { lat, lng, address } = await getDeviceLocation();
+      setAddress(address
+        ? `${address} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
+        : `GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    } catch (err) {
+      setGpsError(err.message || 'Could not detect your location.');
+    } finally {
       setIsScanningGps(false);
-      setGpsError('Geolocation is not supported by your browser.');
     }
   };
 
