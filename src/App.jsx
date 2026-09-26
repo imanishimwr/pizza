@@ -155,7 +155,7 @@ export default function App() {
 
   useEffect(() => {
     // 1. Live Socket.IO connection for instant real-time synchronization
-    const backendUrl = 'http://localhost:5000';
+    const backendUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '') : 'http://localhost:5002');
     let socket;
     try {
       socket = io(backendUrl, {

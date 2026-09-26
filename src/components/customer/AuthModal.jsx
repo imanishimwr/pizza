@@ -105,7 +105,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       setIsSubmitting(false);
       setErrorMsg(
         err.message?.includes('Failed to fetch')
-          ? 'Cannot connect to server on port 5000. Please ensure the backend is running.'
+          ? 'Cannot connect to backend server. Please ensure the backend is running.'
           : (err.message || 'Authentication error occurred.')
       );
     }
