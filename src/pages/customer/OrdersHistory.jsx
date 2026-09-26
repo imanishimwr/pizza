@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Clock, MapPin, CheckCircle2, ChevronRight, FileText, RefreshCw } from 'lucide-react';
+import { ShoppingBag, Clock, MapPin, CheckCircle2, ChevronRight, FileText, RefreshCw, Download, Star, Pizza, ArrowRight } from 'lucide-react';
 import ReceiptModal from '../../components/customer/ReceiptModal';
+import PostDeliveryFeedbackModal from '../../components/customer/PostDeliveryFeedbackModal';
+import { downloadOrderReceiptPdf } from '../../utils/receiptGenerator';
 
-export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart }) {
+export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart, onExploreMenu }) {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [reorderedId, setReorderedId] = useState(null);
+  const [feedbackOrder, setFeedbackOrder] = useState(null);
 
   const handleReorder = (e, order) => {
     e.stopPropagation();
@@ -24,15 +27,31 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
             <ShoppingBag className="w-6 h-6 text-primary" />
             Your HotPot Order History
           </h2>
-          <p className="text-xs text-text-muted">Track your live orders or review past gourmet hotpot deliveries</p>
+          <p className="text-xs text-text-muted">Track your live orders, rate pizza & rider, or review past deliveries</p>
         </div>
       </div>
 
       <div className="space-y-4">
         {orders.length === 0 ? (
-          <div className="py-16 text-center bg-surface-card rounded-2xl border border-white/5 space-y-2">
-            <ShoppingBag className="w-10 h-10 text-text-subdued mx-auto" />
-            <p className="text-text-muted text-sm font-medium">You haven't placed any orders yet.</p>
+          <div className="py-16 text-center bg-surface-card rounded-3xl border border-white/10 space-y-4 p-8 max-w-md mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
+              <ShoppingBag className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-white">No Orders Placed Yet</h3>
+              <p className="text-xs text-text-muted leading-relaxed">
+                The order history is available after you place your first order. Browse our delicious pizzas and gourmet hotpots!
+              </p>
+            </div>
+            {onExploreMenu && (
+              <button
+                onClick={onExploreMenu}
+                className="btn-primary py-2.5 px-6 text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-primary/20"
+              >
+                <span>Browse Menu & Order</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ) : (
           orders.map((order) => (
@@ -68,6 +87,18 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      downloadOrderReceiptPdf(order);
+                    }}
+                    className="p-1.5 px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                    title="Download PDF Receipt"
+                  >
+                    <Download className="w-3.5 h-3.5 text-amber-400" />
+                    PDF
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedReceipt(order);
                     }}
                     className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors flex items-center gap-1 text-[11px]"
@@ -75,6 +106,18 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
                   >
                     <FileText className="w-3.5 h-3.5 text-primary" />
                     Receipt
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFeedbackOrder(order);
+                    }}
+                    className="p-1.5 px-2.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-300 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                    title="Rate Pizza & Rider"
+                  >
+                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                    Rate Pizza & Rider
                   </button>
                 </div>
               </div>
@@ -84,7 +127,7 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
                 {(order.items || []).map((item, idx) => (
                   <div key={idx} className="flex justify-between text-xs text-text-muted">
                     <span>{item.qty}x {item.name} {item.spice ? `(${item.spice})` : ''}</span>
-                    <span className="font-mono">{(item.price || 0).toLocaleString()} RWF</span>
+                    <span className="font-mono">{(item.price || 0)?.toLocaleString() ?? ''} RWF</span>
                   </div>
                 ))}
               </div>
@@ -98,7 +141,7 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
 
                 <div className="flex items-center gap-3">
                   <span className="font-mono font-extrabold text-sm text-primary">
-                    Total: {(order.totalRWF || 0).toLocaleString()} RWF
+                    Total: {(order.totalRWF || 0)?.toLocaleString() ?? ''} RWF
                   </span>
                   <ChevronRight className="w-4 h-4 text-text-muted" />
                 </div>
@@ -112,6 +155,12 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart 
         isOpen={!!selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
         order={selectedReceipt}
+      />
+
+      <PostDeliveryFeedbackModal
+        isOpen={!!feedbackOrder}
+        onClose={() => setFeedbackOrder(null)}
+        order={feedbackOrder}
       />
     </div>
   );

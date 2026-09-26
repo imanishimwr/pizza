@@ -1,28 +1,77 @@
 import React, { useState } from 'react';
-import { Star, Heart, DollarSign, X, Check, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Star, Bike, Pizza, X, Check, MessageSquare } from 'lucide-react';
+import { apiService } from '../../services/apiService';
 
 export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
   if (!isOpen || !order) return null;
 
-  const [rating, setRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [tipAmount, setTipAmount] = useState(1000);
-  const [customTip, setCustomTip] = useState('');
+  const [pizzaRating, setPizzaRating] = useState(5);
+  const [hoverPizzaRating, setHoverPizzaRating] = useState(0);
+  const [riderRating, setRiderRating] = useState(5);
+  const [hoverRiderRating, setHoverRiderRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const predefinedTips = [500, 1000, 2000, 3000];
+  const pizzaLabel = (r) => {
+    if (r === 5) return 'Excellent! Fresh & Delicious';
+    if (r === 4) return 'Very Good';
+    if (r === 3) return 'Average';
+    if (r === 2) return 'Below Average';
+    return 'Poor';
+  };
 
-  const handleSubmit = (e) => {
+  const riderLabel = (r) => {
+    if (r === 5) return 'Outstanding! Super Fast';
+    if (r === 4) return 'Very Good';
+    if (r === 3) return 'Average';
+    if (r === 2) return 'Slow Delivery';
+    return 'Very Poor';
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    try {
+      await apiService.submitReview({
+        orderId: order.id,
+        pizzaRating,
+        riderRating,
+        comment,
+      });
+    } catch (_) {
+      // silent fail — still show success to user
+    }
     setSubmitted(true);
+    setSubmitting(false);
     setTimeout(() => {
       onClose();
       setSubmitted(false);
-    }, 2000);
+    }, 2500);
   };
 
-  const activeTip = customTip ? parseInt(customTip, 10) || 0 : tipAmount;
+  const StarRow = ({ value, hover, onSet, onHover, onLeave }) => (
+    <div className="flex items-center justify-center gap-2">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          type="button"
+          key={star}
+          onClick={() => onSet(star)}
+          onMouseEnter={() => onHover(star)}
+          onMouseLeave={() => onLeave()}
+          className="p-1 transition-transform hover:scale-125 focus:outline-none"
+        >
+          <Star
+            className={`w-7 h-7 ${
+              (hover || value) >= star
+                ? 'fill-amber-400 text-amber-400'
+                : 'text-white/20'
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
@@ -39,106 +88,73 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto animate-bounce">
               <Check className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-white">Murakoze Cyane! Thank You!</h3>
+            <h3 className="text-xl font-bold text-white">Murakoze! Thank You!</h3>
             <p className="text-xs text-text-muted">
-              Your feedback and {activeTip > 0 ? `${activeTip.toLocaleString()} RWF tip` : 'review'} have been sent to rider Eric & our kitchen team!
+              Your ratings for Order #{order.id} have been submitted. We appreciate your feedback!
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="text-center space-y-1">
-              <span className="badge-tag badge-primary text-[10px]">ORDER COMPLETED</span>
-              <h2 className="text-xl font-extrabold text-white">Rate Your Delivery</h2>
-              <p className="text-xs text-text-muted">Order #{order.id} • Eric Mugisha (Rider)</p>
+              <span className="badge-tag badge-primary text-[10px]">ORDER DELIVERED</span>
+              <h2 className="text-xl font-extrabold text-white">Rate Your Experience</h2>
+              <p className="text-xs text-text-muted">Order #{order.id}</p>
             </div>
 
-            {/* Star Rating */}
-            <div className="space-y-2 text-center">
-              <label className="text-xs font-bold uppercase tracking-wider text-text-muted block">
-                How was your food & delivery experience?
+            {/* Pizza Rating */}
+            <div className="space-y-2 p-4 rounded-2xl bg-surface-card border border-white/10">
+              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
+                <Pizza className="w-4 h-4 text-primary" /> Rate the Food Quality
               </label>
-              <div className="flex items-center justify-center gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    type="button"
-                    key={star}
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    className="p-1 transition-transform hover:scale-125 focus:outline-none"
-                  >
-                    <Star
-                      className={`w-8 h-8 ${
-                        (hoverRating || rating) >= star
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-text-subdued'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-amber-400 font-semibold">
-                {rating === 5 ? ' Excellent! Hot & Fast' :
-                 rating === 4 ? ' Very Good' :
-                 rating === 3 ? ' Average' : ' Poor'}
+              <StarRow
+                value={pizzaRating}
+                hover={hoverPizzaRating}
+                onSet={setPizzaRating}
+                onHover={setHoverPizzaRating}
+                onLeave={() => setHoverPizzaRating(0)}
+              />
+              <p className="text-xs text-amber-400 font-semibold text-center">
+                {pizzaLabel(hoverPizzaRating || pizzaRating)}
               </p>
             </div>
 
-            {/* Driver Tipping */}
-            <div className="space-y-3 pt-2 border-t border-white/10">
-              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-primary">
-                  <Heart className="w-4 h-4 fill-primary" /> Add Tip for Rider Eric
-                </span>
-                <span className="text-[10px] text-text-subdued">100% goes to driver</span>
+            {/* Rider Rating */}
+            <div className="space-y-2 p-4 rounded-2xl bg-surface-card border border-white/10">
+              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
+                <Bike className="w-4 h-4 text-blue-400" /> Rate the Rider / Delivery
               </label>
-
-              <div className="grid grid-cols-4 gap-2">
-                {predefinedTips.map((amount) => (
-                  <button
-                    type="button"
-                    key={amount}
-                    onClick={() => {
-                      setTipAmount(amount);
-                      setCustomTip('');
-                    }}
-                    className={`py-2 rounded-xl border text-xs font-mono font-bold transition-all ${
-                      tipAmount === amount && !customTip
-                        ? 'bg-primary text-white border-primary shadow-md'
-                        : 'bg-surface-card border-white/10 text-text-muted hover:border-white/20'
-                    }`}
-                  >
-                    {amount} RWF
-                  </button>
-                ))}
-              </div>
-
-              <input
-                type="number"
-                value={customTip}
-                onChange={(e) => setCustomTip(e.target.value)}
-                placeholder="Or enter custom tip (RWF)"
-                className="w-full bg-surface-card border border-white/10 rounded-xl px-4 py-2.5 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
+              <StarRow
+                value={riderRating}
+                hover={hoverRiderRating}
+                onSet={setRiderRating}
+                onHover={setHoverRiderRating}
+                onLeave={() => setHoverRiderRating(0)}
               />
+              <p className="text-xs text-blue-400 font-semibold text-center">
+                {riderLabel(hoverRiderRating || riderRating)}
+              </p>
             </div>
 
             {/* Comment */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 text-primary" /> Delivery Feedback (Optional)
+                <MessageSquare className="w-4 h-4 text-primary" /> Additional Feedback (Optional)
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={2}
-                placeholder="Share compliment for Eric or kitchen note..."
+                placeholder="Tell us anything about your experience..."
                 className="w-full bg-surface-card border border-white/10 rounded-xl p-3 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary resize-none"
               />
             </div>
 
-            {/* Submit Button */}
-            <button type="submit" className="w-full btn-primary py-3 text-xs">
-              Submit Review & {activeTip > 0 ? `Pay ${activeTip.toLocaleString()} RWF Tip` : 'Finish'}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full btn-primary py-3 text-xs disabled:opacity-60"
+            >
+              {submitting ? 'Submitting...' : 'Submit Ratings'}
             </button>
           </form>
         )}

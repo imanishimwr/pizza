@@ -2,35 +2,15 @@ import React, { useState } from 'react';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, Check } from 'lucide-react';
 
 export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemoveItem, onProceedCheckout }) {
-  const [voucher, setVoucher] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
-
   if (!isOpen) return null;
 
   const subtotal = cart.reduce((acc, item) => acc + item.meal.price * item.quantity, 0);
-  const deliveryFee = appliedVoucher?.code === 'KIGALIFREE' ? 0 : subtotal > 0 ? 1500 : 0;
-  const discount = appliedVoucher?.code === 'BOGOPIZZA' ? 3000 : 0;
-  const grandTotal = Math.max(0, subtotal + deliveryFee - discount);
-
-  const handleApplyVoucher = (event) => {
-    event.preventDefault();
-
-    if (voucher.toUpperCase() === 'KIGALIFREE') {
-      setAppliedVoucher({ code: 'KIGALIFREE', desc: 'Free Delivery Granted!' });
-      return;
-    }
-
-    if (voucher.toUpperCase() === 'BOGOPIZZA') {
-      setAppliedVoucher({ code: 'BOGOPIZZA', desc: '3,000 RWF Discount Applied!' });
-      return;
-    }
-
-    alert('Invalid voucher code. Try KIGALIFREE or BOGOPIZZA');
-  };
+  const deliveryFee = subtotal > 0 ? 1500 : 0;
+  const grandTotal = subtotal + deliveryFee;
 
   return (
     <div
-      className="fixed inset-0 z-[1000] overflow-hidden bg-black/75 backdrop-blur-sm animate-fade-in cursor-pointer"
+      className="fixed inset-0 z-1000 overflow-hidden bg-black/75 backdrop-blur-sm animate-fade-in cursor-pointer"
       onClick={onClose}
     >
       <div
@@ -98,7 +78,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
                     </div>
 
                     <span className="text-xs font-mono font-bold text-primary">
-                      {(item.meal.price * item.quantity).toLocaleString()} RWF
+                      {(item.meal.price * item.quantity)?.toLocaleString() ?? ''} RWF
                     </span>
                   </div>
                 </div>
@@ -109,57 +89,27 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
           {/* Pricing & Checkout Footer - Fixed at bottom of drawer */}
           {cart.length > 0 && (
             <div className="p-3 sm:p-4 bg-surface-card border-t border-white/10 space-y-2.5 shrink-0">
-              <form onSubmit={handleApplyVoucher} className="flex gap-2">
-                <div className="relative flex-1">
-                  <Tag className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input
-                    type="text"
-                    value={voucher}
-                    onChange={(event) => setVoucher(event.target.value)}
-                    placeholder="Voucher (e.g. KIGALIFREE)"
-                    className="w-full bg-surface-dark border border-white/10 rounded-lg pl-7 pr-2 py-1.5 text-xs text-text-main placeholder-text-subdued uppercase focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <button type="submit" className="btn-secondary text-xs px-3 py-1.5 shrink-0">Apply</button>
-              </form>
-
-              {appliedVoucher && (
-                <div className="p-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[11px] font-semibold flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Check className="w-3 h-3" />
-                    {appliedVoucher.desc}
-                  </span>
-                  <button onClick={() => setAppliedVoucher(null)} className="text-[10px] underline hover:text-white">Remove</button>
-                </div>
-              )}
-
               <div className="space-y-1 text-xs text-text-muted">
                 <div className="flex justify-between text-[11px]">
                   <span>Subtotal</span>
-                  <span className="font-mono text-text-main">{subtotal.toLocaleString()} RWF</span>
+                  <span className="font-mono text-text-main">{subtotal?.toLocaleString() ?? ''} RWF</span>
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span>Kigali Delivery Fee</span>
                   <span className="font-mono text-text-main">
-                    {deliveryFee === 0 ? 'FREE' : `${deliveryFee.toLocaleString()} RWF`}
+                    {deliveryFee === 0 ? 'FREE' : `${deliveryFee?.toLocaleString() ?? ''} RWF`}
                   </span>
                 </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-[11px] text-emerald-400">
-                    <span>Discount</span>
-                    <span className="font-mono">-{discount.toLocaleString()} RWF</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-xs font-bold text-text-main pt-1.5 border-t border-white/10">
                   <span>Total Amount</span>
-                  <span className="font-mono text-primary text-sm">{grandTotal.toLocaleString()} RWF</span>
+                  <span className="font-mono text-primary text-sm">{grandTotal?.toLocaleString() ?? ''} RWF</span>
                 </div>
               </div>
 
               <button
                 onClick={() => {
                   onClose();
-                  onProceedCheckout({ cart, subtotal, deliveryFee, discount, grandTotal });
+                  onProceedCheckout({ cart, subtotal, deliveryFee, discount: 0, grandTotal });
                 }}
                 className="w-full btn-primary py-2.5 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
               >

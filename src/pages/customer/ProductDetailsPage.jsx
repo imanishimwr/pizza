@@ -124,14 +124,14 @@ export default function ProductDetailsPage({
         
         {/* Left Column: Product Image & Badges (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="relative rounded-3xl overflow-hidden aspect-[4/3] bg-black/60 border border-white/10 shadow-2xl group">
+          <div className="relative rounded-3xl overflow-hidden aspect-4/3 bg-black/60 border border-white/10 shadow-2xl group">
             <img
               src={meal.image}
               alt={meal.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               onError={(e) => { e.target.src = meal.fallbackImage; }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-black/20" />
 
             {/* Badges Overlay */}
             <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
@@ -211,7 +211,7 @@ export default function ProductDetailsPage({
 
             <div className="flex items-baseline gap-3 pt-1">
               <span className="text-2xl sm:text-3xl font-black font-mono text-primary">
-                {meal.price.toLocaleString()} RWF
+                {meal.price?.toLocaleString() ?? ''} RWF
               </span>
               <span className="text-xs text-text-muted uppercase font-bold tracking-wider">
                 Price incl. taxes
@@ -304,7 +304,7 @@ export default function ProductDetailsPage({
             
             {/* If product is ALREADY in cart */}
             {inCartQty > 0 ? (
-              <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/50 via-surface-card to-surface-card border border-emerald-500/40 space-y-4 shadow-xl animate-fade-in">
+              <div className="p-5 rounded-2xl bg-linear-to-r from-emerald-950/50 via-surface-card to-surface-card border border-emerald-500/40 space-y-4 shadow-xl animate-fade-in">
                 
                 {/* Status Notice Banner */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -363,7 +363,7 @@ export default function ProductDetailsPage({
                   </div>
 
                   <span className="font-mono font-extrabold text-primary text-sm pr-2">
-                    {(meal.price * inCartQty).toLocaleString()} RWF
+                    {(meal.price * inCartQty)?.toLocaleString() ?? ''} RWF
                   </span>
                 </div>
 
@@ -458,7 +458,7 @@ export default function ProductDetailsPage({
                     }`}
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    {meal.outOfStock ? 'Item Currently Sold Out' : `Add to Order • ${(meal.price * newQty).toLocaleString()} RWF`}
+                    {meal.outOfStock ? 'Item Currently Sold Out' : `Add to Order • ${(meal.price * newQty)?.toLocaleString() ?? ''} RWF`}
                   </button>
                 </div>
               </div>
@@ -496,7 +496,7 @@ export default function ProductDetailsPage({
                     onError={(e) => { e.target.src = relMeal.fallbackImage; }}
                   />
                   <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/70 text-white">
-                    {(Number(relMeal.price) || 0).toLocaleString()} RWF
+                    {(Number(relMeal.price) || 0)?.toLocaleString() ?? ''} RWF
                   </span>
                 </div>
                 <div>

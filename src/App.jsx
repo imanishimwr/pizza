@@ -12,14 +12,14 @@ import CartDrawer from './components/customer/CartDrawer';
 import CheckoutModal from './components/customer/CheckoutModal';
 import AuthModal from './components/customer/AuthModal';
 import LocationModal from './components/LocationModal';
-import ReferralModal from './components/customer/ReferralModal';
 import HelpModal from './components/customer/HelpModal';
 import ProfileModal from './components/customer/ProfileModal';
-import CustomPizzaBuilderModal from './components/customer/CustomPizzaBuilderModal';
+import PostDeliveryFeedbackModal from './components/customer/PostDeliveryFeedbackModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import { apiService } from './services/apiService';
 import { eventBus } from './services/eventBus';
 import { notificationService } from './services/notificationService';
+import { downloadOrderReceiptPdf } from './utils/receiptGenerator';
 import { Bell, Flame } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -85,11 +85,10 @@ export default function App() {
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isReferralOpen, setIsReferralOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [isCustomBuilderOpen, setIsCustomBuilderOpen] = useState(false);
+  const [feedbackOrder, setFeedbackOrder] = useState(null);
   const [checkoutData, setCheckoutData] = useState(null);
 
   // Client-specific orders filter (client sees ONLY their own orders, admin sees ALL orders)
@@ -182,6 +181,10 @@ export default function App() {
           return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
         });
         eventBus.emit('ORDER_STATUS_UPDATE', { orderId: updatedOrder.id, status: updatedOrder.status, order: updatedOrder }, true);
+        // Show feedback modal for customer when their order is delivered
+        if (updatedOrder.status === 'delivered') {
+          setFeedbackOrder(updatedOrder);
+        }
       });
 
       socket.on('order_cancelled', (cancelledOrder) => {
@@ -244,7 +247,7 @@ export default function App() {
       } else if (status === 'delivery') {
         notificationService.playChime('status_update');
         if (isAdmin) {
-          const rev = matchingOrder?.totalRWF ? `${Number(matchingOrder.totalRWF).toLocaleString()} RWF` : '';
+          const rev = matchingOrder?.totalRWF ? `${Number(matchingOrder.totalRWF)?.toLocaleString() ?? ''} RWF` : '';
           showToast(`Order #${orderId} ${rev ? `(${rev}) ` : ''}sold & handed to rider! Logged in Sales Report.`, '💰 Order Sold & Dispatched');
           notificationService.sendDesktopNotification(`Sale Recorded: #${orderId}`, {
             body: `Order #${orderId} handed to courier. Sale saved in Admin Financial Report.`
@@ -309,6 +312,18 @@ export default function App() {
               ? 'product-detail'
               : 'menu'
     );
+
+    // Guard: Customer can only access orders or tracking if they have at least 1 order
+    if (targetRole === 'customer' && (targetTab === 'orders' || targetTab === 'tracking') && clientOrders.length === 0) {
+      showToast('Order page is only accessible after purchasing an item. Explore our delicious menu to place your first order!', 'No Orders Yet');
+      setCurrentRole('customer');
+      setActiveTab('menu');
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({}, '', '/');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
 
     setCurrentRole(targetRole);
     setActiveTab(targetTab);
@@ -411,9 +426,16 @@ export default function App() {
       setTrackedOrder(createdOrder);
       apiService.setTrackedOrderId(createdOrder.id);
 
+      // Automatically download PDF receipt for the customer upon payment
+      try {
+        downloadOrderReceiptPdf(createdOrder);
+      } catch (pdfErr) {
+        console.warn('PDF Receipt auto-download exception:', pdfErr);
+      }
+
       eventBus.emit('NEW_ORDER', createdOrder);
       notificationService.playChime('new_order');
-      showToast(`Order #${createdOrder.id} placed successfully! Kitchen is on it.`, 'Order Placed');
+      showToast(`Order #${createdOrder.id} placed & receipt downloaded! Kitchen is on it.`, 'Order Placed & Paid');
       handleNavigate('/tracking', 'tracking', 'customer');
     } catch (e) {
       showToast('Failed to place order. Please try again.', 'Error');
@@ -439,6 +461,12 @@ export default function App() {
       if (newStatus === 'ready') {
         notificationService.playChime('order_ready');
         showToast(`Order #${orderId} is confirmed READY by cooker! Ready for rider dispatch.`, '🍲 Kitchen Order Ready');
+      } else if (newStatus === 'delivered') {
+        notificationService.playChime('order_ready');
+        showToast(`Order #${orderId} confirmed DELIVERED! Enjoy your hot meal.`, '🎉 Delivery Confirmed');
+        // Auto-open rating modal for the delivered order
+        const deliveredOrder = orders.find(o => o.id === orderId) || { id: orderId };
+        setFeedbackOrder(deliveredOrder);
       } else {
         notificationService.playChime('status_update');
         showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
@@ -476,6 +504,37 @@ export default function App() {
     showToast(`Order #${orderId} details updated!`, 'Order Modified');
   };
 
+  // Dedicated Kitchen Display System (KDS) full-screen layout
+  if (currentRole === 'kitchen') {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-bg-dark text-text-main flex flex-col select-none">
+        <KitchenBoard
+          orders={orders}
+          onUpdateStatus={handleUpdateOrderStatus}
+          user={user}
+          meals={meals}
+          onSwitchRole={(role) => handleNavigate(role === 'admin' ? '/admin' : role === 'delivery' ? '/delivery' : '/', 'menu', role)}
+        />
+      </div>
+    );
+  }
+
+  // Dedicated Admin Operations Dashboard full-screen layout (matching KDS architecture)
+  if (currentRole === 'admin' || (activeTab === 'dashboard' && (user?.role || '').toUpperCase() === 'ADMIN')) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
+        <AdminDashboard
+          meals={meals}
+          setMeals={setMeals}
+          orders={orders}
+          onUpdateStatus={handleUpdateOrderStatus}
+          user={user}
+          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-bg-dark text-text-main flex flex-col justify-between selection:bg-primary selection:text-white relative">
       {toast && (
@@ -498,7 +557,6 @@ export default function App() {
         wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenReferral={() => setIsReferralOpen(true)}
         onOpenHelp={() => setIsHelpOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         user={user}
@@ -518,6 +576,7 @@ export default function App() {
         toggleTheme={toggleTheme}
         meals={meals}
         onSelectMeal={handleSelectMeal}
+        hasOrders={clientOrders.length > 0}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 flex-1 w-full relative">
@@ -534,7 +593,6 @@ export default function App() {
                   cart={cart}
                   wishlist={wishlist}
                   onToggleWishlist={handleToggleWishlist}
-                  onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
                   onAddToCart={handleAddToCart}
                   onOpenCart={() => setIsCartOpen(true)}
                 />
@@ -564,6 +622,7 @@ export default function App() {
                     orders={orders}
                     onUpdateStatus={handleUpdateOrderStatus}
                     user={user}
+                    onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
                   />
                 ) : (user?.role || '').toUpperCase() === 'KITCHEN' ? (
                   <KitchenBoard
@@ -590,7 +649,6 @@ export default function App() {
                       apiService.setTrackedOrderId(order.id);
                       handleNavigate('/tracking', 'tracking', 'customer');
                     }}
-                    onOpenReferral={() => setIsReferralOpen(true)}
                     onOpenProfile={() => setIsProfileOpen(true)}
                     onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
                   />
@@ -598,23 +656,47 @@ export default function App() {
               )}
 
               {activeTab === 'orders' && (
-                <OrdersHistory
-                  orders={clientOrders}
-                  onAddToCart={handleAddToCart}
-                  onSelectOrder={(order) => {
-                    setTrackedOrder(order);
-                    apiService.setTrackedOrderId(order.id);
-                    handleNavigate('/tracking', 'tracking', 'customer');
-                  }}
-                />
+                clientOrders.length > 0 ? (
+                  <OrdersHistory
+                    orders={clientOrders}
+                    onAddToCart={handleAddToCart}
+                    onSelectOrder={(order) => {
+                      setTrackedOrder(order);
+                      apiService.setTrackedOrderId(order.id);
+                      handleNavigate('/tracking', 'tracking', 'customer');
+                    }}
+                    onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+                  />
+                ) : (
+                  <Home
+                    meals={meals}
+                    onAddToCart={handleAddToCart}
+                    onSelectMeal={handleSelectMeal}
+                    user={user}
+                    onToggleWishlist={handleToggleWishlist}
+                    wishlist={wishlist}
+                  />
+                )
               )}
 
               {activeTab === 'tracking' && (
-                <LiveTracking
-                  order={trackedOrder || clientOrders[0]}
-                  onCancelOrder={handleCancelOrder}
-                  onModifyOrder={handleModifyOrder}
-                />
+                clientOrders.length > 0 ? (
+                  <LiveTracking
+                    order={trackedOrder || clientOrders[0]}
+                    onCancelOrder={handleCancelOrder}
+                    onModifyOrder={handleModifyOrder}
+                    onUpdateStatus={handleUpdateOrderStatus}
+                  />
+                ) : (
+                  <Home
+                    meals={meals}
+                    onAddToCart={handleAddToCart}
+                    onSelectMeal={handleSelectMeal}
+                    user={user}
+                    onToggleWishlist={handleToggleWishlist}
+                    wishlist={wishlist}
+                  />
+                )
               )}
             </>
           )}
@@ -635,6 +717,7 @@ export default function App() {
               orders={orders}
               onUpdateStatus={handleUpdateOrderStatus}
               user={user}
+              onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
             />
           )}
         </div>
@@ -695,8 +778,12 @@ export default function App() {
         }}
       />
 
-      <ReferralModal isOpen={isReferralOpen} onClose={() => setIsReferralOpen(false)} />
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <PostDeliveryFeedbackModal
+        isOpen={!!feedbackOrder}
+        onClose={() => setFeedbackOrder(null)}
+        order={feedbackOrder}
+      />
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
@@ -708,23 +795,14 @@ export default function App() {
         }}
       />
 
-      <CustomPizzaBuilderModal
-        isOpen={isCustomBuilderOpen}
-        onClose={() => setIsCustomBuilderOpen(false)}
-        onAddToCart={(customItem) => {
-          handleAddToCart(customItem);
-          showToast(`${customItem.name} added to cart!`, 'Custom Pizza Created');
-        }}
-      />
-
       {currentRole === 'customer' && (
         <MobileBottomNav
           activeTab={activeTab}
           setActiveTab={(tab) => handleNavigate(tab === 'menu' ? '/' : `/${tab}`, tab, 'customer')}
           cartCount={cart.reduce((sum, item) => sum + (item.qty || 1), 0)}
           onOpenCart={() => setIsCartOpen(true)}
-          onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
           onOpenProfile={() => (user ? setIsProfileOpen(true) : setIsAuthOpen(true))}
+          hasOrders={clientOrders.length > 0}
         />
       )}
 

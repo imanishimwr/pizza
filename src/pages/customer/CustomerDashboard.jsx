@@ -13,7 +13,6 @@ export default function CustomerDashboard({
   user,
   orders = [],
   onSelectOrder,
-  onOpenReferral,
   onOpenProfile,
   onOpenAuth,
   onExploreMenu,
@@ -67,7 +66,6 @@ export default function CustomerDashboard({
 
   // Notifications preferences
   const [smsAlerts, setSmsAlerts] = useState(true);
-  const [promoOffers, setPromoOffers] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -233,7 +231,7 @@ export default function CustomerDashboard({
   if (!user) {
     return (
       <div className="max-w-2xl mx-auto py-12 px-4 animate-page-enter">
-        <div className="card-item p-8 sm:p-12 text-center space-y-6 border-primary/30 shadow-2xl bg-gradient-to-b from-primary/10 via-surface-card to-surface-card">
+        <div className="card-item p-8 sm:p-12 text-center space-y-6 border-primary/30 shadow-2xl bg-linear-to-b from-primary/10 via-surface-card to-surface-card">
           <div className="w-20 h-20 rounded-3xl bg-primary/20 border border-primary/40 text-primary flex items-center justify-center mx-auto shadow-xl shadow-primary/20">
             <Shield className="w-10 h-10" />
           </div>
@@ -293,7 +291,7 @@ export default function CustomerDashboard({
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-xl shrink-0 bg-gradient-to-br from-primary to-orange-600 border border-white/20">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-2xl text-white shadow-xl shrink-0 bg-linear-to-br from-primary to-orange-600 border border-white/20">
               {user?.name ? user.name[0].toUpperCase() : 'C'}
             </div>
 
@@ -312,29 +310,12 @@ export default function CustomerDashboard({
               </p>
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <button
-              onClick={onExploreMenu}
-              className="btn-primary text-xs px-4 py-2.5 shadow-lg shadow-primary/30 flex items-center gap-2 font-bold"
-            >
-              <Flame className="w-4 h-4 text-amber-300" />
-              <span>Order Food</span>
-            </button>
-            <button
-              onClick={onOpenReferral}
-              className="btn-secondary text-xs px-3.5 py-2.5 flex items-center gap-1.5"
-            >
-              <Gift className="w-4 h-4 text-amber-400" />
-              <span>Earn Points</span>
-            </button>
-          </div>
         </div>
       </section>
 
       {/* ── Cooker Confirmed Ready Live Notification Banner ── */}
       {orders.some(o => o.status === 'ready') && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-emerald-900/60 to-surface-card border border-emerald-500/50 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-bounce-short">
+        <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-emerald-950/90 via-emerald-900/60 to-surface-card border border-emerald-500/50 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-bounce-short">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-600/30">
               <ChefHat className="w-6 h-6" />
@@ -456,30 +437,9 @@ export default function CustomerDashboard({
               </div>
               <div>
                 <div className="text-xl sm:text-2xl font-black text-white font-mono truncate">
-                  {totalSpent.toLocaleString()} <span className="text-xs text-text-muted">RWF</span>
+                  {totalSpent?.toLocaleString() ?? ''} <span className="text-xs text-text-muted">RWF</span>
                 </div>
                 <div className="text-[11px] text-text-muted mt-1">Kigali Express Dining</div>
-              </div>
-            </div>
-
-            {/* VIP Loyalty Points */}
-            <div
-              onClick={onOpenReferral}
-              className="card-item p-4 sm:p-5 flex flex-col justify-between space-y-2 cursor-pointer hover:border-amber-500/40 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-text-subdued">VIP Points</span>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-amber-500/15 text-amber-400 group-hover:scale-110 transition-transform">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">
-                  {loyaltyPoints.toLocaleString()}
-                </div>
-                <div className="text-[11px] text-amber-500 font-semibold flex items-center gap-1 mt-1">
-                  Redeem Rewards <ChevronRight className="w-3 h-3" />
-                </div>
               </div>
             </div>
 
@@ -536,7 +496,7 @@ export default function CustomerDashboard({
                         if (onSelectOrder) onSelectOrder(order);
                         else setActiveTab('tracking');
                       }}
-                      className="card-item p-4 sm:p-5 space-y-3 border-primary/30 hover:border-primary cursor-pointer transition-all bg-gradient-to-br from-primary/10 via-surface-card to-surface-card"
+                      className="card-item p-4 sm:p-5 space-y-3 border-primary/30 hover:border-primary cursor-pointer transition-all bg-linear-to-br from-primary/10 via-surface-card to-surface-card"
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -580,7 +540,7 @@ export default function CustomerDashboard({
                         {(order.items || []).slice(0, 2).map((item, idx) => (
                           <div key={idx} className="flex justify-between">
                             <span className="text-white truncate max-w-[70%]">{item.qty || 1}x {item.name}</span>
-                            <span className="font-mono">{((item.price || 0) * (item.qty || 1)).toLocaleString()} RWF</span>
+                            <span className="font-mono">{((item.price || 0) * (item.qty || 1))?.toLocaleString() ?? ''} RWF</span>
                           </div>
                         ))}
                         {(order.items || []).length > 2 && (
@@ -650,7 +610,7 @@ export default function CustomerDashboard({
 
                       <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
                         <span className="font-mono font-bold text-xs text-primary">
-                          {(order.totalRWF || 0).toLocaleString()} RWF
+                          {(order.totalRWF || 0)?.toLocaleString() ?? ''} RWF
                         </span>
                         <div className="flex items-center gap-1.5">
                           <button
@@ -681,29 +641,6 @@ export default function CustomerDashboard({
 
             {/* Right Side Widgets: Rewards & Support */}
             <div className="space-y-4">
-              {/* Rewards Card */}
-              <div
-                className="p-5 rounded-2xl space-y-3.5 border border-amber-500/30"
-                style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(28, 28, 36, 0.95) 100%)' }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                    <Gift className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">Refer Friends in Kigali</h4>
-                    <p className="text-[11px] text-text-muted">Earn 5,000 RWF voucher on their first meal</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={onOpenReferral}
-                  className="w-full py-2.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-black flex items-center justify-center gap-2 shadow-md transition-all"
-                >
-                  <span>Share Referral Link</span>
-                  <ArrowUpRight className="w-4 h-4" />
-                </button>
-              </div>
 
               {/* Saved Address Quick Glance */}
               <div className="card-item p-4 sm:p-5 space-y-3">
@@ -786,7 +723,7 @@ export default function CustomerDashboard({
                 return (
                   <div
                     key={order.id}
-                    className="card-item p-5 sm:p-7 space-y-6 border-primary/40 bg-gradient-to-b from-primary/5 via-surface-card to-surface-card shadow-2xl"
+                    className="card-item p-5 sm:p-7 space-y-6 border-primary/40 bg-linear-to-b from-primary/5 via-surface-card to-surface-card shadow-2xl"
                   >
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
@@ -908,14 +845,14 @@ export default function CustomerDashboard({
                             <ShoppingBag className="w-3.5 h-3.5 text-primary" /> Order Items ({order.items?.length || 0})
                           </div>
                           <span className="font-mono font-bold text-xs text-primary">
-                            {(order.totalRWF || 0).toLocaleString()} RWF
+                            {(order.totalRWF || 0)?.toLocaleString() ?? ''} RWF
                           </span>
                         </div>
                         <div className="space-y-1 text-xs text-text-muted max-h-24 overflow-y-auto">
                           {(order.items || []).map((item, i) => (
                             <div key={i} className="flex justify-between">
                               <span className="truncate max-w-[70%]">{item.qty || 1}x {item.name}</span>
-                              <span className="font-mono text-white">{((item.price || 0) * (item.qty || 1)).toLocaleString()}</span>
+                              <span className="font-mono text-white">{((item.price || 0) * (item.qty || 1))?.toLocaleString() ?? ''}</span>
                             </div>
                           ))}
                         </div>
@@ -1064,7 +1001,7 @@ export default function CustomerDashboard({
                           </span>
                           <span className="text-white font-medium truncate flex-1">{item.name}</span>
                           <span className="font-mono text-text-muted text-[11px] shrink-0">
-                            {((item.price || 0) * (item.qty || 1)).toLocaleString()} RWF
+                            {((item.price || 0) * (item.qty || 1))?.toLocaleString() ?? ''} RWF
                           </span>
                         </div>
                       ))}
@@ -1081,7 +1018,7 @@ export default function CustomerDashboard({
                     <div className="flex items-center gap-3 font-mono">
                       <span className="text-text-muted">Total:</span>
                       <span className="text-sm font-extrabold text-primary">
-                        {(order.totalRWF || 0).toLocaleString()} RWF
+                        {(order.totalRWF || 0)?.toLocaleString() ?? ''} RWF
                       </span>
                     </div>
                   </div>
@@ -1229,19 +1166,6 @@ export default function CustomerDashboard({
                         type="checkbox"
                         checked={smsAlerts}
                         onChange={(e) => setSmsAlerts(e.target.checked)}
-                        className="w-4 h-4 accent-primary rounded cursor-pointer"
-                      />
-                    </label>
-
-                    <label className="flex items-center justify-between p-3 rounded-xl bg-surface-dark border border-white/5 cursor-pointer">
-                      <div className="space-y-0.5">
-                        <span className="text-xs font-semibold text-white block">VIP Vouchers & Special Offers</span>
-                        <span className="text-[10px] text-text-muted block">Exclusive discounts for registered HotPot clients</span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={promoOffers}
-                        onChange={(e) => setPromoOffers(e.target.checked)}
                         className="w-4 h-4 accent-primary rounded cursor-pointer"
                       />
                     </label>

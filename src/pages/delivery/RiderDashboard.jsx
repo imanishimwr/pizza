@@ -112,7 +112,7 @@ export default function RiderDashboard({ orders = [], onUpdateStatus }) {
                     </div>
 
                     <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
-                      <span className="font-mono font-bold text-primary">{(order.totalRWF || 0).toLocaleString()} RWF</span>
+                      <span className="font-mono font-bold text-primary">{(order.totalRWF || 0)?.toLocaleString() ?? ''} RWF</span>
                       <a
                         href={`https://www.google.com/maps?q=${encodeURIComponent(order.address)}`}
                         target="_blank"

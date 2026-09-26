@@ -302,6 +302,52 @@ app.get('/api/admin/analytics', authMiddleware(['ADMIN']), async (req, res) => {
 });
 
 // ----------------------------------------------------
+// 6b. Reviews / Ratings Endpoint (/api/reviews)
+// ----------------------------------------------------
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { orderId, pizzaRating, riderRating, comment, userId } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+
+    const pizza = Math.min(5, Math.max(1, parseInt(pizzaRating) || 5));
+    const rider = Math.min(5, Math.max(1, parseInt(riderRating) || 5));
+    const combined = Math.round((pizza + rider) / 2);
+    const id = `feedback-${Date.now()}`;
+
+    if (neonClient.sql) {
+      // Upsert so re-submits update rather than error
+      await neonClient.sql`
+        INSERT INTO feedbacks (id, order_id, user_id, pizza_rating, rider_rating, rating, comment, created_at)
+        VALUES (${id}, ${orderId}, ${userId || null}, ${pizza}, ${rider}, ${combined}, ${comment || null}, NOW())
+        ON CONFLICT (order_id) DO UPDATE
+          SET pizza_rating = EXCLUDED.pizza_rating,
+              rider_rating = EXCLUDED.rider_rating,
+              rating = EXCLUDED.rating,
+              comment = EXCLUDED.comment;
+      `;
+    }
+
+    res.json({ success: true, pizzaRating: pizza, riderRating: rider });
+  } catch (err) {
+    console.error('Review save error:', err);
+    res.status(500).json({ error: 'Failed to save review' });
+  }
+});
+
+app.get('/api/reviews', async (req, res) => {
+  try {
+    if (!neonClient.sql) return res.json([]);
+    const rows = await neonClient.sql`
+      SELECT id, order_id, pizza_rating, rider_rating, rating, comment, created_at
+      FROM feedbacks ORDER BY created_at DESC;
+    `;
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch reviews' });
+  }
+});
+
+// ----------------------------------------------------
 // 7. WebSockets Event Streams
 // ----------------------------------------------------
 io.on('connection', (socket) => {

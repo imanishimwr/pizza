@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, User, Flame, Shield, ChefHat, Bike, LogOut, MapPin, Gift, HelpCircle, History, Heart, Menu, X, Globe, Sun, Moon } from 'lucide-react';
+import { ShoppingBag, Search, User, Flame, Shield, ChefHat, Bike, LogOut, MapPin, HelpCircle, History, Heart, Menu, X, Globe, Sun, Moon } from 'lucide-react';
 
 export default function Header({
   currentRole = 'customer',
@@ -8,7 +8,6 @@ export default function Header({
   wishlistCount = 0,
   onOpenCart,
   onOpenAuth,
-  onOpenReferral,
   onOpenHelp,
   onOpenProfile,
   user,
@@ -24,6 +23,7 @@ export default function Header({
   toggleTheme,
   meals = [],
   onSelectMeal,
+  hasOrders = false,
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -107,7 +107,7 @@ export default function Header({
                             <div className="text-[10px] text-text-muted capitalize">{meal.category}</div>
                           </div>
                         </div>
-                        <span className="text-xs font-mono font-bold text-primary">{(meal.price || 0).toLocaleString()} RWF</span>
+                        <span className="text-xs font-mono font-bold text-primary">{(meal.price || 0)?.toLocaleString() ?? ''} RWF</span>
                       </div>
                     ))}
                   </div>
@@ -162,15 +162,17 @@ export default function Header({
                 </button>
               )}
 
-              <button
-                onClick={() => navigateTo('/orders', 'orders', 'customer')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  activeTab === 'orders' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:text-white'
-                }`}
-              >
-                <History className="w-3.5 h-3.5" />
-                {lang === 'RW' ? 'Ibyasabwe' : 'Orders'}
-              </button>
+              {hasOrders && (
+                <button
+                  onClick={() => navigateTo('/orders', 'orders', 'customer')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    activeTab === 'orders' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:text-white'
+                  }`}
+                >
+                  <History className="w-3.5 h-3.5" />
+                  {lang === 'RW' ? 'Ibyasabwe' : 'Orders'}
+                </button>
+              )}
 
               <button
                 onClick={() => navigateTo('/tracking', 'tracking', 'customer')}
@@ -203,15 +205,7 @@ export default function Header({
                 {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-400" />}
               </button>
 
-              {onOpenReferral && (
-                <button
-                  onClick={onOpenReferral}
-                  className="p-2 text-amber-400 hover:text-amber-300 transition-colors"
-                  title="Refer & Earn Vouchers"
-                >
-                  <Gift className="w-5 h-5" />
-                </button>
-              )}
+
 
               {onOpenHelp && (
                 <button

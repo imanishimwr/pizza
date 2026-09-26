@@ -74,6 +74,21 @@ async function migrate() {
     `;
     console.log("✅ Vouchers table created.");
 
+    // 5. Create Feedbacks Table (pizza and rider ratings)
+    await sql`
+      CREATE TABLE IF NOT EXISTS feedbacks (
+        id VARCHAR(255) PRIMARY KEY,
+        order_id VARCHAR(255) UNIQUE,
+        user_id VARCHAR(255),
+        pizza_rating INTEGER DEFAULT 5,
+        rider_rating INTEGER DEFAULT 5,
+        rating INTEGER DEFAULT 5,
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log("✅ Feedbacks (ratings) table created.");
+
     console.log("🎉 Migration completed successfully!");
   } catch (err) {
     console.error("❌ Migration failed:", err);

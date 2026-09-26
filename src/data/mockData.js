@@ -17,25 +17,22 @@ export const PROMO_BANNERS = [
   {
     id: 1,
     title: "BBQ Chicken Pizza Days",
-    subtitle: "Buy 1 Get 1 Free on all Large Pizzas!",
-    code: "BOGOPIZZA",
-    tag: "SPECIAL PROMO",
+    subtitle: "Fresh handcrafted artisan pizzas baked to perfection",
+    tag: "POPULAR PIZZA",
     color: "from-amber-600 to-orange-700",
     bgGradient: "linear-gradient(135deg, #AE3200 0%, #D97706 100%)"
   },
   {
     id: 2,
-    title: "Free Delivery in Kigali",
-    subtitle: "On your first Hotpot combo order over 15,000 RWF",
-    code: "KIGALIFREE",
-    tag: "POPULAR",
+    title: "Fast Delivery in Kigali",
+    subtitle: "Hot, delicious meals delivered right to your doorstep",
+    tag: "KIGALI EXPRESS",
     bgGradient: "linear-gradient(135deg, #128731 0%, #059669 100%)"
   },
   {
     id: 3,
     title: "Szechuan Deluxe Meal",
     subtitle: "Includes Szechuan Broth, Wagyu Beef, & Dumplings",
-    code: "HOTPOT25",
     tag: "CHEF RECOMMENDATION",
     bgGradient: "linear-gradient(135deg, #B91C1C 0%, #7F1D1D 100%)"
   }

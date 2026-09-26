@@ -11,7 +11,6 @@ export default function Home({
   cart = [],
   wishlist = [],
   onToggleWishlist,
-  onOpenCustomBuilder,
   onAddToCart,
   onOpenCart
 }) {
@@ -93,14 +92,11 @@ export default function Home({
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
-              <div className="bg-black/50 px-4 py-2.5 rounded-xl border border-dashed border-white/40 text-xs font-mono font-bold text-white tracking-widest">
-                CODE: {PROMO_BANNERS[activeBanner]?.code}
-              </div>
               <button
                 onClick={() => setSelectedCategory('pizzas')}
-                className="px-5 py-3 rounded-xl bg-white text-primary font-black text-xs hover:bg-orange-100 transition-all shadow-xl flex items-center gap-2 hover:scale-105"
+                className="px-6 py-3 rounded-xl bg-white text-primary font-black text-xs hover:bg-orange-100 transition-all shadow-xl flex items-center gap-2 hover:scale-105"
               >
-                Claim Offer Now
+                Order Now
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -198,7 +194,7 @@ export default function Home({
                   <div className="font-bold text-xs text-text-main line-clamp-1 group-hover:text-primary transition-colors">
                     {item.name}
                   </div>
-                  <div className="text-xs font-mono font-bold text-primary">{item.price.toLocaleString()} RWF</div>
+                  <div className="text-xs font-mono font-bold text-primary">{item.price?.toLocaleString() ?? ''} RWF</div>
                 </div>
               </div>
             ))}
@@ -400,7 +396,7 @@ export default function Home({
                           {meal.name}
                         </h3>
                         <span className="font-mono font-extrabold text-primary text-xs sm:text-sm whitespace-nowrap shrink-0 pt-0.5">
-                          {meal.price.toLocaleString()} RWF
+                          {meal.price?.toLocaleString() ?? ''} RWF
                         </span>
                       </div>
 

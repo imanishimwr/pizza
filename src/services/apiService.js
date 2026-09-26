@@ -223,21 +223,31 @@ export const apiService = {
     }
   },
 
-  // Vouchers API
-  getVouchers: async () => {
-    const res = await fetch(`${API_BASE_URL}/vouchers`);
-    if (!res.ok) throw new Error('Failed to fetch vouchers');
-    return res.json();
+  // Reviews & Ratings API
+  getReviews: async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reviews`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      console.error('Error fetching reviews:', e);
+      return [];
+    }
   },
 
-  createVoucher: async (voucherData, token) => {
-    const res = await fetch(`${API_BASE_URL}/vouchers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(voucherData)
-    });
-    if (!res.ok) throw new Error('Failed to create voucher');
-    return res.json();
+  submitReview: async (reviewData) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData)
+      });
+      if (!res.ok) throw new Error('Failed to submit review');
+      return await res.json();
+    } catch (e) {
+      console.error('Error submitting review:', e);
+      throw e;
+    }
   },
 
   // Admin Analytics API
