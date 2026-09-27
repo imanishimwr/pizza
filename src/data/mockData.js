@@ -1,7 +1,7 @@
 // HotPot Delights UI Constants & Category Configuration
 // All actual data (meals, orders, users) comes from the Neon PostgreSQL backend via apiService.
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const CATEGORIES = [
   { id: 'all', name: 'All Items', icon: 'UtensilsCrossed' },

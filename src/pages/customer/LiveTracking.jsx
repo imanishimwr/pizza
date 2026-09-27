@@ -76,7 +76,8 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
 
   // Real-time WebSocket synchronization for live rider broadcasts
   useEffect(() => {
-    const backendUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '') : 'http://localhost:5002');
+    // Use explicit socket URL if provided, otherwise connect to same origin (Vite proxy forwards /socket.io to backend)
+    const backendUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
     let socket;
     try {
       socket = io(backendUrl, {

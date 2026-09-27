@@ -1,5 +1,6 @@
 // HotPot Delights Persistent Data Service Layer
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 
 const STORAGE_KEYS = {
   MEALS: 'hotpot_meals_v1',
