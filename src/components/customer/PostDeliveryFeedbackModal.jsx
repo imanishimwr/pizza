@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Star, Bike, Pizza, X, Check, MessageSquare } from 'lucide-react';
+import { Star, Bike, UtensilsCrossed, X, Check, MessageSquare, Award } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 
 export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
-  if (!isOpen || !order) return null;
+  // STRICT GUARD: Rating can ONLY be done after receiving the order (status === 'delivered')
+  if (!isOpen || !order || order.status !== 'delivered') return null;
 
   const [pizzaRating, setPizzaRating] = useState(5);
   const [hoverPizzaRating, setHoverPizzaRating] = useState(0);
@@ -14,19 +15,19 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
   const [submitting, setSubmitting] = useState(false);
 
   const pizzaLabel = (r) => {
-    if (r === 5) return 'Excellent! Fresh & Delicious';
-    if (r === 4) return 'Very Good';
-    if (r === 3) return 'Average';
-    if (r === 2) return 'Below Average';
-    return 'Poor';
+    if (r === 5) return '⭐⭐⭐⭐⭐ Outstanding! Fresh, hot & delicious';
+    if (r === 4) return '⭐⭐⭐⭐ Very Good taste & quality';
+    if (r === 3) return '⭐⭐⭐ Average experience';
+    if (r === 2) return '⭐⭐ Below expectations';
+    return '⭐ Poor';
   };
 
   const riderLabel = (r) => {
-    if (r === 5) return 'Outstanding! Super Fast';
-    if (r === 4) return 'Very Good';
-    if (r === 3) return 'Average';
-    if (r === 2) return 'Slow Delivery';
-    return 'Very Poor';
+    if (r === 5) return '⚡ Super Fast, polite & great courier service';
+    if (r === 4) return '👍 Punctual & professional';
+    if (r === 3) return '👌 Acceptable delivery time';
+    if (r === 2) return '⏳ Delayed delivery';
+    return '❌ Poor delivery service';
   };
 
   const handleSubmit = async (e) => {
@@ -40,14 +41,14 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
         comment,
       });
     } catch (_) {
-      // silent fail — still show success to user
+      // silent fail — still show success feedback
     }
     setSubmitted(true);
     setSubmitting(false);
     setTimeout(() => {
       onClose();
       setSubmitted(false);
-    }, 2500);
+    }, 2200);
   };
 
   const StarRow = ({ value, hover, onSet, onHover, onLeave }) => (
@@ -59,13 +60,13 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
           onClick={() => onSet(star)}
           onMouseEnter={() => onHover(star)}
           onMouseLeave={() => onLeave()}
-          className="p-1 transition-transform hover:scale-125 focus:outline-none"
+          className="p-1 transition-transform hover:scale-125 focus:outline-none cursor-pointer"
         >
           <Star
             className={`w-7 h-7 ${
               (hover || value) >= star
-                ? 'fill-amber-400 text-amber-400'
-                : 'text-white/20'
+                ? 'fill-amber-400 text-amber-400 drop-shadow-md'
+                : 'text-slate-600'
             }`}
           />
         </button>
@@ -74,37 +75,39 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-surface-dark border border-white/10 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+      <div className="bg-[#14171F] border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-5 animate-scale-in">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-text-muted hover:text-white"
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all"
         >
           <X className="w-5 h-5" />
         </button>
 
         {submitted ? (
           <div className="text-center py-8 space-y-4 animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto animate-bounce">
+            <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 animate-bounce">
               <Check className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold text-white">Murakoze! Thank You!</h3>
-            <p className="text-xs text-text-muted">
-              Your ratings for Order #{order.id} have been submitted. We appreciate your feedback!
+            <h3 className="text-xl font-black text-white">Murakoze! Feedback Received!</h3>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+              Your ratings for Order <strong className="text-amber-400 font-mono">#{order.id}</strong> and your delivery courier have been saved.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="text-center space-y-1">
-              <span className="badge-tag badge-primary text-[10px]">ORDER DELIVERED</span>
-              <h2 className="text-xl font-extrabold text-white">Rate Your Experience</h2>
-              <p className="text-xs text-text-muted">Order #{order.id}</p>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                ✓ ORDER DELIVERED TO YOU
+              </span>
+              <h2 className="text-xl font-black text-white pt-1">Rate Your Delivery Experience</h2>
+              <p className="text-xs text-slate-400">Order #{order.id} • {order.customerName || 'Customer'}</p>
             </div>
 
-            {/* Pizza Rating */}
-            <div className="space-y-2 p-4 rounded-2xl bg-surface-card border border-white/10">
-              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
-                <Pizza className="w-4 h-4 text-primary" /> Rate the Food Quality
+            {/* Food Quality Rating */}
+            <div className="space-y-2.5 p-4 rounded-2xl bg-[#1A1D24] border border-slate-800">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <UtensilsCrossed className="w-4 h-4 text-orange-400" /> Food Quality & Taste
               </label>
               <StarRow
                 value={pizzaRating}
@@ -113,15 +116,15 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
                 onHover={setHoverPizzaRating}
                 onLeave={() => setHoverPizzaRating(0)}
               />
-              <p className="text-xs text-amber-400 font-semibold text-center">
+              <p className="text-[11px] text-amber-400 font-semibold text-center">
                 {pizzaLabel(hoverPizzaRating || pizzaRating)}
               </p>
             </div>
 
-            {/* Rider Rating */}
-            <div className="space-y-2 p-4 rounded-2xl bg-surface-card border border-white/10">
-              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
-                <Bike className="w-4 h-4 text-blue-400" /> Rate the Rider / Delivery
+            {/* Rider Delivery Rating */}
+            <div className="space-y-2.5 p-4 rounded-2xl bg-[#1A1D24] border border-slate-800">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Bike className="w-4 h-4 text-amber-400" /> Courier Speed & Service
               </label>
               <StarRow
                 value={riderRating}
@@ -130,31 +133,31 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
                 onHover={setHoverRiderRating}
                 onLeave={() => setHoverRiderRating(0)}
               />
-              <p className="text-xs text-blue-400 font-semibold text-center">
+              <p className="text-[11px] text-amber-400 font-semibold text-center">
                 {riderLabel(hoverRiderRating || riderRating)}
               </p>
             </div>
 
-            {/* Comment */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 text-primary" /> Additional Feedback (Optional)
+            {/* Written Comment */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-orange-400" /> Note for Kitchen & Courier (Optional)
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={2}
-                placeholder="Tell us anything about your experience..."
-                className="w-full bg-surface-card border border-white/10 rounded-xl p-3 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary resize-none"
+                placeholder="Tell us about food temperature, delivery speed or rider politeness..."
+                className="w-full bg-[#1A1D24] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-400 resize-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full btn-primary py-3 text-xs disabled:opacity-60"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
             >
-              {submitting ? 'Submitting...' : 'Submit Ratings'}
+              {submitting ? 'Submitting Ratings...' : 'Submit Rating & Feedback ⭐'}
             </button>
           </form>
         )}

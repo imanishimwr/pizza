@@ -464,9 +464,13 @@ export default function App() {
       } else if (newStatus === 'delivered') {
         notificationService.playChime('order_ready');
         showToast(`Order #${orderId} confirmed DELIVERED! Enjoy your hot meal.`, '🎉 Delivery Confirmed');
-        // Auto-open rating modal for the delivered order
-        const deliveredOrder = orders.find(o => o.id === orderId) || { id: orderId };
-        setFeedbackOrder(deliveredOrder);
+        // Auto-open rating modal ONLY for the customer who placed/owns this order
+        const matchingOrder = orders.find(o => o.id === orderId) || { id: orderId };
+        const isCustomer = currentRole === 'customer';
+        const isMyOrder = (trackedOrder && trackedOrder.id === orderId) || (user && matchingOrder && matchingOrder.userId === user.id);
+        if (isCustomer && isMyOrder) {
+          setFeedbackOrder(matchingOrder);
+        }
       } else {
         notificationService.playChime('status_update');
         showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
@@ -870,11 +874,13 @@ export default function App() {
       />
 
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
-      <PostDeliveryFeedbackModal
-        isOpen={!!feedbackOrder}
-        onClose={() => setFeedbackOrder(null)}
-        order={feedbackOrder}
-      />
+      {currentRole === 'customer' && (
+        <PostDeliveryFeedbackModal
+          isOpen={!!feedbackOrder}
+          onClose={() => setFeedbackOrder(null)}
+          order={feedbackOrder}
+        />
+      )}
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}

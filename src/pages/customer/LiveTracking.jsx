@@ -515,7 +515,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
             <span>View Receipt</span>
           </button>
 
-          {currentStep >= 4 && (
+          {currentStep === 5 && (
             <button
               onClick={() => setShowFeedbackModal(true)}
               className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-xs font-bold text-emerald-300 flex items-center gap-1.5 transition-all shadow-sm"

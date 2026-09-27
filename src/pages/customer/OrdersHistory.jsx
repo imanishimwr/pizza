@@ -108,17 +108,19 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onAddToCart,
                     Receipt
                   </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFeedbackOrder(order);
-                    }}
-                    className="p-1.5 px-2.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-300 transition-colors flex items-center gap-1 text-[11px] font-bold"
-                    title="Rate Pizza & Rider"
-                  >
-                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                    Rate Pizza & Rider
-                  </button>
+                  {order.status === 'delivered' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFeedbackOrder(order);
+                      }}
+                      className="p-1.5 px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                      title="Rate Pizza & Rider"
+                    >
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      Rate Pizza & Rider
+                    </button>
+                  )}
                 </div>
               </div>
 
