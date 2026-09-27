@@ -4,16 +4,13 @@
  * Rules this module enforces, so no caller has to remember them:
  *   - A failing request THROWS. It never returns an empty array, a cached copy
  *     or a hardcoded fixture and lets the UI render that as if it were real.
- *     The previous version silently served stale localStorage for orders and a
- *     four-rider fake fleet whenever the API was down, which is how "8 orders,
- *     0 revenue" screens got shipped to production.
  *   - The bearer token is attached centrally from the stored session, so no
  *     call site can forget it.
  *   - Server error messages are surfaced verbatim; 5xx messages are written for
  *     end users by the server and are safe to display.
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 const TOKEN_KEY = 'hotpot_token_v1';
 const USER_KEY = 'hotpot_user_v1';
