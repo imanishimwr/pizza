@@ -809,6 +809,38 @@ export default function CustomerDashboard({
                             )}
                           </div>
 
+                          {/* Courier Assignment Strip for Client */}
+                          {(order.riderName || order.assigned_rider_id) && (
+                            <div className="p-2.5 rounded-xl bg-black/40 border border-amber-500/30 flex items-center justify-between gap-2 text-xs">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs shrink-0">
+                                  🛵
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="font-bold text-white block truncate">{order.riderName || 'Assigned Courier'}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono block truncate">
+                                    {order.riderPhone || ''} {order.riderPlate ? `• ${order.riderPlate}` : ''}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {order.verification_pin && (
+                                  <span className="px-2 py-0.5 rounded-md bg-black/60 border border-amber-500/40 text-[10px] font-mono font-bold text-amber-300">
+                                    PIN: {order.verification_pin}
+                                  </span>
+                                )}
+                                <a
+                                  href={`tel:${order.riderPhone || '+250788123456'}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-xs flex items-center justify-center transition-all"
+                                  title="Call Courier"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Action Button: Track Live Map */}
                           <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
                             <span className="text-xs text-slate-400 flex items-center gap-1.5 truncate max-w-[50%]">

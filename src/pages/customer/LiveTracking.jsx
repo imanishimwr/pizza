@@ -3,7 +3,7 @@ import {
   MapPin, Phone, Clock, ChefHat, Bike, CheckCircle2,
   ShieldCheck, FileText, AlertTriangle, Edit3, XCircle,
   Star, Heart, Download, ThumbsUp, Navigation, Compass,
-  Gauge, Radio, ExternalLink, Sparkles
+  Gauge, Radio, ExternalLink, Sparkles, MessageCircle, User, Hash
 } from 'lucide-react';
 import L from 'leaflet';
 import ReceiptModal from '../../components/customer/ReceiptModal';
@@ -526,7 +526,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
           )}
 
           <a
-            href="tel:+250788123456"
+            href={`tel:${order?.riderPhone || '+250788123456'}`}
             className="px-3.5 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all"
           >
             <Phone className="w-3.5 h-3.5" />
@@ -534,6 +534,65 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
           </a>
         </div>
       </div>
+
+      {/* Dedicated Courier Information Banner for Client */}
+      {(order?.riderName || order?.assigned_rider_id) && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-[#14171F] via-[#1C2029] to-[#14171F] border border-amber-500/30 shadow-xl flex flex-wrap items-center justify-between gap-4 animate-fade-in">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-black text-lg shrink-0 shadow-lg shadow-orange-500/20">
+              🛵
+            </div>
+            <div className="min-w-0 space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm sm:text-base font-black text-white truncate">
+                  {order?.riderName || 'Assigned Courier'}
+                </span>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
+                  order?.rider_handover_status === 'in_transit' || order?.status === 'delivery'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                }`}>
+                  {order?.rider_handover_status === 'in_transit' || order?.status === 'delivery'
+                    ? '🛵 Out for Delivery'
+                    : '⏳ Picking Up from Kitchen'}
+                </span>
+              </div>
+              <div className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-mono">
+                <span>📱 {order?.riderPhone || '+250 788 123 456'}</span>
+                <span>•</span>
+                <span className="text-amber-400 font-bold">{order?.riderPlate || order?.riderVehicle || 'Motorcycle'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+            {order?.verification_pin && (
+              <div className="px-3 py-1.5 rounded-xl bg-black/60 border border-amber-500/40 flex items-center gap-1.5 text-xs font-mono">
+                <span className="text-slate-400 text-[10px] uppercase font-bold">Pickup PIN:</span>
+                <span className="text-amber-300 font-black tracking-widest">{order.verification_pin}</span>
+              </div>
+            )}
+
+            <a
+              href={`tel:${order?.riderPhone || '+250788123456'}`}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>Call Courier</span>
+            </a>
+
+            <a
+              href={`https://wa.me/${(order?.riderPhone || '250788123456').replace(/[^0-9]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-2 rounded-xl bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Customer Delivery Confirmation Card */}
       {order?.status !== 'cancelled' && (
@@ -678,7 +737,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
             <div className="font-bold text-white flex items-center justify-between gap-3">
               <span className="flex items-center gap-1.5">
                 <Bike className="w-4 h-4 text-orange-400" />
-                Eric Mugisha (Express Courier)
+                {order?.riderName ? `${order.riderName} (Courier)` : 'Eric Mugisha (Express Courier)'}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-mono font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
@@ -686,7 +745,9 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
               </span>
             </div>
 
-            <div className="text-[11px] text-slate-400">Motorcycle: Yamaha XTZ 125 • RAC 402B</div>
+            <div className="text-[11px] text-slate-400">
+              {order?.riderPlate ? `${order.riderVehicle || 'Motorcycle'}: ${order.riderPlate}` : 'Motorcycle: Yamaha XTZ 125 • RAC 402B'}
+            </div>
 
             <div className="pt-2 border-t border-slate-800 space-y-1.5 text-[11px]">
               <div className="flex items-start gap-1.5 text-orange-400">
