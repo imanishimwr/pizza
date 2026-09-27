@@ -46,6 +46,7 @@ afterEach(() => {
   cleanup();
   try {
     localStorage.clear();
+    // eslint-disable-next-line no-empty
   } catch {}
   vi.restoreAllMocks();
 });

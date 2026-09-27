@@ -32,7 +32,6 @@ import {
   updateOrderNotes as apiUpdateOrderNotes,
   logout as apiLogout,
   refreshSession,
-  updateProfile,
   onAuthLost,
   cart as cartStore,
   wishlist as wishlistStore,
@@ -40,8 +39,6 @@ import {
   normalizeRole
 } from './services/apiService';
 import { eventBus } from './services/eventBus';
-import { notificationService } from './services/notificationService';
-import { downloadOrderReceiptPdf } from './utils/receiptGenerator';
 import { Bell, Flame, Loader2, AlertTriangle as TriangleAlert, WifiOff } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -99,7 +96,6 @@ function AppContent() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [feedbackOrder, setFeedbackOrder] = useState(null);
-  const [checkoutData, setCheckoutData] = useState(null);
   const [orderBusy, setOrderBusy] = useState(false);
 
   const role = user?.role ? normalizeRole(user.role) : null;

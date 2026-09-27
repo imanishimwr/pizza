@@ -149,7 +149,7 @@ export default function LoginPage({ onLoginSuccess }) {
         />
 
         <div className="mt-6 text-center text-xs text-text-muted">
-          Don't have an account yet?{' '}
+          Don&apos;t have an account yet?{' '}
           <Link to="/register" className="text-primary font-bold hover:underline">
             Create an Account
           </Link>

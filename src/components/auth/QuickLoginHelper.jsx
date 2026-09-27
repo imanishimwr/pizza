@@ -1,7 +1,7 @@
 import React from 'react';
 import { Shield, User, ChefHat, Bike, Zap } from 'lucide-react';
 
-export const DEMO_CREDENTIALS = [
+const DEMO_CREDENTIALS = [
   {
     roleKey: 'admin',
     name: 'Admin',

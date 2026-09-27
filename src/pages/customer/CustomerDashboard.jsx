@@ -26,6 +26,7 @@ import {
   X,
   Home,
   Smartphone,
+  Phone,
   User
 } from 'lucide-react';
 import ReceiptModal from '../../components/customer/ReceiptModal';

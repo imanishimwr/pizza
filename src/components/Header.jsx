@@ -78,7 +78,6 @@ export default function Header({
 
   const role = user?.role ? normalizeRole(user.role) : null;
   const RoleIcon = ROLE_ICONS[role] || User;
-  const roleLabel = ROLE_LABELS[role] || 'Dashboard';
 
   const navigate = useCallback(
     (nextView) => {
