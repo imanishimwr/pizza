@@ -155,7 +155,7 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order }) {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+              className="w-full py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
             >
               {submitting ? 'Submitting Ratings...' : 'Submit Rating & Feedback ⭐'}
             </button>

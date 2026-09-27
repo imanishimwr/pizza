@@ -57,10 +57,10 @@ export default function Header({
             <img src="/assets/1152x1152_S7.png" alt="HotPot Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <span className="text-base sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-orange-100 to-primary bg-clip-text text-transparent">
+            <span className="text-base sm:text-xl font-extrabold tracking-tight bg-linear-to-r from-white via-orange-100 to-primary bg-clip-text text-transparent">
               Hot Pot
             </span>
-            <span className="block text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+            <span className="text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block"></span>
               24/7 Delivery in Kigali
             </span>
@@ -248,10 +248,10 @@ export default function Header({
                     className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-surface-card border border-white/10 hover:border-primary transition-all group"
                     title="View & Edit Account Profile"
                   >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-orange-500 text-white font-black text-[11px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                    <div className="w-6 h-6 rounded-full bg-linear-to-tr from-primary to-orange-500 text-white font-black text-[11px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
                       {user.name ? user.name[0].toUpperCase() : 'U'}
                     </div>
-                    <span className="text-xs font-bold text-white max-w-[100px] truncate hidden sm:inline-block">
+                    <span className="text-xs font-bold text-white max-w-25 truncate hidden sm:inline-block">
                       {user.name || 'Account'}
                     </span>
                   </button>
@@ -344,10 +344,10 @@ export default function Header({
             {/* User Avatar + Name */}
             {user && (
               <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-orange-500 text-white font-black text-xs flex items-center justify-center shadow-sm">
+                <div className="w-7 h-7 rounded-full bg-linear-to-tr from-primary to-orange-500 text-white font-black text-xs flex items-center justify-center shadow-sm">
                   {user.name ? user.name[0].toUpperCase() : 'A'}
                 </div>
-                <span className="text-xs font-bold text-white max-w-[100px] truncate hidden md:inline-block">
+                <span className="text-xs font-bold text-white max-w-25 truncate hidden md:inline-block">
                   {user.name || 'Admin'}
                 </span>
               </div>

@@ -220,7 +220,7 @@ export default function RiderDashboard({
         {/* Sidebar Header */}
         <div className="h-16 px-3.5 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
+            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
               <Bike className="w-5 h-5" />
             </div>
 
@@ -249,7 +249,7 @@ export default function RiderDashboard({
                   window.location.href = '/';
                 }
               }}
-              className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-white transition-all min-h-[36px] min-w-[36px] flex items-center justify-center shadow-xs"
+              className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center shadow-xs"
               title="Return to Customer Store Menu"
               aria-label="Return to Store Menu"
             >
@@ -259,7 +259,7 @@ export default function RiderDashboard({
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsMobileDrawerOpen(false)}
-              className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center"
               aria-label="Close Menu"
             >
               <X className="w-4 h-4 text-orange-400" />
@@ -278,7 +278,7 @@ export default function RiderDashboard({
         </div>
 
         {/* Scrollable Nav Links & Summary Widgets */}
-        <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-4">
+        <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-4">
           {/* Prominent Duty Availability Toggle Switch */}
           <div className={`p-3 rounded-2xl border transition-all ${
             isOnDuty
@@ -288,7 +288,7 @@ export default function RiderDashboard({
             <div className="flex items-center justify-between">
               {!isSidebarCollapsed && (
                 <div className="min-w-0 pr-2">
-                  <span className="text-xs font-black text-white block truncate flex items-center gap-1.5">
+                  <span className="text-xs font-black text-white truncate flex items-center gap-1.5">
                     <span className={`w-2 h-2 rounded-full ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
                     {isOnDuty ? 'Available for Orders' : 'Off Duty / Busy'}
                   </span>
@@ -350,9 +350,9 @@ export default function RiderDashboard({
                     setActiveTab(tab.id);
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-[44px] focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
                     isActive
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20 scale-[1.01]'
+                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20 scale-[1.01]'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
                   title={tab.label}
@@ -396,7 +396,7 @@ export default function RiderDashboard({
 
             {/* Active Rides Badge */}
             <div
-              className={`p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between min-h-[40px] ${
+              className={`p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between min-h-10 ${
                 isSidebarCollapsed ? 'md:justify-center md:p-2' : ''
               }`}
               title={`Active Rides: ${activeDeliveries.length}`}
@@ -414,7 +414,7 @@ export default function RiderDashboard({
 
             {/* Completed Today Badge */}
             <div
-              className={`p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between min-h-[40px] ${
+              className={`p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between min-h-10 ${
                 isSidebarCollapsed ? 'md:justify-center md:p-2' : ''
               }`}
               title={`Completed Today: ${completedDeliveries.length}`}
@@ -449,7 +449,7 @@ export default function RiderDashboard({
         {/* Sidebar Footer: Rider Profile Badge */}
         <div className="p-3 border-t border-slate-800 bg-[#10131A] shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-sm border border-white/10">
+            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-sm border border-white/10">
               {riderUser.name ? riderUser.name[0].toUpperCase() : 'E'}
             </div>
 
@@ -479,7 +479,7 @@ export default function RiderDashboard({
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden p-2.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="md:hidden p-2.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-slate-300 hover:text-white min-h-11 min-w-11 flex items-center justify-center"
               aria-label="Open Navigation"
             >
               <Menu className="w-5 h-5 text-orange-400" />
@@ -513,7 +513,7 @@ export default function RiderDashboard({
                   window.location.href = '/';
                 }
               }}
-              className="min-h-[38px] px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-orange-500/15 border border-slate-700 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+              className="min-h-9.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-orange-500/15 border border-slate-700 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
               title="Return to Customer Store Menu"
             >
               <Home className="w-4 h-4 text-orange-400" />
@@ -529,7 +529,7 @@ export default function RiderDashboard({
             {/* Duty Status Toggle */}
             <button
               onClick={handleToggleDuty}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border shadow-sm ${
+              className={`min-h-9.5 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border shadow-sm ${
                 isOnDuty
                   ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300 shadow-emerald-500/10'
                   : 'bg-slate-800/60 hover:bg-slate-700/60 border-slate-700 text-slate-400'
@@ -559,9 +559,9 @@ export default function RiderDashboard({
             <div className="md:hidden flex border-b border-slate-800 bg-[#14171F] p-2 gap-2 shrink-0">
               <button
                 onClick={() => setMobileViewMode('list')}
-                className={`flex-1 min-h-[44px] py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 min-h-11 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                   mobileViewMode === 'list'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
                     : 'bg-[#1A1D24] text-slate-400 border border-slate-800'
                 }`}
               >
@@ -571,9 +571,9 @@ export default function RiderDashboard({
 
               <button
                 onClick={() => setMobileViewMode('navigation')}
-                className={`flex-1 min-h-[44px] py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 min-h-11 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                   mobileViewMode === 'navigation'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
                     : 'bg-[#1A1D24] text-slate-400 border border-slate-800'
                 }`}
               >
@@ -604,7 +604,7 @@ export default function RiderDashboard({
                 </div>
 
                 {/* Scrollable Requests List */}
-                <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3.5 space-y-3">
+                <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3.5 space-y-3">
                   {activeDeliveries.length === 0 ? (
                     <div className="p-8 text-center bg-[#1A1D24] rounded-2xl border border-slate-800 text-slate-400 space-y-2 mt-4">
                       <Bike className="w-8 h-8 text-slate-600 mx-auto" />
@@ -662,9 +662,9 @@ export default function RiderDashboard({
                                 setSelectedOrder(order);
                                 setMobileViewMode('navigation');
                               }}
-                              className={`min-h-[36px] px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                              className={`min-h-9 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
                                 isSelected
-                                  ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm shadow-orange-500/20'
+                                  ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-sm shadow-orange-500/20'
                                   : 'bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white border border-slate-700/60'
                               }`}
                             >
@@ -703,10 +703,10 @@ export default function RiderDashboard({
                         </p>
                       </div>
 
-                      {/* Call Customer Button (tel: link with min-h-[44px]) */}
+                      {/* Call Customer Button (tel: link with min-h-11) */}
                       <a
                         href={`tel:${selectedOrder.phone || '0788000001'}`}
-                        className="min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all self-start sm:self-auto"
+                        className="min-h-11 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all self-start sm:self-auto"
                       >
                         <Phone className="w-4 h-4" />
                         <span>Call Customer ({selectedOrder.phone || '0788000001'})</span>
@@ -757,7 +757,7 @@ export default function RiderDashboard({
                           href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.address || 'Kigali')}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="min-h-[44px] px-4 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all mt-2"
+                          className="min-h-11 px-4 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all mt-2"
                         >
                           <Navigation className="w-4 h-4 text-orange-400" />
                           <span>Open Google Maps GPS Route</span>
@@ -802,7 +802,7 @@ export default function RiderDashboard({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {/* 1. Picked Up from Kitchen (4-Digit PIN) */}
                         {selectedOrder.status === 'delivery' ? (
-                          <div className="min-h-[48px] px-5 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500 text-blue-300 shadow-md shadow-blue-500/20">
+                          <div className="min-h-12 px-5 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500 text-blue-300 shadow-md shadow-blue-500/20">
                             <Navigation className="w-4 h-4 text-blue-400 animate-pulse" />
                             <span>1. In Transit (GPS Telemetry Active)</span>
                           </div>
@@ -813,7 +813,7 @@ export default function RiderDashboard({
                               setPinError('');
                               setShowPinModal(true);
                             }}
-                            className="min-h-[48px] px-5 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all active:scale-95 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-orange-500/20"
+                            className="min-h-12 px-5 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all active:scale-95 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-orange-500/20"
                           >
                             <Key className="w-4 h-4 text-white" />
                             <span>1. Confirm Package Pickup (PIN)</span>
@@ -823,7 +823,7 @@ export default function RiderDashboard({
                         {/* 2. Complete & Capture Proof */}
                         <button
                           onClick={() => setShowProofModal(true)}
-                          className="min-h-[48px] px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
+                          className="min-h-12 px-5 py-3 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
                         >
                           <CheckCircle2 className="w-4 h-4" />
                           <span>2. Complete & Capture Proof</span>
@@ -849,7 +849,7 @@ export default function RiderDashboard({
             TAB 2: COMPLETED TRIPS & EARNINGS
         ════════════════════════════════════════════════════════════════ */}
         {activeTab === 'trips' && (
-          <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
+          <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
@@ -917,7 +917,7 @@ export default function RiderDashboard({
             TAB 3: VEHICLE & PROFILE SETTINGS
         ════════════════════════════════════════════════════════════════ */}
         {activeTab === 'settings' && (
-          <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
+          <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                 <Settings className="w-5 h-5 text-orange-400" />
@@ -998,7 +998,7 @@ export default function RiderDashboard({
               </div>
               <button
                 onClick={() => setShowProofModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white min-h-[36px] min-w-[36px] flex items-center justify-center"
+                className="p-1 rounded-lg text-slate-400 hover:text-white min-h-9 min-w-9 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1012,7 +1012,7 @@ export default function RiderDashboard({
               {/* Digital Signature */}
               <div
                 onClick={() => setSignature(!signature)}
-                className={`p-4 rounded-xl border text-center cursor-pointer transition-all min-h-[50px] flex flex-col items-center justify-center ${
+                className={`p-4 rounded-xl border text-center cursor-pointer transition-all min-h-12.5 flex flex-col items-center justify-center ${
                   signature
                     ? 'bg-emerald-500/15 border-emerald-500 text-emerald-300'
                     : 'bg-[#1A1D24] border-dashed border-slate-700 text-slate-400 hover:border-slate-500'
@@ -1027,7 +1027,7 @@ export default function RiderDashboard({
               {/* Photo Confirmation */}
               <div
                 onClick={() => setPhotoConfirmed(!photoConfirmed)}
-                className={`p-4 rounded-xl border text-center cursor-pointer transition-all min-h-[50px] flex flex-col items-center justify-center ${
+                className={`p-4 rounded-xl border text-center cursor-pointer transition-all min-h-12.5 flex flex-col items-center justify-center ${
                   photoConfirmed
                     ? 'bg-emerald-500/15 border-emerald-500 text-emerald-300'
                     : 'bg-[#1A1D24] border-dashed border-slate-700 text-slate-400 hover:border-slate-500'
@@ -1042,7 +1042,7 @@ export default function RiderDashboard({
 
             <button
               onClick={handleConfirmDelivery}
-              className="w-full min-h-[48px] rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
+              className="w-full min-h-12 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
             >
               <Check className="w-4 h-4" />
               <span>Confirm Handover & Complete Order</span>
@@ -1128,7 +1128,7 @@ export default function RiderDashboard({
                 <button
                   type="submit"
                   disabled={isVerifyingPin}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all"
+                  className="flex-1 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all"
                 >
                   {isVerifyingPin ? 'Verifying PIN...' : 'Confirm Pickup ✅'}
                 </button>
@@ -1143,7 +1143,7 @@ export default function RiderDashboard({
       ════════════════════════════════════════════════════════════════ */}
       {newAssignmentAlert && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="bg-gradient-to-b from-[#1A1D24] to-[#14171F] border-2 border-orange-500 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-scale-in text-center">
+          <div className="bg-linear-to-b from-[#1A1D24] to-[#14171F] border-2 border-orange-500 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-scale-in text-center">
             <div className="w-16 h-16 rounded-3xl bg-orange-500/20 border-2 border-orange-500 text-orange-400 flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30 animate-bounce-short">
               <Bike className="w-8 h-8" />
             </div>
@@ -1188,7 +1188,7 @@ export default function RiderDashboard({
                   setMobileViewMode('navigation');
                   setNewAssignmentAlert(null);
                 }}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-xs shadow-lg shadow-orange-500/30 active:scale-95 transition-all"
+                className="flex-1 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-xs shadow-lg shadow-orange-500/30 active:scale-95 transition-all"
               >
                 Accept & View Route 🛵
               </button>

@@ -527,7 +527,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
 
           <a
             href="tel:+250788123456"
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all"
+            className="px-3.5 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all"
           >
             <Phone className="w-3.5 h-3.5" />
             <span>Call Rider</span>
@@ -540,13 +540,13 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
         <div className={`p-5 rounded-2xl border transition-all shadow-xl flex flex-wrap items-center justify-between gap-4 ${
           order?.status === 'delivered'
             ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
-            : 'bg-gradient-to-r from-[#14171F] via-[#1A1D24] to-[#14171F] border-slate-800'
+            : 'bg-linear-to-r from-[#14171F] via-[#1A1D24] to-[#14171F] border-slate-800'
         }`}>
           <div className="flex items-center gap-3.5">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
               order?.status === 'delivered'
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                : 'bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20'
+                : 'bg-linear-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20'
             }`}>
               {order?.status === 'delivered' ? (
                 <CheckCircle2 className="w-6 h-6" />
@@ -577,7 +577,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
             <button
               onClick={handleConfirmDelivery}
               disabled={isConfirmingDelivery}
-              className="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+              className="px-5 py-3 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
             >
               {isConfirmingDelivery ? (
                 <span className="flex items-center gap-2">
@@ -660,7 +660,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
             <button onClick={() => setIsEditingNote(false)} className="px-3 py-1.5 rounded-xl bg-[#1F242D] text-xs font-bold text-slate-300">
               Cancel
             </button>
-            <button onClick={handleSaveNote} className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-xs font-bold text-white shadow-md shadow-orange-500/20">
+            <button onClick={handleSaveNote} className="px-4 py-1.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 text-xs font-bold text-white shadow-md shadow-orange-500/20">
               Save Changes
             </button>
           </div>
@@ -670,7 +670,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
       {/* Grid: Google Maps Live Telemetry + 5-Stage Stepper */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Interactive Google Map with Road Network Polyline & Live Heading Marker */}
-        <div className="lg:col-span-2 h-[420px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative bg-[#0F1117]">
+        <div className="lg:col-span-2 h-105 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative bg-[#0F1117]">
           <div ref={mapContainerRef} className="w-full h-full" />
 
           {/* Floating Live Telemetry HUD */}
@@ -739,7 +739,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUp
                 <div key={step.num} className="relative flex items-start gap-4">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs relative z-10 transition-all ${
                     isDone
-                      ? 'bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/30'
+                      ? 'bg-linear-to-br from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/30'
                       : 'bg-[#1A1D24] text-slate-500 border border-slate-800'
                   }`}>
                     {isDone ? <CheckCircle2 className="w-4 h-4" /> : step.num}

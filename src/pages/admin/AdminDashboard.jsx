@@ -891,7 +891,7 @@ export default function AdminDashboard({
                   setIsMobileDrawerOpen(false);
                   if (onSwitchRole) onSwitchRole('customer');
                 }}
-                className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 flex items-center justify-center shrink-0 shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-orange-500/50 min-h-[36px] min-w-[36px]"
+                className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 flex items-center justify-center shrink-0 shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-orange-500/50 min-h-9 min-w-9"
                 title="Return to Customer Store Menu"
                 aria-label="Home"
               >
@@ -912,7 +912,7 @@ export default function AdminDashboard({
                 setIsMobileDrawerOpen(false);
                 if (onSwitchRole) onSwitchRole('customer');
               }}
-              className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 flex items-center justify-center mx-auto shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-orange-500/50 min-h-[36px] min-w-[36px]"
+              className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 flex items-center justify-center mx-auto shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-orange-500/50 min-h-9 min-w-9"
               title="Return to Customer Store Menu"
               aria-label="Home"
             >
@@ -923,7 +923,7 @@ export default function AdminDashboard({
           {/* Close button for mobile drawer */}
           <button
             onClick={() => setIsMobileDrawerOpen(false)}
-            className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0 ml-auto"
+            className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center shrink-0 ml-auto"
             aria-label="Close Navigation"
           >
             <X className="w-5 h-5 text-orange-400" />
@@ -955,7 +955,7 @@ export default function AdminDashboard({
         )}
 
         {/* Scrollable Sidebar Body without internal scrollbars */}
-        <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-2.5 space-y-3.5">
+        <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-2.5 space-y-3.5">
           {/* SECTION A: TOP NAVIGATION LINKS */}
           <div className="space-y-1">
             {!isSidebarCollapsed && (
@@ -981,9 +981,9 @@ export default function AdminDashboard({
                     setActiveTab(tab.id);
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-[44px] focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
                     isActive
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
                   title={tab.label}
@@ -1013,7 +1013,7 @@ export default function AdminDashboard({
                 setShowAddMeal(true);
                 setIsMobileDrawerOpen(false);
               }}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-bold transition-all min-h-[44px] ${
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-bold transition-all min-h-11 ${
                 isSidebarCollapsed ? 'md:justify-center md:px-0' : ''
               }`}
               title="Add New Dish"
@@ -1024,7 +1024,7 @@ export default function AdminDashboard({
 
             <button
               onClick={handleExportCSV}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-[44px] ${
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-11 ${
                 isSidebarCollapsed ? 'md:justify-center md:px-0' : ''
               }`}
               title="Export Orders CSV"
@@ -1035,7 +1035,7 @@ export default function AdminDashboard({
 
             <button
               onClick={handleExportSalesCSV}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-[44px] ${
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-11 ${
                 isSidebarCollapsed ? 'md:justify-center md:px-0' : ''
               }`}
               title="Export Sales Ledger CSV"
@@ -1046,7 +1046,7 @@ export default function AdminDashboard({
           <button
             type="button"
             onClick={e => { e.preventDefault(); handleExportFullReportPDF(); }}
-            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-[44px] ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
+            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-11 ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
             title="Export Full Business Report (PDF)"
           >
             <Download className="w-4 h-4 text-amber-400 shrink-0" />
@@ -1083,7 +1083,7 @@ export default function AdminDashboard({
               setSoundEnabled(nextState);
               if (nextState) notificationService.playChime('new_order');
             }}
-            className={`w-full flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold border transition-all min-h-[44px] focus:outline-none focus:ring-1 ${
+            className={`w-full flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold border transition-all min-h-11 focus:outline-none focus:ring-1 ${
               soundEnabled
                 ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300 hover:bg-emerald-950'
                 : 'bg-[#1F242D] border-slate-700/50 text-slate-400 hover:text-white'
@@ -1115,7 +1115,7 @@ export default function AdminDashboard({
                 setIsMobileDrawerOpen(false);
                 onSwitchRole('customer');
               }}
-              className={`w-full py-2.5 px-3 rounded-xl bg-[#1F242D] hover:bg-orange-500/10 active:bg-orange-500/20 border border-slate-700/50 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm group min-h-[44px] focus:outline-none focus:ring-1 focus:ring-orange-400/50 ${
+              className={`w-full py-2.5 px-3 rounded-xl bg-[#1F242D] hover:bg-orange-500/10 active:bg-orange-500/20 border border-slate-700/50 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm group min-h-11 focus:outline-none focus:ring-1 focus:ring-orange-400/50 ${
                 isSidebarCollapsed ? 'md:p-2' : ''
               }`}
               title="Return to Store Menu"
@@ -1138,7 +1138,7 @@ export default function AdminDashboard({
             {/* Mobile Hamburger Drawer Toggle (screens < 768px) */}
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden p-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-orange-400 hover:text-white transition-all min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0 shadow-sm active:scale-95"
+              className="md:hidden p-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-orange-400 hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center shrink-0 shadow-sm active:scale-95"
               title="Open Navigation Menu"
               aria-label="Toggle Navigation Drawer"
             >
@@ -1148,7 +1148,7 @@ export default function AdminDashboard({
             {/* Mobile Quick Home Button */}
             <button
               onClick={() => onSwitchRole && onSwitchRole('customer')}
-              className="md:hidden p-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
+              className="md:hidden p-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 min-h-11 min-w-11 flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
               title="Return to Customer Store Menu"
               aria-label="Home"
             >
@@ -1174,7 +1174,7 @@ export default function AdminDashboard({
             {/* Quick Export Orders CSV */}
             <button
               onClick={handleExportCSV}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-[44px] shadow-sm"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-11 shadow-sm"
               title="Export Orders CSV"
             >
               <Download className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -1182,7 +1182,7 @@ export default function AdminDashboard({
             </button>
 
             {/* Live Digital Clock */}
-            <div className="px-2.5 py-1.5 rounded-xl bg-black/60 border border-slate-800 text-xs font-mono font-black text-amber-300 flex items-center gap-1.5 shadow-inner shrink-0 min-h-[44px]">
+            <div className="px-2.5 py-1.5 rounded-xl bg-black/60 border border-slate-800 text-xs font-mono font-black text-amber-300 flex items-center gap-1.5 shadow-inner shrink-0 min-h-11">
               <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>{currentTime.toLocaleTimeString()}</span>
             </div>
@@ -1191,7 +1191,7 @@ export default function AdminDashboard({
             <button
               onClick={loadAdminData}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-[#252932] border border-slate-800 text-[11px] text-emerald-400 font-mono shadow-sm transition-all min-h-[44px] shrink-0"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-[#252932] border border-slate-800 text-[11px] text-emerald-400 font-mono shadow-sm transition-all min-h-11 shrink-0"
               title="Neon DB Synchronized - Click to Refresh"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
@@ -1202,7 +1202,7 @@ export default function AdminDashboard({
             {/* + Add New Dish Button */}
             <button
               onClick={() => setShowAddMeal(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 active:scale-95 transition-all min-h-[44px] shrink-0"
+              className="px-3.5 py-1.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 active:scale-95 transition-all min-h-11 shrink-0"
               title="Add New Dish to Catalog"
             >
               <Plus className="w-4 h-4 shrink-0" />
@@ -1214,10 +1214,10 @@ export default function AdminDashboard({
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* 3. MAIN DASHBOARD CONTENT SCROLLABLE CANVAS                */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 sm:p-5 lg:p-6 space-y-6">
+        <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 sm:p-5 lg:p-6 space-y-6">
           {/* Cooker Confirmed Ready Notification Strip for Admin */}
           {readyOrders.length > 0 && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-[#1A1D24] to-[#1A1D24] border border-emerald-500/50 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-bounce-short">
+            <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-emerald-950/90 via-[#1A1D24] to-[#1A1D24] border border-emerald-500/50 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-bounce-short">
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-600/30">
                   <ChefHat className="w-6 h-6" />
@@ -1279,9 +1279,9 @@ export default function AdminDashboard({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap min-h-[40px] ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap min-h-10 ${
                     isActive
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -1326,9 +1326,9 @@ export default function AdminDashboard({
                 <button
                   key={period.id}
                   onClick={() => setTimeRangeFilter(period.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all min-h-[36px] ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all min-h-9 ${
                     timeRangeFilter === period.id
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -1451,7 +1451,7 @@ export default function AdminDashboard({
 
             {/* SVG Chart */}
             <div className="w-full overflow-x-auto pb-2">
-              <div className="min-w-[500px]">
+              <div className="min-w-125">
                 <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-56 select-none overflow-visible">
                   <defs>
                     <linearGradient id="adminChartAreaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1607,7 +1607,7 @@ export default function AdminDashboard({
 
               <button
                 onClick={() => { setActiveTab('orders'); setOrderStatusFilter('all'); }}
-                className="w-full py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all min-h-[44px] mt-2"
+                className="w-full py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all min-h-11 mt-2"
               >
                 <ShoppingBag className="w-4 h-4 text-orange-400" />
                 <span>Open Dispatch Kanban</span>
@@ -1663,7 +1663,7 @@ export default function AdminDashboard({
 
               <button
                 onClick={() => setActiveTab('catalog')}
-                className="w-full py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all min-h-[44px] mt-2"
+                className="w-full py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all min-h-11 mt-2"
               >
                 <UtensilsCrossed className="w-4 h-4 text-orange-400" />
                 <span>View Full Menu Catalog</span>
@@ -1716,7 +1716,7 @@ export default function AdminDashboard({
                             e.stopPropagation();
                             setTrackingOrder(order);
                           }}
-                          className="p-2 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white transition-all min-h-[36px] min-w-[36px] flex items-center justify-center"
+                          className="p-2 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center"
                           title="Track this order live"
                         >
                           <Navigation className="w-3.5 h-3.5" />
@@ -1735,7 +1735,7 @@ export default function AdminDashboard({
 
               <button
                 onClick={() => setActiveTab('sales')}
-                className="w-full py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all min-h-[44px] mt-2"
+                className="w-full py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all min-h-11 mt-2"
               >
                 <DollarSign className="w-4 h-4 text-emerald-400" />
                 <span>Open Sales Ledger</span>
@@ -1796,7 +1796,7 @@ export default function AdminDashboard({
 
             <button
               onClick={() => setShowAddMeal(true)}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all"
+              className="px-4 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Add Dish</span>
@@ -2010,7 +2010,7 @@ export default function AdminDashboard({
                     {order.status === 'pending' && (
                       <button
                         onClick={() => onUpdateStatus?.(order.id, 'preparing')}
-                        className="px-3 py-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all min-h-[44px] flex items-center justify-center shadow-sm"
+                        className="px-3 py-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-bold hover:bg-blue-600 hover:text-white transition-all min-h-11 flex items-center justify-center shadow-sm"
                       >
                         Accept & Cook
                       </button>
@@ -2018,7 +2018,7 @@ export default function AdminDashboard({
                     {(order.status === 'preparing' || order.status === 'ready') && (
                       <button
                         onClick={() => onUpdateStatus?.(order.id, 'delivery')}
-                        className="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-600 hover:text-white transition-all min-h-[44px] flex items-center justify-center shadow-sm"
+                        className="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-600 hover:text-white transition-all min-h-11 flex items-center justify-center shadow-sm"
                       >
                         Dispatch to Rider
                       </button>
@@ -2026,7 +2026,7 @@ export default function AdminDashboard({
                     {order.status === 'delivery' && (
                       <button
                         onClick={() => onUpdateStatus?.(order.id, 'delivered')}
-                        className="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all min-h-[44px] flex items-center justify-center shadow-sm"
+                        className="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all min-h-11 flex items-center justify-center shadow-sm"
                       >
                         Mark Delivered
                       </button>
@@ -2034,7 +2034,7 @@ export default function AdminDashboard({
                     {order.status !== 'delivered' && order.status !== 'cancelled' && (
                       <button
                         onClick={() => onUpdateStatus?.(order.id, 'cancelled')}
-                        className="px-3 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-600 hover:text-white transition-all min-h-[44px] flex items-center justify-center shadow-sm"
+                        className="px-3 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-600 hover:text-white transition-all min-h-11 flex items-center justify-center shadow-sm"
                       >
                         Cancel
                       </button>
@@ -2046,7 +2046,7 @@ export default function AdminDashboard({
                     {/* 80mm Thermal Printer Button */}
                     <button
                       onClick={() => handlePrintTicket(order)}
-                      className="px-3 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm border border-slate-700/50 min-h-[44px]"
+                      className="px-3 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm border border-slate-700/50 min-h-11"
                       title="Print 80mm Kitchen & Rider Ticket"
                     >
                       <Printer className="w-3.5 h-3.5 text-orange-400 shrink-0" />
@@ -2056,7 +2056,7 @@ export default function AdminDashboard({
                     {/* Live Track Order Button */}
                     <button
                       onClick={() => setTrackingOrder(order)}
-                      className="px-3 py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500 text-orange-400 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm border border-orange-500/30 min-h-[44px]"
+                      className="px-3 py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500 text-orange-400 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm border border-orange-500/30 min-h-11"
                       title="Track order live on map"
                     >
                       <Navigation className="w-3.5 h-3.5 shrink-0" />
@@ -2071,7 +2071,7 @@ export default function AdminDashboard({
                           const rName = e.target.value;
                           setAssignedRiders(prev => ({ ...prev, [order.id]: rName }));
                         }}
-                        className="bg-[#12141A] border border-slate-700/50 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500 min-h-[44px]"
+                        className="bg-[#12141A] border border-slate-700/50 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500 min-h-11"
                       >
                         <option value="">Rider: Auto</option>
                         <option value="Emmanuel N. (Moto #1)">Emmanuel N. (Moto #1)</option>
@@ -2193,7 +2193,7 @@ export default function AdminDashboard({
           <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3 flex-1">
               {/* Search */}
-              <div className="relative flex-1 min-w-[220px]">
+              <div className="relative flex-1 min-w-55">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -2506,7 +2506,7 @@ export default function AdminDashboard({
             <div className="flex items-center gap-2.5 w-full sm:w-auto">
               <button
                 onClick={loadRiders}
-                className="p-2.5 rounded-xl bg-[#1F242D] border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 hover:text-white transition-all min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm"
+                className="p-2.5 rounded-xl bg-[#1F242D] border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center shadow-sm"
                 title="Refresh Courier Fleet"
               >
                 <RefreshCw className="w-4 h-4 text-orange-400" />
@@ -2514,7 +2514,7 @@ export default function AdminDashboard({
 
               <button
                 onClick={() => setShowAddRiderModal(true)}
-                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all min-h-[44px]"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all min-h-11"
               >
                 <Plus className="w-4 h-4" />
                 <span>Register New Courier</span>
@@ -2638,7 +2638,7 @@ export default function AdminDashboard({
                         {/* Courier Top Identity */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center font-bold text-base shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center font-bold text-base shrink-0">
                               {rider.name ? rider.name[0].toUpperCase() : 'R'}
                             </div>
                             <div className="min-w-0">
@@ -2665,7 +2665,7 @@ export default function AdminDashboard({
                         <div className="space-y-1.5 text-xs bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
                           <div className="flex items-center justify-between text-slate-300">
                             <span className="text-slate-400">Vehicle:</span>
-                            <span className="font-medium text-white truncate max-w-[170px]">{rider.vehicleType || 'Moto Express'}</span>
+                            <span className="font-medium text-white truncate max-w-42.5">{rider.vehicleType || 'Moto Express'}</span>
                           </div>
                           <div className="flex items-center justify-between text-slate-300">
                             <span className="text-slate-400">Shift:</span>
@@ -2712,7 +2712,7 @@ export default function AdminDashboard({
 
                         <button
                           onClick={() => handleToggleRiderAvailability(rider.id, rider.is_available)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all min-h-[38px] border ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all min-h-9.5 border ${
                             rider.is_available
                               ? 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/50 text-emerald-300'
                               : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-400'
@@ -2822,7 +2822,7 @@ export default function AdminDashboard({
                 <button
                   type="submit"
                   disabled={isSavingRider}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+                  className="px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 active:scale-95 transition-all"
                 >
                   {isSavingRider ? 'Registering...' : 'Register Courier'}
                 </button>
@@ -2881,7 +2881,7 @@ export default function AdminDashboard({
                 <button
                   type="submit"
                   disabled={isReassigning || !selectedNewRiderId}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-linear-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all disabled:opacity-50"
                 >
                   {isReassigning ? 'Reassigning...' : 'Confirm Reassignment'}
                 </button>
@@ -2962,7 +2962,7 @@ export default function AdminDashboard({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <div className="lg:col-span-2 h-72 sm:h-80 rounded-2xl overflow-hidden border border-slate-800 relative shadow-inner">
                 <div ref={mapContainerRef} className="w-full h-full" />
-                <div className="absolute top-3 left-3 z-[400] bg-[#12141A]/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-xs shadow-xl space-y-1">
+                <div className="absolute top-3 left-3 z-400 bg-[#12141A]/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-xs shadow-xl space-y-1">
                   <div className="font-bold text-white flex items-center gap-1.5">
                     <Bike className="w-4 h-4 text-orange-400" />
                     <span>{assignedRiders[trackingOrder.id] || trackingOrder.riderName || 'Eric M. (Moto #1)'}</span>
@@ -3012,7 +3012,7 @@ export default function AdminDashboard({
                           onUpdateStatus?.(trackingOrder.id, 'delivery');
                           setTrackingOrder(prev => ({ ...prev, status: 'delivery' }));
                         }}
-                        className="flex-1 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-bold shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1"
                       >
                         <Bike className="w-3.5 h-3.5" />
                         <span>Dispatch Rider</span>
@@ -3115,7 +3115,7 @@ export default function AdminDashboard({
                 <button
                   type="submit"
                   disabled={isSavingEdit}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-xs shadow-md shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all"
+                  className="px-5 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold text-xs shadow-md shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all"
                 >
                   {isSavingEdit ? 'Saving...' : 'Save Changes'}
                 </button>

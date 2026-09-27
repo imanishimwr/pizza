@@ -102,20 +102,20 @@ export default function Home({
             </div>
           </div>
 
-          <div className="lg:col-span-5 flex justify-center lg:justify-end relative min-h-[220px] sm:min-h-[280px] items-center">
+          <div className="lg:col-span-5 flex justify-center lg:justify-end relative min-h-55 sm:min-h-70 items-center">
             <div className="relative max-w-sm sm:max-w-md w-full flex items-center justify-center">
               <div className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 transform ${
                 activeBanner % 2 === 0 ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-95 -rotate-6 pointer-events-none'
               }`}>
                 <div className="relative group">
-                  <div className="absolute -inset-4 bg-gradient-to-r from-primary via-orange-500 to-amber-400 rounded-3xl blur-2xl opacity-60 animate-pulse"></div>
+                  <div className="absolute -inset-4 bg-linear-to-r from-primary via-orange-500 to-amber-400 rounded-3xl blur-2xl opacity-60 animate-pulse"></div>
 
                   <div className="relative p-6 sm:p-8 rounded-3xl bg-surface-dark/95 border-2 border-amber-500/50 shadow-2xl flex flex-col items-center text-center space-y-3 backdrop-blur-md">
                     <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-black border border-white/20 p-1 flex items-center justify-center shadow-2xl shadow-primary/50 overflow-hidden group-hover:scale-105 transition-transform">
                       <img src="/assets/1152x1152_S7.png" alt="Official HotPot Logo" className="w-full h-full object-contain rounded-xl" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black bg-gradient-to-r from-white via-orange-200 to-amber-400 bg-clip-text text-transparent">
+                      <h3 className="text-2xl font-black bg-linear-to-r from-white via-orange-200 to-amber-400 bg-clip-text text-transparent">
                         Hot Pot
                       </h3>
                       <p className="text-xs font-bold text-amber-300 uppercase tracking-widest mt-1">
@@ -291,7 +291,7 @@ export default function Home({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
               <div key={item} className="card-item overflow-hidden flex flex-col justify-between">
-                <div className="aspect-[4/3] skeleton-box"></div>
+                <div className="aspect-4/3 skeleton-box"></div>
                 <div className="p-3.5 sm:p-4 space-y-2 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-center gap-2">
@@ -334,7 +334,7 @@ export default function Home({
                   }`}
                   onClick={() => !meal.outOfStock && onSelectMeal(meal)}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-black/40 shrink-0">
+                  <div className="relative aspect-4/3 overflow-hidden bg-black/40 shrink-0">
                     <img
                       src={meal.image}
                       alt={meal.name}
@@ -343,7 +343,7 @@ export default function Home({
                         event.target.src = meal.fallbackImage;
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-black/20" />
 
                     <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
                       {meal.outOfStock ? (
@@ -392,7 +392,7 @@ export default function Home({
                   <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="flex items-start justify-between gap-2.5">
-                        <h3 className="font-bold text-text-main text-sm sm:text-base leading-snug line-clamp-2 min-h-[2.5rem] flex items-center">
+                        <h3 className="font-bold text-text-main text-sm sm:text-base leading-snug line-clamp-2 min-h-10 flex items-center">
                           {meal.name}
                         </h3>
                         <span className="font-mono font-extrabold text-primary text-xs sm:text-sm whitespace-nowrap shrink-0 pt-0.5">
@@ -400,7 +400,7 @@ export default function Home({
                         </span>
                       </div>
 
-                      <p className="text-xs text-text-muted leading-relaxed line-clamp-2 h-[2.5rem] overflow-hidden mt-1.5">
+                      <p className="text-xs text-text-muted leading-relaxed line-clamp-2 h-10 overflow-hidden mt-1.5">
                         {meal.description}
                       </p>
                     </div>

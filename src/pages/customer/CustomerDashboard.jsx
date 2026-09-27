@@ -263,14 +263,14 @@ export default function CustomerDashboard({
           <div className="pt-2 flex flex-col gap-3">
             <button
               onClick={onOpenAuth || onOpenProfile}
-              className="w-full min-h-[44px] py-3 px-6 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="w-full min-h-11 py-3 px-6 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               <User className="w-4 h-4" />
               <span>Sign In / Register</span>
             </button>
             <button
               onClick={onExploreMenu}
-              className="w-full min-h-[44px] py-3 px-6 rounded-xl bg-[#1A1D24] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2"
+              className="w-full min-h-11 py-3 px-6 rounded-xl bg-[#1A1D24] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2"
             >
               <Home className="w-4 h-4 text-orange-400" />
               <span>Return to Store Menu</span>
@@ -312,7 +312,7 @@ export default function CustomerDashboard({
         {/* Sidebar Header */}
         <div className="h-16 px-3.5 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
+            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
               <Flame className="w-5 h-5 fill-current" />
             </div>
 
@@ -335,7 +335,7 @@ export default function CustomerDashboard({
                 setIsMobileDrawerOpen(false);
                 if (onExploreMenu) onExploreMenu();
               }}
-              className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-white transition-all min-h-[36px] min-w-[36px] flex items-center justify-center shadow-xs"
+              className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center shadow-xs"
               title="Return to Customer Store Menu"
               aria-label="Return to Store Menu"
             >
@@ -345,7 +345,7 @@ export default function CustomerDashboard({
             {/* Mobile Close Button */}
             <button
               onClick={() => setIsMobileDrawerOpen(false)}
-              className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-[36px] min-w-[36px] flex items-center justify-center"
+              className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center"
               aria-label="Close Menu"
             >
               <X className="w-4 h-4 text-orange-400" />
@@ -364,7 +364,7 @@ export default function CustomerDashboard({
         </div>
 
         {/* Scrollable Nav Links Body */}
-        <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-4">
+        <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-4">
           {/* Section: Main Navigation */}
           <div className="space-y-1.5">
             {!isSidebarCollapsed && (
@@ -408,9 +408,9 @@ export default function CustomerDashboard({
                     setActiveTab(tab.id);
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-[44px] focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
                     isActive
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20 scale-[1.01]'
+                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20 scale-[1.01]'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
                   title={tab.label}
@@ -457,7 +457,7 @@ export default function CustomerDashboard({
                 setIsMobileDrawerOpen(false);
                 if (onExploreMenu) onExploreMenu();
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-bold transition-all min-h-[44px] ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-bold transition-all min-h-11 ${
                 isSidebarCollapsed ? 'md:justify-center md:px-0' : ''
               }`}
               title="Browse Full Menu"
@@ -472,7 +472,7 @@ export default function CustomerDashboard({
                   setIsMobileDrawerOpen(false);
                   onOpenCart();
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#1A1D24] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-[44px] ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#1A1D24] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-11 ${
                   isSidebarCollapsed ? 'md:justify-center md:px-0' : ''
                 }`}
                 title="View My Cart"
@@ -524,7 +524,7 @@ export default function CustomerDashboard({
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden p-2.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-slate-300 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="md:hidden p-2.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-slate-300 hover:text-white min-h-11 min-w-11 flex items-center justify-center"
               aria-label="Open Navigation"
             >
               <Menu className="w-5 h-5 text-orange-400" />
@@ -542,7 +542,7 @@ export default function CustomerDashboard({
 
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
                 <MapPin className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                <span className="truncate max-w-[200px] sm:max-w-xs">{activeAddress}</span>
+                <span className="truncate max-w-50 sm:max-w-xs">{activeAddress}</span>
               </div>
             </div>
           </div>
@@ -553,7 +553,7 @@ export default function CustomerDashboard({
             {activeOrders.length > 0 && (
               <button
                 onClick={() => setActiveTab('tracking')}
-                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 text-xs font-bold flex items-center gap-1.5 transition-all min-h-[36px]"
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 text-xs font-bold flex items-center gap-1.5 transition-all min-h-9"
               >
                 <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping" />
                 <span className="hidden xs:inline">{activeOrders.length} in Prep/Transit</span>
@@ -578,11 +578,11 @@ export default function CustomerDashboard({
         </header>
 
         {/* Smooth Independent Section Scrolling Content Canvas */}
-        <main className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
+        <main className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
           
           {/* Cooker Confirmed Ready Special Alert Banner */}
           {orders.some((o) => o.status === 'ready') && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-emerald-900/60 to-[#14171F] border border-emerald-500/50 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-bounce-short">
+            <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-emerald-950/90 via-emerald-900/60 to-[#14171F] border border-emerald-500/50 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-bounce-short">
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-600/30">
                   <ChefHat className="w-6 h-6" />
@@ -606,7 +606,7 @@ export default function CustomerDashboard({
                   if (readyOrder && onSelectOrder) onSelectOrder(readyOrder);
                   else setActiveTab('tracking');
                 }}
-                className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
+                className="w-full sm:w-auto min-h-11 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
               >
                 <Navigation className="w-4 h-4" />
                 <span>Track Live on Map</span>
@@ -677,7 +677,7 @@ export default function CustomerDashboard({
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl sm:text-3xl font-bold text-white font-mono text-orange-400">
+                    <div className="text-2xl sm:text-3xl font-bold font-mono text-orange-400">
                       {activeOrders.length} <span className="text-sm font-sans font-normal text-slate-300">Active</span>
                     </div>
                     <div className="text-xs text-slate-400 mt-1 flex items-center justify-between">
@@ -750,7 +750,7 @@ export default function CustomerDashboard({
                               
                               {/* Glowing Active Bar */}
                               <div
-                                className={`absolute left-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-gradient-to-r shadow-md transition-all duration-500 z-0 ${barGlowClass}`}
+                                className={`absolute left-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-linear-to-r shadow-md transition-all duration-500 z-0 ${barGlowClass}`}
                                 style={{ width: `${(stepIdx / 3) * 100}%` }}
                               />
 
@@ -821,7 +821,7 @@ export default function CustomerDashboard({
                                 if (onSelectOrder) onSelectOrder(order);
                                 else setActiveTab('tracking');
                               }}
-                              className="min-h-[44px] px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95"
+                              className="min-h-11 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all active:scale-95"
                             >
                               <Navigation className="w-4 h-4" />
                               <span>Track Live Map</span>
@@ -856,7 +856,7 @@ export default function CustomerDashboard({
                       <p className="text-xs text-slate-400">No orders placed yet.</p>
                       <button
                         onClick={onExploreMenu}
-                        className="min-h-[44px] px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs"
+                        className="min-h-11 px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs"
                       >
                         Browse HotPot Menu
                       </button>
@@ -890,7 +890,7 @@ export default function CustomerDashboard({
                               <button
                                 type="button"
                                 onClick={(e) => handleReorder(order, e)}
-                                className="min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shadow-orange-500/20 active:scale-95 transition-all"
+                                className="min-h-11 px-3 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shadow-orange-500/20 active:scale-95 transition-all"
                                 title="Reorder dishes"
                               >
                                 <RefreshCw className="w-3.5 h-3.5" />
@@ -900,7 +900,7 @@ export default function CustomerDashboard({
                               <button
                                 type="button"
                                 onClick={() => setSelectedReceipt(order)}
-                                className="min-h-[44px] px-3 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
+                                className="min-h-11 px-3 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
                                 title="View Receipt"
                               >
                                 <FileText className="w-3.5 h-3.5" />
@@ -943,7 +943,7 @@ export default function CustomerDashboard({
 
                     <button
                       onClick={() => setActiveTab('profile')}
-                      className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-2"
+                      className="w-full min-h-11 py-2.5 px-4 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-2"
                     >
                       <Plus className="w-4 h-4 text-orange-400" />
                       <span>Add or Switch Address</span>
@@ -982,7 +982,7 @@ export default function CustomerDashboard({
                 </div>
                 <button
                   onClick={onExploreMenu}
-                  className="min-h-[44px] px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-orange-500/20 self-start sm:self-auto"
+                  className="min-h-11 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-orange-500/20 self-start sm:self-auto"
                 >
                   <Flame className="w-4 h-4" />
                   <span>Order More Dishes</span>
@@ -1003,13 +1003,13 @@ export default function CustomerDashboard({
                   <div className="flex flex-wrap justify-center gap-3 pt-2">
                     <button
                       onClick={onExploreMenu}
-                      className="min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold shadow-lg shadow-orange-500/20"
+                      className="min-h-11 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold shadow-lg shadow-orange-500/20"
                     >
                       Browse HotPot Menu
                     </button>
                     <button
                       onClick={() => setActiveTab('history')}
-                      className="min-h-[44px] px-5 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold"
+                      className="min-h-11 px-5 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-bold"
                     >
                       View Past Orders
                     </button>
@@ -1051,7 +1051,7 @@ export default function CustomerDashboard({
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => onSelectOrder && onSelectOrder(order)}
-                              className="min-h-[44px] px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-orange-500/20 transition-all"
+                              className="min-h-11 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-orange-500/20 transition-all"
                             >
                               <Navigation className="w-4 h-4" />
                               <span>Open Live GPS Map</span>
@@ -1064,7 +1064,7 @@ export default function CustomerDashboard({
                           <div className="relative flex items-center justify-between">
                             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 bg-slate-800 rounded-full z-0" />
                             <div
-                              className={`absolute left-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-gradient-to-r shadow-md transition-all duration-500 z-0 ${barGlowClass}`}
+                              className={`absolute left-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-linear-to-r shadow-md transition-all duration-500 z-0 ${barGlowClass}`}
                               style={{ width: `${(stepIdx / 3) * 100}%` }}
                             />
 
@@ -1249,7 +1249,7 @@ export default function CustomerDashboard({
                           <button
                             type="button"
                             onClick={(e) => handleReorder(order, e)}
-                            className="min-h-[44px] px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+                            className="min-h-11 px-4 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 active:scale-95 transition-all"
                           >
                             <RefreshCw className="w-3.5 h-3.5" />
                             <span>Reorder</span>
@@ -1258,7 +1258,7 @@ export default function CustomerDashboard({
                           <button
                             type="button"
                             onClick={() => setSelectedReceipt(order)}
-                            className="min-h-[44px] px-3.5 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
+                            className="min-h-11 px-3.5 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             <span>Receipt</span>
@@ -1280,14 +1280,14 @@ export default function CustomerDashboard({
                     <button
                       disabled={historyPage === 1}
                       onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
-                      className="min-h-[38px] px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-xs font-bold disabled:opacity-40"
+                      className="min-h-9.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-xs font-bold disabled:opacity-40"
                     >
                       Previous
                     </button>
                     <button
                       disabled={historyPage === totalPages}
                       onClick={() => setHistoryPage((p) => Math.min(totalPages, p + 1))}
-                      className="min-h-[38px] px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-xs font-bold disabled:opacity-40"
+                      className="min-h-9.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-xs font-bold disabled:opacity-40"
                     >
                       Next
                     </button>
@@ -1329,7 +1329,7 @@ export default function CustomerDashboard({
                           type="text"
                           value={profileName}
                           onChange={(e) => setProfileName(e.target.value)}
-                          className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-[44px]"
+                          className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-11"
                           placeholder="Your Name"
                         />
                       </div>
@@ -1342,7 +1342,7 @@ export default function CustomerDashboard({
                           type="text"
                           value={profilePhone}
                           onChange={(e) => setProfilePhone(e.target.value)}
-                          className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-[44px]"
+                          className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-11"
                           placeholder="0788000001"
                         />
                       </div>
@@ -1355,7 +1355,7 @@ export default function CustomerDashboard({
                           type="email"
                           value={profileEmail}
                           onChange={(e) => setProfileEmail(e.target.value)}
-                          className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-[44px]"
+                          className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-11"
                           placeholder="client@hotpot.rw"
                         />
                       </div>
@@ -1380,7 +1380,7 @@ export default function CustomerDashboard({
                               key={p.id}
                               type="button"
                               onClick={() => setPreferredPayment(p.id)}
-                              className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2 min-h-[44px] ${
+                              className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2 min-h-11 ${
                                 isSelected
                                   ? 'bg-orange-500/20 border-orange-500 text-white font-bold shadow-xs'
                                   : 'bg-[#14171F] border-slate-800 text-slate-400 hover:border-slate-700'
@@ -1396,7 +1396,7 @@ export default function CustomerDashboard({
 
                     {/* Notification Alerts */}
                     <div className="space-y-2 pt-2">
-                      <label className="flex items-center justify-between p-3.5 rounded-xl bg-[#14171F] border border-slate-800 cursor-pointer min-h-[44px]">
+                      <label className="flex items-center justify-between p-3.5 rounded-xl bg-[#14171F] border border-slate-800 cursor-pointer min-h-11">
                         <div className="space-y-0.5">
                           <span className="text-xs font-semibold text-white block">SMS Live Tracking Updates</span>
                           <span className="text-[11px] text-slate-400 block">Receive instant status updates on your phone</span>
@@ -1413,7 +1413,7 @@ export default function CustomerDashboard({
                     <div className="pt-4 border-t border-slate-800 flex justify-end">
                       <button
                         type="submit"
-                        className="min-h-[44px] px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/20 transition-all active:scale-95"
+                        className="min-h-11 px-6 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/20 transition-all active:scale-95"
                       >
                         Save Profile Changes
                       </button>
@@ -1478,7 +1478,7 @@ export default function CustomerDashboard({
 
                         <button
                           type="submit"
-                          className="w-full min-h-[44px] rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs"
+                          className="w-full min-h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs"
                         >
                           Save Address
                         </button>
@@ -1520,7 +1520,7 @@ export default function CustomerDashboard({
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteAddress(addr.id)}
-                                  className="text-slate-500 hover:text-red-400 p-1 min-h-[32px] min-w-[32px] flex items-center justify-center"
+                                  className="text-slate-500 hover:text-red-400 p-1 min-h-8 min-w-8 flex items-center justify-center"
                                   title="Delete address"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />

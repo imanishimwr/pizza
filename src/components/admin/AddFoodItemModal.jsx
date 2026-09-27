@@ -105,7 +105,7 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      className="fixed inset-0 z-9999 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
@@ -124,7 +124,7 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
         {/* ─── Header ─── */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg shadow-orange-500/25">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-linear-to-br from-orange-500 to-amber-500 shadow-lg shadow-orange-500/25">
               <UtensilsCrossed className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -284,11 +284,11 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
             }`}
             onClick={() => setIsSpicy(!isSpicy)}
           >
-            <div className={`relative w-10 h-5 rounded-full transition-all flex-shrink-0 ${
+            <div className={`relative w-10 h-5 rounded-full transition-all shrink-0 ${
               isSpicy ? "bg-red-500" : "bg-slate-700"
             }`}>
               <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                isSpicy ? "left-[22px]" : "left-[2px]"
+                isSpicy ? "left-5.5" : "left-0.5"
               }`} />
             </div>
             <Flame className={`w-4 h-4 transition-colors ${isSpicy ? "text-red-400" : "text-slate-500"}`} />
@@ -318,7 +318,7 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
             <button
               type="submit" form="add-food-form"
               disabled={saving || !name.trim() || !price}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 bg-linear-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
