@@ -449,7 +449,7 @@ function AppContent() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 p-4 rounded-xl bg-surface-card border border-primary/40 shadow-2xl flex items-center gap-4 animate-toast-enter min-w-[280px] max-w-[92vw]"
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 p-4 rounded-xl bg-surface-card border border-primary/40 shadow-2xl flex items-center gap-4 animate-toast-enter min-w-70 max-w-[92vw]"
         >
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${

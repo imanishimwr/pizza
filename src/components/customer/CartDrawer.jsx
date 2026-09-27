@@ -103,7 +103,7 @@ export default function CartDrawer({ isOpen, onClose, cart, onUpdateQty, onRemov
 
   return (
     <div
-      className="fixed inset-0 z-[1000] overflow-hidden bg-black/75 backdrop-blur-sm transition-opacity duration-200 cursor-pointer"
+      className="fixed inset-0 z-1000 overflow-hidden bg-black/75 backdrop-blur-sm transition-opacity duration-200 cursor-pointer"
       onClick={onClose}
     >
       <div

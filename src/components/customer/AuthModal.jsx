@@ -325,7 +325,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
           {GOOGLE_CLIENT_ID && mode !== 'forgot' && (
             <div className="space-y-2">
-              <div ref={googleButtonHost} className="flex justify-center min-h-[44px]" />
+              <div ref={googleButtonHost} className="flex justify-center min-h-11" />
               {googleReady && (
                 <>
                   <div className="flex items-center gap-3 text-[11px] text-text-subdued">

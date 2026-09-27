@@ -98,7 +98,7 @@ function DetailRow({ label, value, valueClass = 'text-white font-bold' }) {
   return (
     <div className="flex justify-between gap-4 py-2 border-b border-slate-800/60 last:border-0">
       <span className="text-slate-400 shrink-0">{label}</span>
-      <span className={`text-right min-w-0 break-words ${valueClass}`}>{value}</span>
+      <span className={`text-right min-w-0 wrap-break-word ${valueClass}`}>{value}</span>
     </div>
   );
 }
@@ -851,7 +851,7 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
 
               {/* Route + actions */}
               <div
-                className={`flex-1 flex flex-col min-w-0 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117] ${
+                className={`flex-1 flex flex-col min-w-0 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117] ${
                   mobileViewMode === 'list' ? 'hidden md:flex' : 'flex'
                 }`}
               >
