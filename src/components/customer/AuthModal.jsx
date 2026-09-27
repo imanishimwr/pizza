@@ -33,12 +33,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     }, 2500);
   };
 
-  const handleQuickFill = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setErrorMsg('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -287,7 +281,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="customer@hotpot.com"
+                      placeholder="name@example.com"
                       required
                       className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     />
@@ -382,39 +376,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
                   )}
                 </button>
               </form>
-
-              {/* Quick Demo Credentials Assistant */}
-              {!isRegister && (
-                <div className="pt-2 border-t border-white/5 space-y-1.5">
-                  <div className="text-[11px] font-bold text-text-muted flex items-center justify-between">
-                    <span>⚡ Quick Demo Logins:</span>
-                    <span className="text-[10px] text-text-subdued">Click to autofill</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill('customer@hotpot.com', 'customer123')}
-                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-amber-300 font-medium transition-colors"
-                    >
-                      👤 Customer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill('cooker@hotpot.com', 'cooker123')}
-                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-emerald-300 font-medium transition-colors"
-                    >
-                      👨‍🍳 Cooker
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickFill('admin@hotpot.com', 'admin123')}
-                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-purple-300 font-medium transition-colors"
-                    >
-                      👑 Admin
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* Bottom Switcher */}
               <div className="text-center text-xs text-text-muted pt-2 border-t border-white/5">
