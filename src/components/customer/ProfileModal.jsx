@@ -1,143 +1,243 @@
-import React, { useState, useEffect } from 'react';
-import { X, User, Phone, MapPin, Mail, CreditCard, Plus, Trash2, Check, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { X, User, Phone, MapPin, Mail, Check, ShieldCheck, LogOut, Loader2, AlertTriangle as TriangleAlert } from 'lucide-react';
+import { updateProfile } from '../../services/apiService';
 
-export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [email, setEmail] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [isScanningGps, setIsScanningGps] = useState(false);
-  const [gpsError, setGpsError] = useState('');
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])'
+].join(', ');
 
-  // Saved Addresses Manager State
-  const [addresses, setAddresses] = useState([]);
-  const [newAddrLabel, setNewAddrLabel] = useState('');
-  const [newAddrText, setNewAddrText] = useState('');
-  const [showAddAddr, setShowAddAddr] = useState(false);
+const formatCoords = (lat, lng) => `GPS: ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
 
-  // Saved Payment Methods Manager State
-  const [payments, setPayments] = useState([
-    { id: 1, type: 'momo', name: 'MTN Mobile Money', number: '0788123456' },
-    { id: 2, type: 'card', name: 'Visa Ending in 4242', number: '**** **** **** 4242' }
-  ]);
-  const [newPayName, setNewPayName] = useState('');
-  const [newPayNumber, setNewPayNumber] = useState('');
-  const [showAddPay, setShowAddPay] = useState(false);
+function useOverlayA11y(isOpen, onClose) {
+  const panelRef = useRef(null);
+  const closeRef = useRef(onClose);
 
   useEffect(() => {
-    if (user) {
-      setName(user.name || '');
-      setPhone(user.phone || '');
-      setAddress(user.address || user.location || '');
-      setEmail(user.email || '');
-    }
-  }, [user]);
+    closeRef.current = onClose;
+  });
 
-  if (!isOpen || !user) return null;
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const panel = panelRef.current;
+    const first = panel ? panel.querySelector(FOCUSABLE_SELECTOR) : null;
+    if (first instanceof HTMLElement) first.focus();
+    else if (panel instanceof HTMLElement) panel.focus();
+    return () => {
+      if (trigger && document.contains(trigger)) trigger.focus();
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (typeof closeRef.current === 'function') closeRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const nodes = Array.from(panel.querySelectorAll(FOCUSABLE_SELECTOR));
+      if (nodes.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || active === panel || !panel.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !panel.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen]);
+
+  return panelRef;
+}
+
+/**
+ * Account settings. Every change goes through `updateProfile(...)`, which is
+ * persisted server-side and returns the authoritative user; only then is
+ * `onSaved(updatedUser)` called. The previous version wrote a fabricated user
+ * object to localStorage and pretended the card/address book was stored.
+ */
+export default function ProfileModal({ isOpen, onClose, user, onSaved, onLogout }) {
+  // Hooks first, always. The "closed" early return comes after them.
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [coords, setCoords] = useState({ lat: null, lng: null });
+  const [isScanningGps, setIsScanningGps] = useState(false);
+  const [gpsError, setGpsError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const open = Boolean(isOpen) && Boolean(user);
+  const panelRef = useOverlayA11y(open, onClose);
+  const geoRequestId = useRef(0);
+
+  // Re-seed from the signed-in user each time the modal opens.
+  useEffect(() => {
+    if (!open) return;
+    geoRequestId.current += 1;
+    setName(user.name || '');
+    setPhone(user.phone || '');
+    setEmail(user.email || '');
+    setAddress(user.location || '');
+    setCoords({ lat: Number(user.lat) || null, lng: Number(user.lng) || null });
+    setIsScanningGps(false);
+    setGpsError('');
+    setErrorMsg('');
+    setSaving(false);
+  }, [open, user]);
 
   const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsError('Geolocation is not supported by your browser. Enter the address manually.');
+      return;
+    }
     setIsScanningGps(true);
     setGpsError('');
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-            const data = await res.json();
-            setIsScanningGps(false);
-            
-            const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
-            const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county;
-            const country = data.address?.country;
-            
-            const parts = [road, city, country].filter(Boolean);
-            const locString = parts.length > 0 
-              ? `${parts.join(', ')} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
-              : `GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-              
-            setAddress(locString);
-          } catch (err) {
-            setIsScanningGps(false);
-            setAddress(`GPS Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-            setGpsError('Could not fetch address details for coordinates.');
-          }
-        },
-        (error) => {
-          setIsScanningGps(false);
-          setGpsError(`Location access denied or unavailable. Please enter manually.`);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      setIsScanningGps(false);
-      setGpsError('Geolocation is not supported by your browser.');
+    geoRequestId.current += 1;
+    const requestId = geoRequestId.current;
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        if (requestId !== geoRequestId.current) return;
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setCoords({ lat, lng });
+        setIsScanningGps(false);
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          );
+          if (!res.ok) throw new Error(`Reverse geocoding failed (${res.status}).`);
+          const data = await res.json();
+          if (requestId !== geoRequestId.current) return;
+          const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
+          const city =
+            data.address?.city || data.address?.town || data.address?.village || data.address?.county;
+          const country = data.address?.country;
+          const parts = [road, city, country].filter(Boolean);
+          setAddress(
+            parts.length > 0
+              ? `${parts.join(', ')} (${formatCoords(lat, lng)})`
+              : formatCoords(lat, lng)
+          );
+        } catch {
+          if (requestId !== geoRequestId.current) return;
+          setAddress(formatCoords(lat, lng));
+          setGpsError('Could not read a street address for those coordinates. Check it before saving.');
+        }
+      },
+      () => {
+        if (requestId !== geoRequestId.current) return;
+        setIsScanningGps(false);
+        setGpsError('Location access was denied. Enter the address manually.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setErrorMsg('');
+    try {
+      const updated = await updateProfile({
+        name: name.trim(),
+        phone: phone.trim(),
+        location: address.trim(),
+        lat: coords.lat,
+        lng: coords.lng
+      });
+      if (typeof onSaved === 'function') onSaved(updated);
+      if (typeof onClose === 'function') onClose();
+    } catch (err) {
+      // The server message is user-safe; show exactly what it said.
+      setErrorMsg(err?.message || 'Could not save your profile. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleAddAddress = (e) => {
-    e.preventDefault();
-    if (!newAddrText) return;
-    setAddresses([...addresses, { id: Date.now(), label: newAddrLabel || 'Other', text: newAddrText }]);
-    setNewAddrLabel('');
-    setNewAddrText('');
-    setShowAddAddr(false);
-  };
-
-  const handleDeleteAddress = (id) => {
-    setAddresses(addresses.filter((a) => a.id !== id));
-  };
-
-  const handleAddPayment = (e) => {
-    e.preventDefault();
-    if (!newPayNumber) return;
-    setPayments([...payments, { id: Date.now(), type: 'momo', name: newPayName || 'Mobile Money', number: newPayNumber }]);
-    setNewPayName('');
-    setNewPayNumber('');
-    setShowAddPay(false);
-  };
-
-  const handleDeletePayment = (id) => {
-    setPayments(payments.filter((p) => p.id !== id));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const updated = { ...user, name, phone, email, address, savedAddresses: addresses, savedPayments: payments };
-    onSaveUser(updated);
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      onClose();
-    }, 1200);
-  };
+  if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto scrollbar-thin">
-        
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity duration-200"
+      onClick={onClose}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-modal-title"
+        tabIndex={-1}
+        onClick={(event) => event.stopPropagation()}
+        className="bg-surface-dark border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/40 text-primary flex items-center justify-center font-bold text-base">
-              {name ? name[0] : 'U'}
+            <div
+              aria-hidden="true"
+              className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/40 text-primary flex items-center justify-center font-bold text-base shrink-0"
+            >
+              {name ? name[0].toUpperCase() : 'U'}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-text-main">Account & Delivery Settings</h2>
-              <p className="text-xs text-text-muted">Manage personal details, addresses & payments</p>
+              <h2 id="profile-modal-title" className="text-lg font-bold text-text-main">
+                Account &amp; Delivery Settings
+              </h2>
+              <p className="text-xs text-text-muted">Manage your personal details and delivery area</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-text-muted hover:text-white">
-            <X className="w-5 h-5" />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close account settings"
+            className="p-2 text-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+          >
+            <X className="w-5 h-5" aria-hidden="true" focusable="false" />
           </button>
         </div>
 
-        {saved && (
-          <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-semibold flex items-center gap-2">
-            <Check className="w-4 h-4" />
-            Profile and delivery details saved!
+        {errorMsg && (
+          <div
+            role="alert"
+            className="p-3 rounded-xl bg-red-950/70 border border-red-500/40 text-red-300 text-xs font-semibold flex items-start gap-2"
+          >
+            <TriangleAlert className="w-4 h-4 shrink-0" aria-hidden="true" focusable="false" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
@@ -145,11 +245,20 @@ export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-text-muted block">Full Name</label>
+              <label htmlFor="profile-name" className="text-xs font-bold text-text-muted block">
+                Full Name
+              </label>
               <div className="relative">
-                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                <User
+                  className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                  aria-hidden="true"
+                  focusable="false"
+                />
                 <input
+                  id="profile-name"
                   type="text"
+                  name="name"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -159,11 +268,21 @@ export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-text-muted block">Phone</label>
+              <label htmlFor="profile-phone" className="text-xs font-bold text-text-muted block">
+                Phone
+              </label>
               <div className="relative">
-                <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                <Phone
+                  className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                  aria-hidden="true"
+                  focusable="false"
+                />
                 <input
-                  type="text"
+                  id="profile-phone"
+                  type="tel"
+                  name="phone"
+                  autoComplete="tel"
+                  inputMode="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
@@ -174,162 +293,115 @@ export default function ProfileModal({ isOpen, onClose, user, onSaveUser }) {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-text-muted block">Email Address</label>
+            <label htmlFor="profile-email" className="text-xs font-bold text-text-muted block">
+              Email Address
+            </label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+              <Mail
+                className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                aria-hidden="true"
+                focusable="false"
+              />
               <input
+                id="profile-email"
                 type="email"
+                name="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full bg-surface-card border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-text-main focus:outline-none focus:border-primary"
+                readOnly
+                aria-describedby="profile-email-hint"
+                className="w-full bg-surface-card/60 border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-text-muted cursor-not-allowed focus:outline-none"
               />
             </div>
+            <p id="profile-email-hint" className="text-[10px] text-text-subdued">
+              Your email identifies your account and cannot be changed here.
+            </p>
           </div>
 
           <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-text-muted block">Primary Delivery Address</label>
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="profile-address" className="text-xs font-bold text-text-muted block">
+                Primary Delivery Address
+              </label>
               <button
                 type="button"
                 onClick={handleDetectLocation}
-                disabled={isScanningGps}
-                className="text-[10px] text-primary font-bold hover:underline flex items-center gap-1"
+                disabled={isScanningGps || saving}
+                className="text-[10px] text-primary font-bold hover:underline flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isScanningGps ? (
-                  <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                  <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" focusable="false" />
                 ) : (
-                  <MapPin className="w-3 h-3" />
+                  <MapPin className="w-3 h-3" aria-hidden="true" focusable="false" />
                 )}
                 {isScanningGps ? 'Scanning...' : 'Detect Location'}
               </button>
             </div>
             <div className="relative">
-              <MapPin className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+              <MapPin
+                className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                aria-hidden="true"
+                focusable="false"
+              />
               <input
+                id="profile-address"
                 type="text"
+                name="address"
+                autoComplete="street-address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. 123 Main St, City"
-                className="w-full bg-surface-card border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-text-main focus:outline-none focus:border-primary"
+                placeholder="e.g. KG 9 Ave, Nyarutarama, Kigali"
+                className="w-full bg-surface-card border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
               />
             </div>
             {gpsError && (
-              <p className="text-[10px] text-red-400 mt-1">{gpsError}</p>
+              <p role="alert" className="text-[10px] text-red-400 mt-1">
+                {gpsError}
+              </p>
             )}
+            <p className="text-[10px] text-text-subdued">
+              This is the address our riders use to deliver your orders.
+            </p>
           </div>
 
-          {/* Saved Addresses Manager */}
-          <div className="pt-2 border-t border-white/10 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
-                Saved Delivery Addresses
-              </label>
+          <p className="flex items-start gap-1.5 text-[10px] text-text-subdued">
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" focusable="false" />
+            Payment is taken at checkout from the phone number on your order. We never ask for or
+            store card numbers.
+          </p>
+
+          <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full btn-primary text-xs py-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" focusable="false" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" aria-hidden="true" focusable="false" />
+                  Save Profile Changes
+                </>
+              )}
+            </button>
+
+            {onLogout && (
               <button
                 type="button"
-                onClick={() => setShowAddAddr(!showAddAddr)}
-                className="text-[11px] text-primary font-bold hover:underline flex items-center gap-1"
+                onClick={onLogout}
+                className="btn-secondary text-xs py-2.5 w-full flex items-center justify-center gap-2 text-red-300 hover:text-red-200"
               >
-                <Plus className="w-3 h-3" /> Add Address
+                <LogOut className="w-4 h-4" aria-hidden="true" focusable="false" />
+                Log out
               </button>
-            </div>
-
-            <div className="space-y-2">
-              {addresses.map((a) => (
-                <div key={a.id} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5 text-xs">
-                  <div>
-                    <span className="font-bold text-white bg-primary/20 px-2 py-0.5 rounded text-[10px] mr-2">{a.label}</span>
-                    <span className="text-text-muted">{a.text}</span>
-                  </div>
-                  <button type="button" onClick={() => handleDeleteAddress(a.id)} className="text-red-400 hover:text-red-300 p-1">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {showAddAddr && (
-              <div className="bg-surface-card p-3 rounded-xl border border-white/10 space-y-2">
-                <input
-                  type="text"
-                  placeholder="Address Tag (Home, Work, Gym)"
-                  value={newAddrLabel}
-                  onChange={(e) => setNewAddrLabel(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white"
-                />
-                <input
-                  type="text"
-                  placeholder="Full Delivery Address & House #"
-                  value={newAddrText}
-                  onChange={(e) => setNewAddrText(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white"
-                />
-                <button type="button" onClick={handleAddAddress} className="btn-primary text-xs py-1.5 w-full">
-                  Save Address
-                </button>
-              </div>
             )}
           </div>
-
-          {/* Saved Payment Methods Manager */}
-          <div className="pt-2 border-t border-white/10 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5" />
-                Saved Payment Methods
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowAddPay(!showAddPay)}
-                className="text-[11px] text-primary font-bold hover:underline flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" /> Add Method
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              {payments.map((p) => (
-                <div key={p.id} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5 text-xs">
-                  <div>
-                    <span className="font-bold text-white">{p.name}</span>
-                    <span className="text-text-muted ml-2 font-mono">({p.number})</span>
-                  </div>
-                  <button type="button" onClick={() => handleDeletePayment(p.id)} className="text-red-400 hover:text-red-300 p-1">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {showAddPay && (
-              <div className="bg-surface-card p-3 rounded-xl border border-white/10 space-y-2">
-                <input
-                  type="text"
-                  placeholder="Method Label (MTN MoMo, Visa)"
-                  value={newPayName}
-                  onChange={(e) => setNewPayName(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white"
-                />
-                <input
-                  type="text"
-                  placeholder="Phone Number / Card Last 4 Digits"
-                  value={newPayNumber}
-                  onChange={(e) => setNewPayNumber(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white"
-                />
-                <button type="button" onClick={handleAddPayment} className="btn-primary text-xs py-1.5 w-full">
-                  Save Payment Method
-                </button>
-              </div>
-            )}
-          </div>
-
-          <button type="submit" className="w-full btn-primary text-xs py-3 mt-4">
-            Save All Profile Changes
-          </button>
         </form>
-
       </div>
     </div>
   );

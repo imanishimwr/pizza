@@ -1,422 +1,381 @@
-// HotPot Delights Persistent Data Service Layer
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+/**
+ * API client.
+ *
+ * Rules this module enforces, so no caller has to remember them:
+ *   - A failing request THROWS. It never returns an empty array, a cached copy
+ *     or a hardcoded fixture and lets the UI render that as if it were real.
+ *     The previous version silently served stale localStorage for orders and a
+ *     four-rider fake fleet whenever the API was down, which is how "8 orders,
+ *     0 revenue" screens got shipped to production.
+ *   - The bearer token is attached centrally from the stored session, so no
+ *     call site can forget it.
+ *   - Server error messages are surfaced verbatim; 5xx messages are written for
+ *     end users by the server and are safe to display.
+ */
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api').replace(/\/$/, '');
 
-const STORAGE_KEYS = {
-  MEALS: 'hotpot_meals_v1',
-  ORDERS: 'hotpot_orders_v1',
-  USER: 'hotpot_user_v1',
-  CART: 'hotpot_cart_v1',
-  WISHLIST: 'hotpot_wishlist_v1',
-  TRACKED_ORDER_ID: 'hotpot_tracked_order_id_v1'
-};
+const TOKEN_KEY = 'hotpot_token_v1';
+const USER_KEY = 'hotpot_user_v1';
+const CART_KEY = 'hotpot_cart_v1';
+const WISHLIST_KEY = 'hotpot_wishlist_v1';
+const TRACKED_ORDER_KEY = 'hotpot_tracked_order_id_v1';
 
-export const apiService = {
-  // Meals Persistence
-  getMeals: async () => {
+const STORAGE_KEYS = { TOKEN_KEY, USER_KEY, CART_KEY, WISHLIST_KEY, TRACKED_ORDER_KEY };
+
+/** Notified whenever the server rejects our token, so the app can sign out. */
+const authListeners = new Set();
+const notifyAuthLost = () => {
+  for (const fn of authListeners) {
     try {
-      const res = await fetch(`${API_BASE_URL}/meals`);
-      if (!res.ok) throw new Error('Failed to fetch meals');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        localStorage.setItem(STORAGE_KEYS.MEALS, JSON.stringify(data));
-        return data;
-      }
-      return [];
-    } catch (e) {
-      console.warn('Backend unavailable, checking local cache', e);
-      try {
-        const saved = localStorage.getItem(STORAGE_KEYS.MEALS);
-        const parsed = saved ? JSON.parse(saved) : null;
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (err) {
-        return [];
-      }
+      fn();
+    } catch (err) {
+      console.error('[auth] listener failed', err);
     }
-  },
-
-  createMeal: async (mealData, token) => {
-    const res = await fetch(`${API_BASE_URL}/meals`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(mealData)
-    });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(`${res.status}: ${errBody.error || 'Failed to create meal'}`);
-    }
-    const created = await res.json();
-    try {
-      const cached = localStorage.getItem(STORAGE_KEYS.MEALS);
-      const list = cached ? JSON.parse(cached) : [];
-      if (Array.isArray(list)) {
-        localStorage.setItem(STORAGE_KEYS.MEALS, JSON.stringify([created, ...list.filter(m => m.id !== created.id)]));
-      }
-    } catch (e) {}
-    return created;
-  },
-
-  updateMeal: async (id, mealData, token) => {
-    const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(mealData)
-    });
-    if (!res.ok) throw new Error('Failed to update meal');
-    return res.json();
-  },
-
-  deleteMeal: async (id, token) => {
-    const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('Failed to delete meal');
-    return res.json();
-  },
-
-  // Orders Persistence
-  getOrders: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/orders`);
-      if (!res.ok) throw new Error('Failed to fetch orders');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(data));
-        return data;
-      }
-      return [];
-    } catch (e) {
-      console.warn('Backend unavailable, checking local cache', e);
-      try {
-        const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
-        const parsed = saved ? JSON.parse(saved) : null;
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (err) {
-        return [];
-      }
-    }
-  },
-
-  createOrder: async (orderData) => {
-    const res = await fetch(`${API_BASE_URL}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    });
-    if (!res.ok) throw new Error('Failed to create order');
-    return res.json();
-  },
-
-  updateOrderStatus: async (id, status, riderName, token) => {
-    const res = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ status, riderName })
-    });
-    if (!res.ok) throw new Error('Failed to update order status');
-    return res.json();
-  },
-
-  // User Session Persistence
-  getUser: () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.USER);
-      return saved ? JSON.parse(saved) : null;
-    } catch (e) {
-      return null;
-    }
-  },
-
-  saveUser: (user) => {
-    try {
-      if (user) {
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.USER);
-      }
-    } catch (e) {
-      console.error('Error saving user:', e);
-    }
-  },
-
-  register: async ({ name, email, phone, password, role = 'CUSTOMER' }) => {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, phone, password, role })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || 'Registration failed.');
-    }
-    return data;
-  },
-
-  login: async ({ email, password }) => {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || 'Invalid email or password.');
-    }
-    return data;
-  },
-
-  // Cart Persistence across all MPA pages
-  getCart: () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CART);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  },
-
-  saveCart: (cart) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
-    } catch (e) {
-      console.error('Error saving cart:', e);
-    }
-  },
-
-  // Wishlist Persistence
-  getWishlist: () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.WISHLIST);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  },
-
-  saveWishlist: (wishlist) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.WISHLIST, JSON.stringify(wishlist));
-    } catch (e) {
-      console.error('Error saving wishlist:', e);
-    }
-  },
-
-
-  // Active Tracked Order Persistence
-  getTrackedOrderId: () => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.TRACKED_ORDER_ID) || null;
-    } catch (e) {
-      return null;
-    }
-  },
-
-  setTrackedOrderId: (orderId) => {
-    try {
-      if (orderId) {
-        localStorage.setItem(STORAGE_KEYS.TRACKED_ORDER_ID, orderId);
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.TRACKED_ORDER_ID);
-      }
-    } catch (e) {
-      console.error('Error saving tracked order id:', e);
-    }
-  },
-
-  // Reviews & Ratings API
-  getReviews: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/reviews`);
-      if (!res.ok) return [];
-      return await res.json();
-    } catch (e) {
-      console.error('Error fetching reviews:', e);
-      return [];
-    }
-  },
-
-  submitReview: async (reviewData) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reviewData)
-      });
-      if (!res.ok) throw new Error('Failed to submit review');
-      return await res.json();
-    } catch (e) {
-      console.error('Error submitting review:', e);
-      throw e;
-    }
-  },
-
-  // Admin Analytics API
-  getAdminAnalytics: async (token) => {
-    const res = await fetch(`${API_BASE_URL}/admin/analytics`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('Failed to fetch analytics');
-    return res.json();
-  },
-
-  // --------------------------------------------------
-  // Smart Dispatch & Rider Fleet Management API
-  // --------------------------------------------------
-  getRiders: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/riders`);
-      if (!res.ok) throw new Error('Failed to fetch riders');
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    } catch (e) {
-      console.warn('Backend unavailable, using default riders fleet');
-      return [
-        {
-          id: 'rider-1',
-          name: 'Eric Mugisha',
-          phone: '+250 788 123 456',
-          plateNumber: 'RAC 402B',
-          vehicleType: 'Yamaha XTZ 125 (Moto #1)',
-          shift: 'Day Shift (08:00 - 16:00)',
-          is_available: true,
-          status: 'AVAILABLE',
-          current_order_id: null,
-          lat: -1.9702,
-          lng: 30.1250,
-          rating: 4.95,
-          completed_today: 8,
-          earnings_today: 18500
-        },
-        {
-          id: 'rider-2',
-          name: 'Jean-Paul Nshimiyimana',
-          phone: '+250 788 234 567',
-          plateNumber: 'RD 192A',
-          vehicleType: 'TVS Apache 160 (Moto #2)',
-          shift: 'Day Shift (08:00 - 16:00)',
-          is_available: true,
-          status: 'AVAILABLE',
-          current_order_id: null,
-          lat: -1.9510,
-          lng: 30.0920,
-          rating: 4.88,
-          completed_today: 6,
-          earnings_today: 15200
-        },
-        {
-          id: 'rider-3',
-          name: 'Patrick Habimana',
-          phone: '+250 788 345 678',
-          plateNumber: 'RAE 883K',
-          vehicleType: 'Honda Ace 125 (Moto #3)',
-          shift: 'Evening Shift (16:00 - 00:00)',
-          is_available: true,
-          status: 'AVAILABLE',
-          current_order_id: null,
-          lat: -1.9620,
-          lng: 30.1100,
-          rating: 4.92,
-          completed_today: 4,
-          earnings_today: 12000
-        },
-        {
-          id: 'rider-4',
-          name: 'Fabrice Manzi',
-          phone: '+250 788 456 789',
-          plateNumber: 'RAG 311P',
-          vehicleType: 'Bajaj Boxer 150 (Moto #4)',
-          shift: 'Night Shift (18:00 - 02:00)',
-          is_available: false,
-          status: 'OFF_DUTY',
-          current_order_id: null,
-          lat: -1.9420,
-          lng: 30.0750,
-          rating: 4.85,
-          completed_today: 0,
-          earnings_today: 0
-        }
-      ];
-    }
-  },
-
-  createRider: async (riderData) => {
-    const res = await fetch(`${API_BASE_URL}/riders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(riderData)
-    });
-    if (!res.ok) throw new Error('Failed to create rider');
-    return res.json();
-  },
-
-  toggleRiderAvailability: async (riderId, is_available) => {
-    const res = await fetch(`${API_BASE_URL}/riders/${riderId}/availability`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_available })
-    });
-    if (!res.ok) throw new Error('Failed to toggle rider availability');
-    return res.json();
-  },
-
-  updateRider: async (riderId, data) => {
-    const res = await fetch(`${API_BASE_URL}/riders/${riderId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Failed to update rider');
-    return res.json();
-  },
-
-  assignRiderToOrder: async (orderId, riderId) => {
-    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/assign-rider`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ riderId })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to assign rider');
-    }
-    return res.json();
-  },
-
-  assignManualRiderToOrder: async (orderId, riderData) => {
-    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/assign-manual-rider`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(riderData)
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to assign manual rider');
-    }
-    return res.json();
-  },
-
-  verifyHandoverPickup: async (orderId, verificationPin) => {
-    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/handover-pickup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verificationPin })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to verify handover pickup');
-    }
-    return res.json();
-  },
-
-  reassignRider: async (orderId, newRiderId) => {
-    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/reassign-rider`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newRiderId })
-    });
-    if (!res.ok) throw new Error('Failed to reassign rider');
-    return res.json();
   }
 };
+export const onAuthLost = (fn) => {
+  authListeners.add(fn);
+  return () => authListeners.delete(fn);
+};
+
+// ---------------------------------------------------------------------------
+// Session
+// ---------------------------------------------------------------------------
+function readJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed ?? fallback;
+  } catch {
+    // A corrupt entry is worse than none — drop it so it cannot break every read.
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* storage disabled (private mode) — nothing to clean up */
+    }
+    return fallback;
+  }
+}
+
+function writeJSON(key, value) {
+  try {
+    if (value === null || value === undefined) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.error(`[storage] could not write ${key}`, err);
+  }
+}
+
+export const session = {
+  getToken: () => {
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  },
+  getUser: () => readJSON(USER_KEY, null),
+  set({ token, user }) {
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+    } catch (err) {
+      console.error('[storage] could not store token', err);
+    }
+    writeJSON(USER_KEY, user);
+  },
+  updateUser(user) {
+    writeJSON(USER_KEY, user);
+  },
+  clear() {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      /* storage disabled */
+    }
+    writeJSON(USER_KEY, null);
+  },
+  isAuthenticated() {
+    return Boolean(session.getToken());
+  },
+  role() {
+    const user = session.getUser();
+    return user?.role ? String(user.role).toLowerCase() : null;
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Core request helper
+// ---------------------------------------------------------------------------
+export class ApiError extends Error {
+  constructor(message, { status = 0, body = null, cause = null } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+    this.cause = cause;
+  }
+}
+
+/** Thrown when the caller explicitly opted into a cached read. */
+export class OfflineError extends ApiError {
+  constructor(message, cause) {
+    super(message, { cause });
+    this.name = 'OfflineError';
+  }
+}
+
+async function request(path, { method = 'GET', body, auth = true, signal } = {}) {
+  const headers = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+
+  if (auth) {
+    const token = session.getToken();
+    if (!token) throw new ApiError('Please sign in to continue.', { status: 401 });
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    // A network failure is not an empty dataset. Say so.
+    throw new ApiError('Cannot reach the server. Check your connection and try again.', { cause: err });
+  }
+
+  const isJSON = res.headers.get('content-type')?.includes('application/json');
+  const payload = isJSON ? await res.json().catch(() => null) : null;
+
+  if (!res.ok) {
+    // 401 means the session is gone. Drop it so the UI stops pretending to be
+    // signed in instead of failing one request at a time.
+    if (res.status === 401) {
+      session.clear();
+      notifyAuthLost();
+    }
+    throw new ApiError(payload?.error || `Request failed (${res.status}).`, { status: res.status, body: payload });
+  }
+
+  return payload;
+}
+
+const qs = (params) => {
+  const entries = Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null && v !== '');
+  return entries.length ? `?${new URLSearchParams(entries)}` : '';
+};
+
+// ---------------------------------------------------------------------------
+// Menu
+// ---------------------------------------------------------------------------
+export const getMeals = ({ signal } = {}) => request('/meals', { auth: false, signal });
+
+export const createMeal = (meal) => request('/meals', { method: 'POST', body: meal });
+
+export const updateMeal = (id, meal) => request(`/meals/${encodeURIComponent(id)}`, { method: 'PATCH', body: meal });
+
+export const deleteMeal = (id) => request(`/meals/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+/** Customers receive only their own orders; staff receive the book. Enforced server-side. */
+export const getOrders = ({ limit, statuses, signal } = {}) =>
+  request(`/orders${qs({ limit, status: Array.isArray(statuses) ? statuses.join(',') : statuses })}`, { signal });
+
+export const getOrder = (id) => request(`/orders/${encodeURIComponent(id)}`);
+
+export const createOrder = (order) => request('/orders', { method: 'POST', body: order });
+
+export const updateOrderStatus = (id, status, extra = {}) =>
+  request(`/orders/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: { status, ...extra } });
+
+export const updateOrderNotes = (id, notes) =>
+  request(`/orders/${encodeURIComponent(id)}/notes`, { method: 'PATCH', body: { notes } });
+
+export const cancelOrder = (id) => request(`/orders/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+// ---------------------------------------------------------------------------
+// Dispatch
+// ---------------------------------------------------------------------------
+export const getRiders = () => request('/riders');
+
+export const createRider = (rider) => request('/riders', { method: 'POST', body: rider });
+
+export const updateRider = (id, patch) => request(`/riders/${encodeURIComponent(id)}`, { method: 'PATCH', body: patch });
+
+export const setRiderAvailability = (id, isAvailable) =>
+  request(`/riders/${encodeURIComponent(id)}/availability`, { method: 'PATCH', body: { is_available: isAvailable } });
+
+export const getRiderLocations = () => request('/riders/live-gps');
+
+export const assignRider = (orderId, riderId) =>
+  request(`/orders/${encodeURIComponent(orderId)}/assign-rider`, { method: 'POST', body: { riderId } });
+
+export const reassignRider = (orderId, newRiderId) =>
+  request(`/orders/${encodeURIComponent(orderId)}/reassign-rider`, { method: 'POST', body: { newRiderId } });
+
+/** The rider types in the code the customer gave them. A blank code fails. */
+export const verifyHandover = (orderId, verificationPin, riderId) =>
+  request(`/orders/${encodeURIComponent(orderId)}/handover-pickup`, {
+    method: 'POST',
+    body: { verificationPin, riderId }
+  });
+
+export const completeDelivery = (orderId, riderId) =>
+  request(`/orders/${encodeURIComponent(orderId)}/complete`, { method: 'POST', body: { riderId } });
+
+export const reportRiderLocation = (orderId, telemetry) =>
+  request(`/orders/${encodeURIComponent(orderId)}/location`, { method: 'POST', body: telemetry });
+
+// ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
+export const getReviews = () => request('/reviews');
+
+/** The server rejects this unless the order is delivered and owned by the caller. */
+export const submitReview = (review) => request('/reviews', { method: 'POST', body: review });
+
+// ---------------------------------------------------------------------------
+// Vouchers
+// ---------------------------------------------------------------------------
+export const validateVoucher = (code) => request('/vouchers/validate', { method: 'POST', body: { code } });
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+export const getAdminAnalytics = () => request('/admin/analytics');
+
+export const getAdminUsers = () => request('/admin/users');
+
+export const setUserRole = (id, role) => request(`/admin/users/${encodeURIComponent(id)}/role`, { method: 'PATCH', body: { role } });
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+export async function register({ name, email, phone, password }) {
+  // `role` is not sent and is not accepted server-side: self-registration can
+  // only ever create a customer.
+  const data = await request('/auth/register', { method: 'POST', auth: false, body: { name, email, phone, password } });
+  session.set(data);
+  return data.user;
+}
+
+export async function login({ email, password }) {
+  const data = await request('/auth/login', { method: 'POST', auth: false, body: { email, password } });
+  session.set(data);
+  return data.user;
+}
+
+export async function loginWithGoogle(idToken) {
+  const data = await request('/auth/google', { method: 'POST', auth: false, body: { idToken } });
+  session.set(data);
+  return data.user;
+}
+
+/** Re-checks the stored token against the server and refreshes the user record. */
+export async function refreshSession() {
+  if (!session.isAuthenticated()) return null;
+  const { user } = await request('/auth/me');
+  session.updateUser(user);
+  return user;
+}
+
+export async function updateProfile(patch) {
+  const { user } = await request('/auth/me', { method: 'PATCH', body: patch });
+  session.updateUser(user);
+  return user;
+}
+
+export const logout = () => session.clear();
+
+// ---------------------------------------------------------------------------
+// Purely local UI state (no server involvement)
+// ---------------------------------------------------------------------------
+export const cart = {
+  get: () => readJSON(CART_KEY, []),
+  set: (value) => writeJSON(CART_KEY, Array.isArray(value) ? value : []),
+  clear: () => writeJSON(CART_KEY, [])
+};
+
+export const wishlist = {
+  get: () => readJSON(WISHLIST_KEY, []),
+  set: (value) => writeJSON(WISHLIST_KEY, Array.isArray(value) ? value : [])
+};
+
+export const trackedOrder = {
+  get: () => {
+    try {
+      return localStorage.getItem(TRACKED_ORDER_KEY);
+    } catch {
+      return null;
+    }
+  },
+  set: (id) => {
+    try {
+      if (id) localStorage.setItem(TRACKED_ORDER_KEY, id);
+      else localStorage.removeItem(TRACKED_ORDER_KEY);
+    } catch (err) {
+      console.error('[storage] could not save tracked order id', err);
+    }
+  }
+};
+
+export const assignManualRider = (orderId, riderData) =>
+  request(`/orders/${encodeURIComponent(orderId)}/assign-manual-rider`, {
+    method: 'POST',
+    body: riderData
+  });
+
+export const apiService = {
+  getUser: () => session.getUser(),
+  getToken: () => session.getToken(),
+  getCart: () => cart.get(),
+  setCart: (v) => cart.set(v),
+  getWishlist: () => wishlist.get(),
+  saveWishlist: (v) => wishlist.set(v),
+  getTrackedOrderId: () => trackedOrder.get(),
+  setTrackedOrderId: (id) => trackedOrder.set(id),
+  getMeals,
+  createMeal,
+  updateMeal,
+  deleteMeal,
+  getOrders,
+  getOrder,
+  createOrder,
+  updateOrderStatus,
+  updateOrderNotes,
+  cancelOrder,
+  getRiders,
+  createRider,
+  updateRider,
+  setRiderAvailability,
+  getRiderLocations,
+  assignRider,
+  assignRiderToOrder: assignRider,
+  assignManualRiderToOrder: assignManualRider,
+  reassignRider,
+  verifyHandover,
+  verifyHandoverPickup: verifyHandover,
+  completeDelivery,
+  reportRiderLocation,
+  getReviews,
+  submitReview,
+  validateVoucher,
+  getAdminAnalytics,
+  getAdminUsers,
+  setUserRole,
+  register,
+  login,
+  loginWithGoogle,
+  logout
+};
+
+export { STORAGE_KEYS, API_BASE_URL };
 
