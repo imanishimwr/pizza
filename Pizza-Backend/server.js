@@ -427,22 +427,20 @@ app.post('/api/orders/:id/assign-rider', requireStaff, wrap(async (req, res) => 
 }));
 
 // Smart Dispatch: Assign Manual / Custom Courier to Order
-app.post('/api/orders/:id/assign-manual-rider', wrap(async (req, res) => {
+app.post('/api/orders/:id/assign-manual-rider', requireStaff, wrap(async (req, res) => {
   const { id } = req.params;
-  const { name, phone, plateNumber, vehicleType, verificationPin, shift } = req.body;
+  const { name, phone, plateNumber, vehicleType, verificationPin, shift } = req.body || {};
   if (!name || !phone) {
     return res.status(400).json({ error: 'Rider Name and Phone Number are required.' });
   }
 
-  const result = db.assignManualRiderToOrder
-    ? db.assignManualRiderToOrder(id, { name, phone, plateNumber, vehicleType, verificationPin, shift })
-    : null;
+  const result = await neonClient.assignManualRiderToOrder(id, { name, phone, plateNumber, vehicleType, verificationPin, shift });
   if (!result) return res.status(400).json({ error: 'Could not assign manual courier to order.' });
 
   // Broadcast to kitchen, admin, and customer
   io.emit('order_assigned_to_rider', result);
   io.emit('order_status_updated', result.order);
-  io.emit('rider_fleet_updated', db.getRiders ? db.getRiders() : await neonClient.getRiders());
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
   io.to(`order_${id}`).emit('live_order_status', result.order);
 
   return res.json(result);
