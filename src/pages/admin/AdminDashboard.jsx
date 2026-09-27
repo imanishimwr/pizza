@@ -283,8 +283,23 @@ export default function AdminDashboard({
   const [reviews, setReviews] = useState([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
-  // Fleet Riders
+  // Fleet Riders State & Governance
+  const [riders, setRiders] = useState([]);
   const [assignedRiders, setAssignedRiders] = useState({});
+  const [showAddRiderModal, setShowAddRiderModal] = useState(false);
+  const [isSavingRider, setIsSavingRider] = useState(false);
+  const [newRiderForm, setNewRiderForm] = useState({
+    name: '',
+    phone: '',
+    plateNumber: '',
+    vehicleType: 'Yamaha XTZ 125 (Moto)',
+    shift: 'Day Shift (08:00 - 16:00)'
+  });
+  const [reassignOrderModal, setReassignOrderModal] = useState(null);
+  const [selectedNewRiderId, setSelectedNewRiderId] = useState('');
+  const [isReassigning, setIsReassigning] = useState(false);
+  const [riderSearch, setRiderSearch] = useState('');
+  const [riderStatusFilter, setRiderStatusFilter] = useState('all');
 
   // Edit meal fields
   const [editName, setEditName] = useState('');
@@ -473,16 +488,29 @@ export default function AdminDashboard({
     printWindow.document.close();
   };
 
+  const loadRiders = async () => {
+    try {
+      const data = await apiService.getRiders();
+      if (Array.isArray(data)) {
+        setRiders(data);
+      }
+    } catch (err) {
+      console.warn('Failed to load riders fleet:', err);
+    }
+  };
+
   const loadAdminData = async () => {
     setIsRefreshing(true);
     try {
       const token = localStorage.getItem('token');
-      const [revs, stats] = await Promise.all([
+      const [revs, stats, riderList] = await Promise.all([
         apiService.getReviews(),
-        apiService.getAdminAnalytics(token)
+        apiService.getAdminAnalytics(token),
+        apiService.getRiders()
       ]);
       if (Array.isArray(revs)) setReviews(revs);
       if (stats) setAnalytics(stats);
+      if (Array.isArray(riderList)) setRiders(riderList);
     } catch (err) {
       // Fallback gracefully
     } finally {
@@ -492,7 +520,58 @@ export default function AdminDashboard({
 
   useEffect(() => {
     loadAdminData();
+    const interval = setInterval(loadRiders, 6000);
+    return () => clearInterval(interval);
   }, []);
+
+  const handleToggleRiderAvailability = async (riderId, currentAvailable) => {
+    try {
+      const updated = await apiService.toggleRiderAvailability(riderId, !currentAvailable);
+      setRiders(prev => prev.map(r => r.id === riderId ? { ...r, is_available: !currentAvailable, status: !currentAvailable ? 'AVAILABLE' : 'OFF_DUTY' } : r));
+    } catch (err) {
+      // Optimistic fallback
+      setRiders(prev => prev.map(r => r.id === riderId ? { ...r, is_available: !currentAvailable, status: !currentAvailable ? 'AVAILABLE' : 'OFF_DUTY' } : r));
+    }
+  };
+
+  const handleCreateRider = async (e) => {
+    e.preventDefault();
+    if (!newRiderForm.name.trim() || !newRiderForm.phone.trim()) return;
+    setIsSavingRider(true);
+    try {
+      const created = await apiService.createRider(newRiderForm);
+      setRiders(prev => [created, ...prev]);
+      setShowAddRiderModal(false);
+      setNewRiderForm({
+        name: '',
+        phone: '',
+        plateNumber: '',
+        vehicleType: 'Yamaha XTZ 125 (Moto)',
+        shift: 'Day Shift (08:00 - 16:00)'
+      });
+    } catch (err) {
+      alert("Failed to register courier: " + (err.message || "Unknown error"));
+    } finally {
+      setIsSavingRider(false);
+    }
+  };
+
+  const handleReassignOrder = async (e) => {
+    e.preventDefault();
+    if (!reassignOrderModal || !selectedNewRiderId) return;
+    setIsReassigning(true);
+    try {
+      await apiService.reassignRider(reassignOrderModal.id, selectedNewRiderId);
+      await loadRiders();
+      setReassignOrderModal(null);
+      setSelectedNewRiderId('');
+      alert(`Order #${reassignOrderModal.id} successfully reassigned to new courier!`);
+    } catch (err) {
+      alert("Failed to reassign order: " + (err.message || "Unknown error"));
+    } finally {
+      setIsReassigning(false);
+    }
+  };
 
   // Exact Hot Pot Kigali Google Maps Coordinates (-1.97022762, 30.12498964)
   const restaurantCoords = useMemo(() => [-1.97022762, 30.12498964], []);
@@ -889,6 +968,7 @@ export default function AdminDashboard({
               { id: 'overview', label: 'Overview & Analytics', icon: TrendingUp },
               { id: 'catalog', label: 'Menu Catalog', icon: UtensilsCrossed, badge: meals.length },
               { id: 'orders', label: 'Live Orders & Dispatch', icon: ShoppingBag, badge: displayOrders.length },
+              { id: 'fleet', label: 'Rider Fleet Governance', icon: Bike, badge: riders.length },
               { id: 'sales', label: 'Sales Ledger & Financials', icon: DollarSign, badge: soldOrders.length },
               { id: 'reviews', label: 'Reviews & Ratings', icon: Star, badge: reviews.length },
             ].map((tab) => {
@@ -1189,6 +1269,7 @@ export default function AdminDashboard({
               { id: 'overview', label: 'Overview', icon: TrendingUp },
               { id: 'catalog', label: 'Catalog', icon: UtensilsCrossed, badge: meals.length },
               { id: 'orders', label: 'Orders', icon: ShoppingBag, badge: displayOrders.length },
+              { id: 'fleet', label: 'Fleet', icon: Bike, badge: riders.length },
               { id: 'sales', label: 'Financials', icon: DollarSign, badge: soldOrders.length },
               { id: 'reviews', label: 'Reviews', icon: Star, badge: reviews.length },
             ].map((tab) => {
@@ -2403,11 +2484,410 @@ export default function AdminDashboard({
             )}
           </div>
         </div>
+      {/* ======================================================== */}
+      {/* TAB: RIDER FLEET GOVERNANCE                              */}
+      {/* ======================================================== */}
+      {activeTab === 'fleet' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#1A1D24] p-4 sm:px-6 sm:py-4 rounded-2xl border border-slate-800 shadow-xl">
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2.5">
+                <Bike className="w-5 h-5 text-orange-400" />
+                Rider Fleet Governance & Courier Management
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Real-time courier availability, duty toggles, fleet dispatch status, and order reassignment
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <button
+                onClick={loadRiders}
+                className="p-2.5 rounded-xl bg-[#1F242D] border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 hover:text-white transition-all min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm"
+                title="Refresh Courier Fleet"
+              >
+                <RefreshCw className="w-4 h-4 text-orange-400" />
+              </button>
+
+              <button
+                onClick={() => setShowAddRiderModal(true)}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all min-h-[44px]"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Register New Courier</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Fleet KPI Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>Total Fleet Couriers</span>
+                <Users className="w-4 h-4 text-orange-400" />
+              </div>
+              <div className="text-3xl font-black text-white font-mono mt-2">
+                {riders.length}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">Registered Moto Drivers</p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>On Duty / Available</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+              </div>
+              <div className="text-3xl font-black text-emerald-400 font-mono mt-2">
+                {riders.filter(r => r.is_available && (r.status === 'AVAILABLE' || !r.current_order_id)).length}
+              </div>
+              <p className="text-[11px] text-emerald-400 font-bold mt-1">Ready for Kitchen Handover</p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>Busy / In Transit</span>
+                <Bike className="w-4 h-4 text-blue-400" />
+              </div>
+              <div className="text-3xl font-black text-blue-400 font-mono mt-2">
+                {riders.filter(r => r.status === 'BUSY' || r.current_order_id).length}
+              </div>
+              <p className="text-[11px] text-blue-400 font-bold mt-1">Active Deliveries En Route</p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl">
+              <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>Off Duty / Inactive</span>
+                <Clock className="w-4 h-4 text-slate-500" />
+              </div>
+              <div className="text-3xl font-black text-slate-400 font-mono mt-2">
+                {riders.filter(r => !r.is_available).length}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">Unavailable for assignment</p>
+            </div>
+          </div>
+
+          {/* Courier Governance & Control Table */}
+          <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#1A1D24] border border-slate-800 shadow-2xl backdrop-blur-xl space-y-4">
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={riderSearch}
+                  onChange={(e) => setRiderSearch(e.target.value)}
+                  placeholder="Search courier by name, phone, plate #..."
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#12141A] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-slate-400" />
+                <select
+                  value={riderStatusFilter}
+                  onChange={(e) => setRiderStatusFilter(e.target.value)}
+                  className="bg-[#12141A] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="available">On Duty / Available</option>
+                  <option value="busy">Busy / Delivering</option>
+                  <option value="off_duty">Off Duty</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Courier Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+              {riders
+                .filter(r => {
+                  const q = riderSearch.toLowerCase().trim();
+                  const matchesQuery = !q ||
+                    r.name?.toLowerCase().includes(q) ||
+                    r.phone?.includes(q) ||
+                    r.plateNumber?.toLowerCase().includes(q) ||
+                    r.vehicleType?.toLowerCase().includes(q);
+
+                  const isAvail = r.is_available && (r.status === 'AVAILABLE' || !r.current_order_id);
+                  const isBusy = r.status === 'BUSY' || !!r.current_order_id;
+                  const isOff = !r.is_available;
+
+                  if (riderStatusFilter === 'available') return matchesQuery && isAvail;
+                  if (riderStatusFilter === 'busy') return matchesQuery && isBusy;
+                  if (riderStatusFilter === 'off_duty') return matchesQuery && isOff;
+                  return matchesQuery;
+                })
+                .map((rider) => {
+                  const isBusy = rider.status === 'BUSY' || !!rider.current_order_id;
+                  const isAvailable = rider.is_available && !isBusy;
+
+                  return (
+                    <div
+                      key={rider.id}
+                      className={`p-4 sm:p-5 rounded-2xl bg-[#12141A] border transition-all shadow-lg flex flex-col justify-between space-y-4 ${
+                        isBusy
+                          ? 'border-blue-500/40'
+                          : isAvailable
+                          ? 'border-emerald-500/40'
+                          : 'border-slate-800'
+                      }`}
+                    >
+                      <div className="space-y-3">
+                        {/* Courier Top Identity */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center font-bold text-base shrink-0">
+                              {rider.name ? rider.name[0].toUpperCase() : 'R'}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-black text-white truncate">{rider.name}</h4>
+                              <span className="font-mono text-xs font-bold text-amber-400">{rider.plateNumber || 'RAC 402B'}</span>
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-black border ${
+                              isBusy
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 animate-pulse'
+                                : isAvailable
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                            }`}
+                          >
+                            {isBusy ? 'BUSY / EN ROUTE' : isAvailable ? 'ON DUTY / FREE' : 'OFF DUTY'}
+                          </span>
+                        </div>
+
+                        {/* Vehicle & Contact Info */}
+                        <div className="space-y-1.5 text-xs bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
+                          <div className="flex items-center justify-between text-slate-300">
+                            <span className="text-slate-400">Vehicle:</span>
+                            <span className="font-medium text-white truncate max-w-[170px]">{rider.vehicleType || 'Moto Express'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-300">
+                            <span className="text-slate-400">Shift:</span>
+                            <span className="font-medium text-slate-300">{rider.shift || 'Day Shift'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-300">
+                            <span className="text-slate-400">Phone:</span>
+                            <a href={`tel:${rider.phone}`} className="font-mono text-emerald-400 hover:underline flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {rider.phone || 'N/A'}
+                            </a>
+                          </div>
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                            <span className="text-slate-400">Today:</span>
+                            <span className="font-mono text-white font-bold">
+                              {rider.completed_today || 0} trips • {(rider.earnings_today || 0).toLocaleString()} RWF
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Active Order Alert if Busy */}
+                        {isBusy && rider.current_order_id && (
+                          <div className="p-2.5 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-center justify-between text-xs">
+                            <span className="text-blue-300 font-medium">Assigned Order #{rider.current_order_id}</span>
+                            <button
+                              onClick={() => {
+                                const matched = displayOrders.find(o => String(o.id) === String(rider.current_order_id));
+                                setReassignOrderModal(matched || { id: rider.current_order_id, assigned_rider_id: rider.id });
+                              }}
+                              className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 text-[10px] font-bold transition-all"
+                              title="Courier vehicle breakdown or delay? Reassign order to another free courier."
+                            >
+                              Reassign Order
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Manual Availability Toggle Switch for Admin */}
+                      <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+                        <span className="text-[11px] text-slate-400 font-semibold">
+                          Duty Override:
+                        </span>
+
+                        <button
+                          onClick={() => handleToggleRiderAvailability(rider.id, rider.is_available)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all min-h-[38px] border ${
+                            rider.is_available
+                              ? 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/50 text-emerald-300'
+                              : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${rider.is_available ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+                          <span>{rider.is_available ? 'Switch to OFF DUTY' : 'Switch to ON DUTY'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
       )}
         </main>
       </div>
 
-      {/* Add Food Item Modal */}
+      {/* ── Modal: Register New Courier ── */}
+      {showAddRiderModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1D24] border border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                <Bike className="w-5 h-5 text-orange-400" />
+                Register New Courier to Fleet
+              </h3>
+              <button onClick={() => setShowAddRiderModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateRider} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Eric Mugisha"
+                  value={newRiderForm.name}
+                  onChange={(e) => setNewRiderForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="+250 788 000 000"
+                    value={newRiderForm.phone}
+                    onChange={(e) => setNewRiderForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Plate Number</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. RAC 402B"
+                    value={newRiderForm.plateNumber}
+                    onChange={(e) => setNewRiderForm(prev => ({ ...prev, plateNumber: e.target.value }))}
+                    className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Vehicle Type</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Yamaha XTZ 125"
+                    value={newRiderForm.vehicleType}
+                    onChange={(e) => setNewRiderForm(prev => ({ ...prev, vehicleType: e.target.value }))}
+                    className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Default Shift</label>
+                  <select
+                    value={newRiderForm.shift}
+                    onChange={(e) => setNewRiderForm(prev => ({ ...prev, shift: e.target.value }))}
+                    className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="Day Shift (08:00 - 16:00)">Day Shift (08:00 - 16:00)</option>
+                    <option value="Evening Shift (16:00 - 00:00)">Evening Shift (16:00 - 00:00)</option>
+                    <option value="Night Shift (18:00 - 02:00)">Night Shift (18:00 - 02:00)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRiderModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 hover:text-white font-bold text-xs transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingRider}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+                >
+                  {isSavingRider ? 'Registering...' : 'Register Courier'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Reassign In-Flight Order on Delay/Breakdown ── */}
+      {reassignOrderModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1D24] border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+                Emergency Reassign Order #{reassignOrderModal.id}
+              </h3>
+              <button onClick={() => setReassignOrderModal(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Reassign this delivery to an available courier if the current rider has a vehicle breakdown or delay.
+            </p>
+
+            <form onSubmit={handleReassignOrder} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Select Available Courier</label>
+                <select
+                  required
+                  value={selectedNewRiderId}
+                  onChange={(e) => setSelectedNewRiderId(e.target.value)}
+                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"
+                >
+                  <option value="">-- Choose an Available Rider --</option>
+                  {riders
+                    .filter(r => r.is_available && (r.status === 'AVAILABLE' || !r.current_order_id) && r.id !== reassignOrderModal.assigned_rider_id)
+                    .map(r => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} ({r.plateNumber || 'Moto'}) - {r.phone}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReassignOrderModal(null)}
+                  className="px-4 py-2.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 hover:text-white font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isReassigning || !selectedNewRiderId}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {isReassigning ? 'Reassigning...' : 'Confirm Reassignment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <AddFoodItemModal
         isOpen={showAddMeal}
         onClose={() => setShowAddMeal(false)}

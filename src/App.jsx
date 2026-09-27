@@ -535,6 +535,97 @@ export default function App() {
     );
   }
 
+  // Dedicated Customer Operations & GPS Dashboard full-screen layout (matching KDS & Admin architecture)
+  if (currentRole === 'customer' && activeTab === 'dashboard') {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
+        <CustomerDashboard
+          user={user}
+          orders={clientOrders}
+          cart={cart}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onAddToCart={handleAddToCart}
+          onOpenCart={() => setIsCartOpen(true)}
+          onUpdateUser={(updatedUser) => {
+            setUser(updatedUser);
+            apiService.saveUser(updatedUser);
+          }}
+          onSelectOrder={(order) => {
+            setTrackedOrder(order);
+            apiService.setTrackedOrderId(order.id);
+            handleNavigate('/tracking', 'tracking', 'customer');
+          }}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+          onNavigate={handleNavigate}
+        />
+
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          cart={cart}
+          onUpdateQty={handleUpdateQty}
+          onRemoveItem={handleRemoveCartItem}
+          onProceedCheckout={(data) => setCheckoutData(data)}
+        />
+
+        <CheckoutModal
+          isOpen={!!checkoutData}
+          onClose={() => setCheckoutData(null)}
+          checkoutData={checkoutData}
+          onOrderPlaced={handleOrderPlaced}
+        />
+
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          onLoginSuccess={(loggedInUser) => {
+            setUser(loggedInUser);
+            apiService.saveUser(loggedInUser);
+          }}
+        />
+
+        <LocationModal
+          isOpen={isLocationModalOpen}
+          onClose={() => setIsLocationModalOpen(false)}
+          onSetLocation={(loc) => {
+            const updated = { ...(user || {}), location: loc };
+            setUser(updated);
+            apiService.saveUser(updated);
+            showToast(`Location set to: ${loc}`, 'Location Updated');
+          }}
+        />
+
+        <ProfileModal
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          user={user}
+          onSaveUser={(profileUser) => {
+            setUser(profileUser);
+            apiService.saveUser(profileUser);
+            showToast('Profile saved successfully!', 'Profile Saved');
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Dedicated Rider Operations & Dispatch full-screen layout (matching KDS, Admin & Customer architecture)
+  if (currentRole === 'delivery' || (user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER') {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
+        <RiderDashboard
+          orders={orders}
+          onUpdateStatus={handleUpdateOrderStatus}
+          user={user}
+          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+          onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-bg-dark text-text-main flex flex-col justify-between selection:bg-primary selection:text-white relative">
       {toast && (
