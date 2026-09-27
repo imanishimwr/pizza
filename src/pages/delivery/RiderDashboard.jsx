@@ -241,7 +241,13 @@ export default function RiderDashboard({
             <button
               onClick={() => {
                 setIsMobileDrawerOpen(false);
-                if (onExploreMenu) onExploreMenu();
+                if (onExploreMenu) {
+                  onExploreMenu();
+                } else if (onSwitchRole) {
+                  onSwitchRole('customer');
+                } else {
+                  window.location.href = '/';
+                }
               }}
               className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-white transition-all min-h-[36px] min-w-[36px] flex items-center justify-center shadow-xs"
               title="Return to Customer Store Menu"
@@ -496,6 +502,24 @@ export default function RiderDashboard({
 
           {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Back to Home Store Button */}
+            <button
+              onClick={() => {
+                if (onExploreMenu) {
+                  onExploreMenu();
+                } else if (onSwitchRole) {
+                  onSwitchRole('customer');
+                } else {
+                  window.location.href = '/';
+                }
+              }}
+              className="min-h-[38px] px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-orange-500/15 border border-slate-700 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+              title="Return to Customer Store Menu"
+            >
+              <Home className="w-4 h-4 text-orange-400" />
+              <span className="hidden sm:inline">Store Home</span>
+            </button>
+
             {/* Today's Earnings Badge */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-amber-500/30 text-amber-400 text-xs font-bold shadow-xs">
               <DollarSign className="w-4 h-4 text-amber-400" />

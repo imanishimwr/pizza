@@ -612,14 +612,14 @@ export default function App() {
   }
 
   // Dedicated Rider Operations & Dispatch full-screen layout (matching KDS, Admin & Customer architecture)
-  if (currentRole === 'delivery' || (user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER') {
+  if (currentRole === 'delivery' || (activeTab === 'delivery' && ((user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER'))) {
     return (
       <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
         <RiderDashboard
           orders={orders}
           onUpdateStatus={handleUpdateOrderStatus}
           user={user}
-          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
           onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
         />
       </div>
