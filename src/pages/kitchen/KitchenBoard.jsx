@@ -14,7 +14,7 @@ export default function KitchenBoard({
   orders = [],
   onUpdateStatus,
   user: initialUser,
-  meals = [],
+  _meals = [],
   onSwitchRole
 }) {
   // Sidebar Collapse state (desktop expanded w-64 vs collapsed w-16)
@@ -84,7 +84,7 @@ export default function KitchenBoard({
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  const user = initialUser || {
+  const _user = initialUser || {
     name: 'Head Cooker & Chef',
     email: 'cooker@hotpot.rw',
     role: 'KITCHEN'
@@ -1039,7 +1039,7 @@ export default function KitchenBoard({
                       <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-text-subdued space-y-2">
                         <Flame className="w-8 h-8 text-text-subdued opacity-30" />
                         <span className="font-bold text-white">No meals cooking</span>
-                        <p className="text-[11px]">Click "Start Cooking" on incoming orders to move them here.</p>
+                        <p className="text-[11px]">Click &quot;Start Cooking&quot; on incoming orders to move them here.</p>
                       </div>
                     ) : (
                       preparingOrders.map(order => {
