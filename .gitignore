@@ -2,9 +2,24 @@ node_modules
 dist
 dist-ssr
 *.local
+
 .vscode
+.idea
 .DS_Store
+Thumbs.db
+
 *.log
+npm-debug.log*
+yarn-error.log*
 vite_log.txt
+
+# Secrets. The .example files are the templates and ARE committed.
 .env
 .env.*
+!.env.example
+
+# Build artefacts that must never enter the repository
+*.apk
+*.aab
+*.ipa
+vite.config.js.timestamp-*
