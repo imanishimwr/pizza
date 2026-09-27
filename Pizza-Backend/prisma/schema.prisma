@@ -107,13 +107,14 @@ model Voucher {
 }
 
 model Feedback {
-  id        String   @id @default(uuid())
-  orderId   String   @unique
-  userId    String?
-  rating    Int
-  comment   String?
-  tipRWF    Float    @default(0)
-  createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  user      User?    @relation(fields: [userId], references: [id])
+  id          String   @id @default(uuid())
+  orderId     String   @unique
+  userId      String?
+  pizzaRating Int      @default(5)
+  riderRating Int      @default(5)
+  rating      Int      @default(5)  // kept for backward compat
+  comment     String?
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id])
 }

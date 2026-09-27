@@ -143,7 +143,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-1000 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-xl w-full max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Header */}
@@ -354,7 +354,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
             <div>
               <span className="text-[9px] text-text-subdued uppercase font-bold block">Total Amount Due</span>
               <span className="text-base font-extrabold font-mono text-primary">
-                {checkoutData.grandTotal.toLocaleString()} RWF
+                {(checkoutData.grandTotal ?? 0)?.toLocaleString() ?? ''} RWF
               </span>
             </div>
             <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
@@ -371,7 +371,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn-primary text-xs flex-[2] py-2.5 font-bold"
+              className="btn-primary text-xs flex-2 py-2.5 font-bold"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -379,7 +379,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
                   Processing...
                 </span>
               ) : (
-                `Confirm & Pay ${checkoutData.grandTotal.toLocaleString()} RWF`
+                `Confirm & Pay ${(checkoutData.grandTotal ?? 0)?.toLocaleString() ?? ''} RWF`
               )}
             </button>
           </div>

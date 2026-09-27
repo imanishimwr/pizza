@@ -12,14 +12,14 @@ import CartDrawer from './components/customer/CartDrawer';
 import CheckoutModal from './components/customer/CheckoutModal';
 import AuthModal from './components/customer/AuthModal';
 import LocationModal from './components/LocationModal';
-import ReferralModal from './components/customer/ReferralModal';
 import HelpModal from './components/customer/HelpModal';
 import ProfileModal from './components/customer/ProfileModal';
-import CustomPizzaBuilderModal from './components/customer/CustomPizzaBuilderModal';
+import PostDeliveryFeedbackModal from './components/customer/PostDeliveryFeedbackModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import { apiService } from './services/apiService';
 import { eventBus } from './services/eventBus';
 import { notificationService } from './services/notificationService';
+import { downloadOrderReceiptPdf } from './utils/receiptGenerator';
 import { Bell, Flame } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -45,10 +45,8 @@ export default function App() {
   const [meals, setMeals] = useState([]);
   const [orders, setOrders] = useState([]);
   const [user, setUser] = useState(() => apiService.getUser());
-  // Cart & wishlist are namespaced per account so a user only ever sees
-  // what THEY added (never a previous user on the same device).
-  const [cart, setCart] = useState(() => apiService.getCart(user));
-  const [wishlist, setWishlist] = useState(() => apiService.getWishlist(user));
+  const [cart, setCart] = useState(() => apiService.getCart());
+  const [wishlist, setWishlist] = useState(() => apiService.getWishlist());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [lang, setLang] = useState('EN');
@@ -87,17 +85,13 @@ export default function App() {
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isReferralOpen, setIsReferralOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [isCustomBuilderOpen, setIsCustomBuilderOpen] = useState(false);
+  const [feedbackOrder, setFeedbackOrder] = useState(null);
   const [checkoutData, setCheckoutData] = useState(null);
 
-  // Client-specific orders filter: a client only ever sees data that matches
-  // their OWN account (userId), or legacy orders bound to their phone, or an
-  // order they are actively tracking. Name/email matching is dropped because
-  // it leaks other users' orders (shared names/emails are not stored on orders).
+  // Client-specific orders filter (client sees ONLY their own orders, admin sees ALL orders)
   const clientOrders = useMemo(() => {
     if (!Array.isArray(orders)) return [];
     if (!user) {
@@ -106,47 +100,19 @@ export default function App() {
     }
     return orders.filter(o => {
       const matchUserId = o.userId && user.id && String(o.userId) === String(user.id);
-      const matchPhone = o.phone && user.phone && String(o.phone).trim() === String(user.phone).trim();
+      const matchEmail = (o.userEmail && user.email && o.userEmail.toLowerCase() === user.email.toLowerCase()) || 
+                         (o.email && user.email && o.email.toLowerCase() === user.email.toLowerCase());
+      const matchPhone = o.phone && user.phone && o.phone.trim() === user.phone.trim();
+      const matchName = o.customerName && user.name && o.customerName.toLowerCase().trim() === user.name.toLowerCase().trim();
       const matchTracked = apiService.getTrackedOrderId() === o.id;
-      return matchUserId || matchPhone || matchTracked;
+      return matchUserId || matchEmail || matchPhone || matchName || matchTracked;
     });
   }, [orders, user]);
-
-  // True when an order belongs to the current view: staff see everything,
-  // customers only their own orders, guests only the order they track.
-  const belongsToCurrentUser = (order) => {
-    if (!order) return false;
-    if (!user) return apiService.getTrackedOrderId() === order.id;
-    const role = String(user.role || '').toUpperCase();
-    if (['ADMIN', 'KITCHEN', 'DELIVERY', 'RIDER'].includes(role)) return true;
-    const matchUserId = order.userId && user.id && String(order.userId) === String(user.id);
-    const matchPhone = order.phone && user.phone && String(order.phone).trim() === String(user.phone).trim();
-    const matchTracked = apiService.getTrackedOrderId() === order.id;
-    return matchUserId || matchPhone || matchTracked;
-  };
 
   const showToast = useCallback((message, title = 'Notification') => {
     setToast({ title, message });
     setTimeout(() => setToast(null), 4000);
   }, []);
-
-  // When the signed-in account changes (login/logout) switch to THAT user's
-  // cart & wishlist, and drop any tracked order that no longer belongs to them.
-  useEffect(() => {
-    setCart(apiService.getCart(user));
-    setWishlist(apiService.getWishlist(user));
-
-    const trackedId = apiService.getTrackedOrderId();
-    if (trackedId) {
-      const mine = Array.isArray(orders) ? orders.find(o => String(o.id) === String(trackedId)) : null;
-      if (mine) {
-        setTrackedOrder(mine);
-      } else {
-        setTrackedOrder(null);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
 
   // Load Initial Data from Backend
   useEffect(() => {
@@ -154,7 +120,7 @@ export default function App() {
       const fetchedMeals = await apiService.getMeals();
       setMeals(fetchedMeals);
 
-      const fetchedOrders = await apiService.getOrders(user);
+      const fetchedOrders = await apiService.getOrders();
       setOrders(fetchedOrders);
 
       const trackedId = apiService.getTrackedOrderId();
@@ -164,7 +130,7 @@ export default function App() {
       }
     };
     loadData();
-  }, [user]);
+  }, []);
 
   // Sync state to local storage is no longer primary for meals/orders, but keeping it for offline fallback if needed.
   useEffect(() => {
@@ -172,7 +138,7 @@ export default function App() {
   }, [meals]);
 
   useEffect(() => {
-    if (orders.length > 0) apiService.saveOrders(orders, user);
+    if (orders.length > 0) apiService.saveOrders?.(orders);
   }, [orders]);
 
   useEffect(() => {
@@ -180,19 +146,16 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
-    apiService.saveCart(cart, user);
+    apiService.saveCart(cart);
   }, [cart]);
 
   useEffect(() => {
-    apiService.saveWishlist(wishlist, user);
+    apiService.saveWishlist(wishlist);
   }, [wishlist]);
 
   useEffect(() => {
-    // 1. Live Socket.IO connection for instant real-time synchronization.
-    // The JWT is supplied on the handshake so the server can route each order
-    // event ONLY to staff + the order owner's room (never to all clients).
-    const backendUrl = 'http://localhost:5000';
-    const token = typeof window !== 'undefined' ? window.localStorage.getItem('token') : null;
+    // 1. Live Socket.IO connection for instant real-time synchronization
+    const backendUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '') : 'http://localhost:5002');
     let socket;
     try {
       socket = io(backendUrl, {
@@ -200,21 +163,10 @@ export default function App() {
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
-        auth: token ? { token } : undefined,
       });
-
-      // Listen for the owner's own order updates in their private room.
-      const joinTrackedRoom = () => {
-        const trackedId = apiService.getTrackedOrderId();
-        if (trackedId && socket) socket.emit('join_order_room', trackedId);
-      };
-      socket.on('connect', joinTrackedRoom);
-      joinTrackedRoom();
 
       socket.on('new_order_placed', (newOrder) => {
         if (!newOrder) return;
-        // Customers must not ingest other people's orders into their app state.
-        if (!belongsToCurrentUser(newOrder)) return;
         setOrders((prev) => {
           const exists = prev.some(o => o.id === newOrder.id);
           if (exists) return prev;
@@ -226,20 +178,18 @@ export default function App() {
       socket.on('order_status_updated', (updatedOrder) => {
         if (!updatedOrder) return;
         setOrders((prev) => {
-          const known = prev.some(o => o.id === updatedOrder.id);
-          if (!known) {
-            return belongsToCurrentUser(updatedOrder) ? [updatedOrder, ...prev] : prev;
-          }
           return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
         });
         eventBus.emit('ORDER_STATUS_UPDATE', { orderId: updatedOrder.id, status: updatedOrder.status, order: updatedOrder }, true);
+        // Show feedback modal for customer when their order is delivered
+        if (updatedOrder.status === 'delivered') {
+          setFeedbackOrder(updatedOrder);
+        }
       });
 
       socket.on('order_cancelled', (cancelledOrder) => {
         if (!cancelledOrder) return;
         setOrders((prev) => {
-          const known = prev.some(o => o.id === cancelledOrder.id);
-          if (!known && !belongsToCurrentUser(cancelledOrder)) return prev;
           return prev.map(o => o.id === cancelledOrder.id ? { ...o, status: 'cancelled' } : o);
         });
       });
@@ -250,7 +200,7 @@ export default function App() {
     // 2. Background Heartbeat Polling every 3.5 seconds to guarantee 100% real-time data sync without user refresh
     const pollInterval = setInterval(async () => {
       try {
-        const freshOrders = await apiService.getOrders(user);
+        const freshOrders = await apiService.getOrders();
         if (Array.isArray(freshOrders)) {
           setOrders(freshOrders);
         }
@@ -261,7 +211,7 @@ export default function App() {
 
     const unsubOrder = eventBus.on('NEW_ORDER', async (newOrder, isCrossTab) => {
       if (isCrossTab) {
-        const freshOrders = await apiService.getOrders(user);
+        const freshOrders = await apiService.getOrders();
         setOrders(Array.isArray(freshOrders) ? freshOrders : []);
         showToast(`New Order #${newOrder.id} received!`, 'Incoming Order');
         notificationService.playChime('new_order');
@@ -272,7 +222,7 @@ export default function App() {
     });
 
     const unsubStatus = eventBus.on('ORDER_STATUS_UPDATE', async ({ orderId, status }, isCrossTab) => {
-      const freshOrders = await apiService.getOrders(user);
+      const freshOrders = await apiService.getOrders();
       setOrders(Array.isArray(freshOrders) ? freshOrders : []);
 
       const matchingOrder = Array.isArray(freshOrders) ? freshOrders.find(o => o.id === orderId) : null;
@@ -297,7 +247,7 @@ export default function App() {
       } else if (status === 'delivery') {
         notificationService.playChime('status_update');
         if (isAdmin) {
-          const rev = matchingOrder?.totalRWF ? `${Number(matchingOrder.totalRWF).toLocaleString()} RWF` : '';
+          const rev = matchingOrder?.totalRWF ? `${Number(matchingOrder.totalRWF)?.toLocaleString() ?? ''} RWF` : '';
           showToast(`Order #${orderId} ${rev ? `(${rev}) ` : ''}sold & handed to rider! Logged in Sales Report.`, '💰 Order Sold & Dispatched');
           notificationService.sendDesktopNotification(`Sale Recorded: #${orderId}`, {
             body: `Order #${orderId} handed to courier. Sale saved in Admin Financial Report.`
@@ -363,6 +313,18 @@ export default function App() {
               : 'menu'
     );
 
+    // Guard: Customer can only access orders or tracking if they have at least 1 order
+    if (targetRole === 'customer' && (targetTab === 'orders' || targetTab === 'tracking') && clientOrders.length === 0) {
+      showToast('Order page is only accessible after purchasing an item. Explore our delicious menu to place your first order!', 'No Orders Yet');
+      setCurrentRole('customer');
+      setActiveTab('menu');
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({}, '', '/');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
     setCurrentRole(targetRole);
     setActiveTab(targetTab);
 
@@ -386,7 +348,7 @@ export default function App() {
         ? prev.filter((item) => (typeof item === 'string' ? item !== meal.id : item.id !== meal.id))
         : [...prev, meal];
 
-      apiService.saveWishlist(next, user);
+      apiService.saveWishlist(next);
       showToast(
         exists ? `Removed ${meal.name} from wishlist` : `Added ${meal.name} to wishlist!`,
         exists ? 'Wishlist Updated' : 'Saved to Wishlist'
@@ -415,7 +377,7 @@ export default function App() {
         next = [...prev, cartItem];
       }
 
-      apiService.saveCart(next, user);
+      apiService.saveCart(next);
       return next;
     });
 
@@ -432,7 +394,7 @@ export default function App() {
     setCart((prev) => {
       const next = [...prev];
       next[index].quantity = newQty;
-      apiService.saveCart(next, user);
+      apiService.saveCart(next);
       return next;
     });
   };
@@ -440,7 +402,7 @@ export default function App() {
   const handleRemoveCartItem = (index) => {
     setCart((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      apiService.saveCart(next, user);
+      apiService.saveCart(next);
       return next;
     });
   };
@@ -464,9 +426,16 @@ export default function App() {
       setTrackedOrder(createdOrder);
       apiService.setTrackedOrderId(createdOrder.id);
 
+      // Automatically download PDF receipt for the customer upon payment
+      try {
+        downloadOrderReceiptPdf(createdOrder);
+      } catch (pdfErr) {
+        console.warn('PDF Receipt auto-download exception:', pdfErr);
+      }
+
       eventBus.emit('NEW_ORDER', createdOrder);
       notificationService.playChime('new_order');
-      showToast(`Order #${createdOrder.id} placed successfully! Kitchen is on it.`, 'Order Placed');
+      showToast(`Order #${createdOrder.id} placed & receipt downloaded! Kitchen is on it.`, 'Order Placed & Paid');
       handleNavigate('/tracking', 'tracking', 'customer');
     } catch (e) {
       showToast('Failed to place order. Please try again.', 'Error');
@@ -492,6 +461,12 @@ export default function App() {
       if (newStatus === 'ready') {
         notificationService.playChime('order_ready');
         showToast(`Order #${orderId} is confirmed READY by cooker! Ready for rider dispatch.`, '🍲 Kitchen Order Ready');
+      } else if (newStatus === 'delivered') {
+        notificationService.playChime('order_ready');
+        showToast(`Order #${orderId} confirmed DELIVERED! Enjoy your hot meal.`, '🎉 Delivery Confirmed');
+        // Auto-open rating modal for the delivered order
+        const deliveredOrder = orders.find(o => o.id === orderId) || { id: orderId };
+        setFeedbackOrder(deliveredOrder);
       } else {
         notificationService.playChime('status_update');
         showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
@@ -504,7 +479,7 @@ export default function App() {
   const handleCancelOrder = (orderId) => {
     setOrders((prev) => {
       const next = prev.map((order) => (order.id === orderId ? { ...order, status: 'cancelled' } : order));
-      apiService.saveOrders(next, user);
+      apiService.saveOrders(next);
       return next;
     });
 
@@ -518,7 +493,7 @@ export default function App() {
   const handleModifyOrder = (orderId, updatedFields) => {
     setOrders((prev) => {
       const next = prev.map((order) => (order.id === orderId ? { ...order, ...updatedFields } : order));
-      apiService.saveOrders(next, user);
+      apiService.saveOrders(next);
       return next;
     });
 
@@ -528,6 +503,128 @@ export default function App() {
 
     showToast(`Order #${orderId} details updated!`, 'Order Modified');
   };
+
+  // Dedicated Kitchen Display System (KDS) full-screen layout
+  if (currentRole === 'kitchen') {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-bg-dark text-text-main flex flex-col select-none">
+        <KitchenBoard
+          orders={orders}
+          onUpdateStatus={handleUpdateOrderStatus}
+          user={user}
+          meals={meals}
+          onSwitchRole={(role) => handleNavigate(role === 'admin' ? '/admin' : role === 'delivery' ? '/delivery' : '/', 'menu', role)}
+        />
+      </div>
+    );
+  }
+
+  // Dedicated Admin Operations Dashboard full-screen layout (matching KDS architecture)
+  if (currentRole === 'admin' || (activeTab === 'dashboard' && (user?.role || '').toUpperCase() === 'ADMIN')) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
+        <AdminDashboard
+          meals={meals}
+          setMeals={setMeals}
+          orders={orders}
+          onUpdateStatus={handleUpdateOrderStatus}
+          user={user}
+          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+        />
+      </div>
+    );
+  }
+
+  // Dedicated Customer Operations & GPS Dashboard full-screen layout (matching KDS & Admin architecture)
+  if (currentRole === 'customer' && activeTab === 'dashboard') {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
+        <CustomerDashboard
+          user={user}
+          orders={clientOrders}
+          cart={cart}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onAddToCart={handleAddToCart}
+          onOpenCart={() => setIsCartOpen(true)}
+          onUpdateUser={(updatedUser) => {
+            setUser(updatedUser);
+            apiService.saveUser(updatedUser);
+          }}
+          onSelectOrder={(order) => {
+            setTrackedOrder(order);
+            apiService.setTrackedOrderId(order.id);
+            handleNavigate('/tracking', 'tracking', 'customer');
+          }}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+          onNavigate={handleNavigate}
+        />
+
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          cart={cart}
+          onUpdateQty={handleUpdateQty}
+          onRemoveItem={handleRemoveCartItem}
+          onProceedCheckout={(data) => setCheckoutData(data)}
+        />
+
+        <CheckoutModal
+          isOpen={!!checkoutData}
+          onClose={() => setCheckoutData(null)}
+          checkoutData={checkoutData}
+          onOrderPlaced={handleOrderPlaced}
+        />
+
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          onLoginSuccess={(loggedInUser) => {
+            setUser(loggedInUser);
+            apiService.saveUser(loggedInUser);
+          }}
+        />
+
+        <LocationModal
+          isOpen={isLocationModalOpen}
+          onClose={() => setIsLocationModalOpen(false)}
+          onSetLocation={(loc) => {
+            const updated = { ...(user || {}), location: loc };
+            setUser(updated);
+            apiService.saveUser(updated);
+            showToast(`Location set to: ${loc}`, 'Location Updated');
+          }}
+        />
+
+        <ProfileModal
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          user={user}
+          onSaveUser={(profileUser) => {
+            setUser(profileUser);
+            apiService.saveUser(profileUser);
+            showToast('Profile saved successfully!', 'Profile Saved');
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Dedicated Rider Operations & Dispatch full-screen layout (matching KDS, Admin & Customer architecture)
+  if (currentRole === 'delivery' || (activeTab === 'delivery' && ((user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER'))) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
+        <RiderDashboard
+          orders={orders}
+          onUpdateStatus={handleUpdateOrderStatus}
+          user={user}
+          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+          onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg-dark text-text-main flex flex-col justify-between selection:bg-primary selection:text-white relative">
@@ -551,7 +648,6 @@ export default function App() {
         wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenReferral={() => setIsReferralOpen(true)}
         onOpenHelp={() => setIsHelpOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         user={user}
@@ -571,6 +667,7 @@ export default function App() {
         toggleTheme={toggleTheme}
         meals={meals}
         onSelectMeal={handleSelectMeal}
+        hasOrders={clientOrders.length > 0}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 flex-1 w-full relative">
@@ -587,7 +684,6 @@ export default function App() {
                   cart={cart}
                   wishlist={wishlist}
                   onToggleWishlist={handleToggleWishlist}
-                  onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
                   onAddToCart={handleAddToCart}
                   onOpenCart={() => setIsCartOpen(true)}
                 />
@@ -617,6 +713,7 @@ export default function App() {
                     orders={orders}
                     onUpdateStatus={handleUpdateOrderStatus}
                     user={user}
+                    onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
                   />
                 ) : (user?.role || '').toUpperCase() === 'KITCHEN' ? (
                   <KitchenBoard
@@ -643,7 +740,6 @@ export default function App() {
                       apiService.setTrackedOrderId(order.id);
                       handleNavigate('/tracking', 'tracking', 'customer');
                     }}
-                    onOpenReferral={() => setIsReferralOpen(true)}
                     onOpenProfile={() => setIsProfileOpen(true)}
                     onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
                   />
@@ -651,23 +747,47 @@ export default function App() {
               )}
 
               {activeTab === 'orders' && (
-                <OrdersHistory
-                  orders={clientOrders}
-                  onAddToCart={handleAddToCart}
-                  onSelectOrder={(order) => {
-                    setTrackedOrder(order);
-                    apiService.setTrackedOrderId(order.id);
-                    handleNavigate('/tracking', 'tracking', 'customer');
-                  }}
-                />
+                clientOrders.length > 0 ? (
+                  <OrdersHistory
+                    orders={clientOrders}
+                    onAddToCart={handleAddToCart}
+                    onSelectOrder={(order) => {
+                      setTrackedOrder(order);
+                      apiService.setTrackedOrderId(order.id);
+                      handleNavigate('/tracking', 'tracking', 'customer');
+                    }}
+                    onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
+                  />
+                ) : (
+                  <Home
+                    meals={meals}
+                    onAddToCart={handleAddToCart}
+                    onSelectMeal={handleSelectMeal}
+                    user={user}
+                    onToggleWishlist={handleToggleWishlist}
+                    wishlist={wishlist}
+                  />
+                )
               )}
 
               {activeTab === 'tracking' && (
-                <LiveTracking
-                  order={trackedOrder || clientOrders[0]}
-                  onCancelOrder={handleCancelOrder}
-                  onModifyOrder={handleModifyOrder}
-                />
+                clientOrders.length > 0 ? (
+                  <LiveTracking
+                    order={trackedOrder || clientOrders[0]}
+                    onCancelOrder={handleCancelOrder}
+                    onModifyOrder={handleModifyOrder}
+                    onUpdateStatus={handleUpdateOrderStatus}
+                  />
+                ) : (
+                  <Home
+                    meals={meals}
+                    onAddToCart={handleAddToCart}
+                    onSelectMeal={handleSelectMeal}
+                    user={user}
+                    onToggleWishlist={handleToggleWishlist}
+                    wishlist={wishlist}
+                  />
+                )
               )}
             </>
           )}
@@ -688,6 +808,7 @@ export default function App() {
               orders={orders}
               onUpdateStatus={handleUpdateOrderStatus}
               user={user}
+              onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
             />
           )}
         </div>
@@ -740,16 +861,20 @@ export default function App() {
       <LocationModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
-        onSetLocation={({ location, lat, lng }) => {
-          const updated = { ...(user || {}), location, lat, lng };
+        onSetLocation={(loc) => {
+          const updated = { ...(user || {}), location: loc };
           setUser(updated);
           apiService.saveUser(updated);
-          showToast(`Location set to: ${location}`, 'Location Updated');
+          showToast(`Location set to: ${loc}`, 'Location Updated');
         }}
       />
 
-      <ReferralModal isOpen={isReferralOpen} onClose={() => setIsReferralOpen(false)} />
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <PostDeliveryFeedbackModal
+        isOpen={!!feedbackOrder}
+        onClose={() => setFeedbackOrder(null)}
+        order={feedbackOrder}
+      />
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
@@ -761,23 +886,14 @@ export default function App() {
         }}
       />
 
-      <CustomPizzaBuilderModal
-        isOpen={isCustomBuilderOpen}
-        onClose={() => setIsCustomBuilderOpen(false)}
-        onAddToCart={(customItem) => {
-          handleAddToCart(customItem);
-          showToast(`${customItem.name} added to cart!`, 'Custom Pizza Created');
-        }}
-      />
-
       {currentRole === 'customer' && (
         <MobileBottomNav
           activeTab={activeTab}
           setActiveTab={(tab) => handleNavigate(tab === 'menu' ? '/' : `/${tab}`, tab, 'customer')}
           cartCount={cart.reduce((sum, item) => sum + (item.qty || 1), 0)}
           onOpenCart={() => setIsCartOpen(true)}
-          onOpenCustomBuilder={() => setIsCustomBuilderOpen(true)}
           onOpenProfile={() => (user ? setIsProfileOpen(true) : setIsAuthOpen(true))}
+          hasOrders={clientOrders.length > 0}
         />
       )}
 

@@ -1,39 +1,26 @@
-import React from 'react';
-import { X, Printer, CheckCircle2, Flame, Download } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { X, Printer, CheckCircle2, Flame, Download, Loader2 } from 'lucide-react';
+import { downloadOrderReceiptPdf } from '../../utils/receiptGenerator';
 
 export default function ReceiptModal({ isOpen, onClose, order }) {
   if (!isOpen || !order) return null;
+
+  const receiptRef = useRef(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleDownloadInvoice = () => {
-    const textContent = `
-========================================
-       HOTPOT DELIGHTS KIGALI
-========================================
-Receipt No: #${order.id}
-Date: ${order.orderTime || new Date().toLocaleString()}
-Customer: ${order.customerName}
-Phone: ${order.phone}
-Address: ${order.address}
-Payment: ${order.paymentMethod || 'MTN Mobile Money'}
-----------------------------------------
-ITEMS:
-${(order.items || []).map(item => `- ${item.name} (${item.spice || 'Regular'}) x${item.qty}: ${(item.qty * (Number(item.price) || 0)).toLocaleString()} RWF`).join('\n')}
-----------------------------------------
-TOTAL PAID: ${(Number(order.totalRWF) || 0).toLocaleString()} RWF
-========================================
-Murakoze! Thank you for your order.
-`;
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Invoice_${order.id}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadPdf = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      downloadOrderReceiptPdf(order);
+    } catch (err) {
+      console.error('PDF Generation Error:', err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
@@ -48,12 +35,17 @@ Murakoze! Thank you for your order.
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleDownloadInvoice}
-              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
-              title="Download text receipt"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 disabled:opacity-50"
+              title="Download PDF receipt"
             >
-              <Download className="w-3.5 h-3.5 text-amber-400" />
-              Download
+              {isGeneratingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-amber-400" />
+              )}
+              {isGeneratingPdf ? 'Generating...' : 'PDF'}
             </button>
             <button
               onClick={handlePrint}
@@ -69,7 +61,7 @@ Murakoze! Thank you for your order.
         </div>
 
         {/* Printable Receipt Body */}
-        <div className="space-y-4 font-mono text-xs">
+        <div ref={receiptRef} className="p-4 bg-surface-card rounded-xl border border-white/5 space-y-4 font-mono text-xs print:p-0 print:bg-white print:border-none">
           
           {/* Logo Header */}
           <div className="text-center space-y-1 pb-3 border-b border-dashed border-white/20 print:border-black/20">
@@ -128,9 +120,9 @@ Murakoze! Thank you for your order.
                     {item.spice && <div className="text-[10px] text-orange-400 print:text-gray-700">Spice: {item.spice}</div>}
                   </div>
                   <div className="text-right">
-                    <div>{item.qty} x {(Number(item.price) || 0).toLocaleString()}</div>
+                    <div>{item.qty} x {(Number(item.price) || 0)?.toLocaleString() ?? ''}</div>
                     <div className="font-bold text-text-main print:text-black">
-                      {(item.qty * (Number(item.price) || 0)).toLocaleString()} RWF
+                      {(item.qty * (Number(item.price) || 0))?.toLocaleString() ?? ''} RWF
                     </div>
                   </div>
                 </div>
@@ -142,7 +134,7 @@ Murakoze! Thank you for your order.
           <div className="pt-3 border-t border-dashed border-white/20 print:border-black/20 space-y-1">
             <div className="flex justify-between text-text-muted print:text-black">
               <span>Subtotal:</span>
-              <span>{(order.totalRWF || 0).toLocaleString()} RWF</span>
+              <span>{(order.totalRWF || 0)?.toLocaleString() ?? ''} RWF</span>
             </div>
             <div className="flex justify-between text-text-muted print:text-black">
               <span>Delivery Fee (Kigali):</span>
@@ -150,7 +142,7 @@ Murakoze! Thank you for your order.
             </div>
             <div className="flex justify-between text-base font-extrabold text-primary print:text-black pt-1 border-t border-white/10">
               <span>TOTAL PAID:</span>
-              <span>{(order.totalRWF || 0).toLocaleString()} RWF</span>
+              <span>{(order.totalRWF || 0)?.toLocaleString() ?? ''} RWF</span>
             </div>
           </div>
 

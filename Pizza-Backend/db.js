@@ -1,17 +1,5 @@
 // Comprehensive Database Abstraction & Store Layer
 const bcrypt = require('bcryptjs');
-const orderFlow = require('./orderFlow');
-
-function formatTime(timestamp) {
-  if (!timestamp) return '—';
-  const d = new Date(timestamp);
-  if (isNaN(d.getTime())) return '—';
-  let hours = d.getHours();
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  const meridiem = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
-  return `${hours}:${minutes} ${meridiem}`;
-}
 
 let users = [
   {
@@ -69,19 +57,21 @@ let orders = [
     customerName: 'Aline Uwase',
     phone: '0788123456',
     address: 'KG 9 Ave, Nyarutarama, Kigali',
-    totalRWF: 29000,
-    status: 'pending',
-    riderName: null,
-    paymentType: 'MTN Mobile Money',
+    totalRWF: 22000,
+    status: 'ready',
+    assigned_rider_id: 'rider-1',
+    riderName: 'Eric Mugisha',
+    riderPhone: '+250 788 123 456',
+    riderPlate: 'RAC 402B',
+    rider_handover_status: 'assigned',
+    verification_pin: '4829',
+    assigned_at: new Date(Date.now() - 2 * 60000).toISOString(),
+    paymentMethod: 'MTN Mobile Money',
     paymentStatus: 'PAID',
-    items: [
-      { id: 'oi-1', name: 'Royal Szechuan Hotpot Combo', qty: 1, price: 22000, spice: 'Medium Szechuan 🌶️🌶️', broth: 'Szechuan Chili Oil', specialNote: '' },
-      { id: 'oi-2', name: 'Iced Passionfruit Jasmine Tea', qty: 2, price: 3500, spice: null, broth: null, specialNote: '' }
-    ],
     createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
-    preparedAt: null,
-    readyAt: null,
-    deliveredAt: null
+    items: [
+      { name: 'Royal Szechuan Hotpot Combo', qty: 1, price: 22000 }
+    ]
   }
 ];
 
@@ -93,13 +83,81 @@ let vouchers = [
 
 let feedbackList = [];
 
+let riders = [
+  {
+    id: 'rider-1',
+    name: 'Eric Mugisha',
+    phone: '+250 788 123 456',
+    plateNumber: 'RAC 402B',
+    vehicleType: 'Yamaha XTZ 125 (Moto #1)',
+    shift: 'Day Shift (08:00 - 16:00)',
+    is_available: false,
+    status: 'BUSY',
+    current_order_id: '104829',
+    lat: -1.9702,
+    lng: 30.1250,
+    rating: 4.95,
+    completed_today: 8,
+    earnings_today: 18500
+  },
+  {
+    id: 'rider-2',
+    name: 'Jean-Paul Nshimiyimana',
+    phone: '+250 788 234 567',
+    plateNumber: 'RD 192A',
+    vehicleType: 'TVS Apache 160 (Moto #2)',
+    shift: 'Day Shift (08:00 - 16:00)',
+    is_available: true,
+    status: 'AVAILABLE',
+    current_order_id: null,
+    lat: -1.9510,
+    lng: 30.0920,
+    rating: 4.88,
+    completed_today: 6,
+    earnings_today: 15200
+  },
+  {
+    id: 'rider-3',
+    name: 'Patrick Habimana',
+    phone: '+250 788 345 678',
+    plateNumber: 'RAE 883K',
+    vehicleType: 'Honda Ace 125 (Moto #3)',
+    shift: 'Evening Shift (16:00 - 00:00)',
+    is_available: true,
+    status: 'AVAILABLE',
+    current_order_id: null,
+    lat: -1.9620,
+    lng: 30.1100,
+    rating: 4.92,
+    completed_today: 4,
+    earnings_today: 12000
+  },
+  {
+    id: 'rider-4',
+    name: 'Fabrice Manzi',
+    phone: '+250 788 456 789',
+    plateNumber: 'RAG 311P',
+    vehicleType: 'Bajaj Boxer 150 (Moto #4)',
+    shift: 'Night Shift (18:00 - 02:00)',
+    is_available: false,
+    status: 'OFF_DUTY',
+    current_order_id: null,
+    lat: -1.9420,
+    lng: 30.0750,
+    rating: 4.85,
+    completed_today: 0,
+    earnings_today: 0
+  }
+];
+
 let riderLocations = {
-  'Eric Mugisha': { lat: -1.9702, lng: 30.1250, status: 'AVAILABLE', vehicle: 'RAC 482B' },
-  'Jean-Paul Nshimiyimana': { lat: -1.9510, lng: 30.0920, status: 'DELIVERING', vehicle: 'RD 192A' },
-  'Patrick Habimana': { lat: -1.9620, lng: 30.1100, status: 'AVAILABLE', vehicle: 'RAE 883K' }
+  'Eric Mugisha': { lat: -1.9702, lng: 30.1250, status: 'BUSY', vehicle: 'RAC 402B' },
+  'Jean-Paul Nshimiyimana': { lat: -1.9510, lng: 30.0920, status: 'AVAILABLE', vehicle: 'RD 192A' },
+  'Patrick Habimana': { lat: -1.9620, lng: 30.1100, status: 'AVAILABLE', vehicle: 'RAE 883K' },
+  'Fabrice Manzi': { lat: -1.9420, lng: 30.0750, status: 'OFF_DUTY', vehicle: 'RAG 311P' }
 };
 
-const store = {
+module.exports = {
   // User Model Queries
   findUserByEmail: (email) => users.find(u => u.email.toLowerCase() === email.toLowerCase()),
   createUser: async ({ name, email, phone, password, role = 'CUSTOMER' }) => {
@@ -136,102 +194,190 @@ const store = {
   },
 
   // Order Model Queries
-  serializeOrder: (o) => ({
-    id: o.id,
-    customerName: o.customerName,
-    phone: o.phone,
-    address: o.address,
-    lat: o.lat || null,
-    lng: o.lng || null,
-    status: String(o.status || 'pending').toLowerCase(),
-    totalRWF: Number(o.totalRWF) || 0,
-    riderName: o.riderName || null,
-    paymentMethod: o.paymentType || 'MTN Mobile Money',
-    paymentStatus: o.paymentStatus || 'PAID',
-    userId: o.userId || null,
-    createdAt: o.createdAt || o.created_at || null,
-    preparedAt: o.preparedAt || null,
-    readyAt: o.readyAt || null,
-    deliveredAt: o.deliveredAt || null,
-    orderTime: formatTime(o.createdAt || o.created_at),
-    items: Array.isArray(o.items) ? o.items.map((it) => ({ id: it.id || null, name: it.name, qty: Number(it.qty) || 1, price: Number(it.price) || 0, mealId: it.mealId || null, spice: it.spice || undefined, broth: it.broth || undefined, specialNote: it.specialNote || undefined })) : []
-  }),
-
-  getOrders: () => orders.map((o) => store.serializeOrder(o)),
-
-  getOrderById: (id) => {
-    const found = orders.find((o) => String(o.id) === String(id));
-    return found ? store.serializeOrder(found) : null;
-  },
-
-  getKitchenBoard: () => store.getOrders().filter((o) => ['pending', 'preparing', 'ready'].includes(o.status)),
-
-  getKitchenStats: () => {
-    const groups = { pending: 0, preparing: 0, ready: 0, delivery: 0, delivered: 0 };
-    orders.forEach((o) => { const s = String(o.status).toLowerCase(); if (s in groups) groups[s] += 1; });
-    const prepTimes = orders
-      .filter((o) => o.readyAt && o.preparedAt)
-      .map((o) => (new Date(o.readyAt).getTime() - new Date(o.preparedAt).getTime()) / 1000);
-    const avgPrepSeconds = prepTimes.length
-      ? Math.round(prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length)
-      : null;
-    return {
-      ...groups,
-      avgPrepSeconds,
-      avgPrepMinutes: avgPrepSeconds ? Math.round((avgPrepSeconds / 60) * 10) / 10 : null
-    };
-  },
-
+  getOrders: () => orders,
   createOrder: (data) => {
     const newOrder = {
-      id: `HP-${Math.floor(100000 + Math.random() * 900000)}`,
+      id: Math.floor(100000 + Math.random() * 900000).toString(),
       status: 'pending',
-      paymentType: data.paymentMethod || 'MTN Mobile Money',
+      assigned_rider_id: null,
+      riderName: null,
+      riderPhone: null,
+      riderPlate: null,
+      rider_handover_status: 'unassigned',
+      verification_pin: null,
+      assigned_at: null,
       paymentStatus: 'PAID',
-      items: Array.isArray(data.items) ? data.items.map((it, i) => ({ id: `oi-${Date.now()}-${i}`, ...it })) : [],
       createdAt: new Date().toISOString(),
-      preparedAt: null,
-      readyAt: null,
-      deliveredAt: null,
-      ...data,
-      totalRWF: Number(data.totalRWF) ||
-        (Array.isArray(data.items) ? data.items.reduce((sum, it) => sum + (Number(it.qty) || 1) * (Number(it.price) || 0), 0) : 0)
+      ...data
     };
     orders.unshift(newOrder);
-    return store.serializeOrder(newOrder);
+    return newOrder;
+  },
+  updateOrderStatus: (id, status, riderName) => {
+    const idx = orders.findIndex(o => o.id === id);
+    if (idx === -1) return null;
+    orders[idx].status = status;
+    if (riderName) orders[idx].riderName = riderName;
+
+    // Handle rider status changes on delivery completion
+    if (status === 'delivered') {
+      orders[idx].rider_handover_status = 'delivered';
+      const riderId = orders[idx].assigned_rider_id;
+      if (riderId) {
+        const rIdx = riders.findIndex(r => r.id === riderId || r.name === riderName);
+        if (rIdx !== -1) {
+          riders[rIdx].status = 'AVAILABLE';
+          riders[rIdx].is_available = true;
+          riders[rIdx].current_order_id = null;
+          riders[rIdx].completed_today = (riders[rIdx].completed_today || 0) + 1;
+          riders[rIdx].earnings_today = (riders[rIdx].earnings_today || 18500) + 1200;
+        }
+      }
+    }
+    return orders[idx];
   },
 
-  updateOrderStatus: (id, status, riderName, role) => {
-    const idx = orders.findIndex((o) => String(o.id) === String(id));
-    if (idx === -1) return null;
+  // Rider Fleet Management
+  getRiders: () => riders,
+  createRider: (riderData) => {
+    const newRider = {
+      id: `rider-${Date.now()}`,
+      name: riderData.name,
+      phone: riderData.phone || '+250 788 000 000',
+      plateNumber: riderData.plateNumber || 'RAC 000X',
+      vehicleType: riderData.vehicleType || 'Motorcycle 125cc',
+      shift: riderData.shift || 'Day Shift (08:00 - 16:00)',
+      is_available: true,
+      status: 'AVAILABLE',
+      current_order_id: null,
+      lat: -1.9702,
+      lng: 30.1250,
+      rating: 5.0,
+      completed_today: 0,
+      earnings_today: 0
+    };
+    riders.push(newRider);
+    riderLocations[newRider.name] = { lat: newRider.lat, lng: newRider.lng, status: 'AVAILABLE', vehicle: newRider.plateNumber };
+    return newRider;
+  },
+  toggleRiderAvailability: (id, is_available) => {
+    const rIdx = riders.findIndex(r => r.id === id);
+    if (rIdx === -1) return null;
+    riders[rIdx].is_available = !!is_available;
+    riders[rIdx].status = is_available ? (riders[rIdx].current_order_id ? 'BUSY' : 'AVAILABLE') : 'OFF_DUTY';
+    if (riderLocations[riders[rIdx].name]) {
+      riderLocations[riders[rIdx].name].status = riders[rIdx].status;
+    }
+    return riders[rIdx];
+  },
+  updateRider: (id, data) => {
+    const rIdx = riders.findIndex(r => r.id === id);
+    if (rIdx === -1) return null;
+    riders[rIdx] = { ...riders[rIdx], ...data };
+    return riders[rIdx];
+  },
 
-    const currentStatus = String(orders[idx].status).toLowerCase();
-    if (!orderFlow.canTransition(currentStatus, status, role)) {
-      const err = new Error(`Invalid status transition: "${currentStatus}" -> "${status}"`);
-      err.statusCode = 400;
-      throw err;
+  // Smart Dispatch & Handover Queries
+  assignRiderToOrder: (orderId, riderId) => {
+    const oIdx = orders.findIndex(o => o.id === orderId);
+    const rIdx = riders.findIndex(r => r.id === riderId);
+    if (oIdx === -1 || rIdx === -1) return null;
+
+    const rider = riders[rIdx];
+    const pin = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit code
+
+    orders[oIdx].assigned_rider_id = rider.id;
+    orders[oIdx].riderName = rider.name;
+    orders[oIdx].riderPhone = rider.phone;
+    orders[oIdx].riderPlate = rider.plateNumber;
+    orders[oIdx].rider_handover_status = 'assigned';
+    orders[oIdx].verification_pin = pin;
+    orders[oIdx].assigned_at = new Date().toISOString();
+    orders[oIdx].status = 'ready'; // Ready for courier pickup
+
+    // Mark rider busy
+    riders[rIdx].is_available = false;
+    riders[rIdx].status = 'BUSY';
+    riders[rIdx].current_order_id = orderId;
+    if (riderLocations[rider.name]) {
+      riderLocations[rider.name].status = 'BUSY';
     }
 
-    orders[idx].status = String(status).toLowerCase();
-    if (riderName) orders[idx].riderName = riderName;
-    const now = new Date().toISOString();
-    if (String(status).toLowerCase() === 'preparing' && !orders[idx].preparedAt) orders[idx].preparedAt = now;
-    if (String(status).toLowerCase() === 'ready') orders[idx].readyAt = now;
-    if (String(status).toLowerCase() === 'delivered') orders[idx].deliveredAt = now;
-    return store.serializeOrder(orders[idx]);
+    return { order: orders[oIdx], rider: riders[rIdx], verificationPin: pin };
+  },
+
+  verifyHandoverPickup: (orderId, enteredPin) => {
+    const oIdx = orders.findIndex(o => o.id === orderId);
+    if (oIdx === -1) return { error: 'Order not found.' };
+
+    const order = orders[oIdx];
+    if (enteredPin && order.verification_pin && order.verification_pin !== enteredPin.toString().trim()) {
+      return { error: `Invalid 4-digit PIN. Expected: ${order.verification_pin}` };
+    }
+
+    order.rider_handover_status = 'in_transit';
+    order.status = 'delivery';
+    order.handed_over_at = new Date().toISOString();
+
+    const riderId = order.assigned_rider_id;
+    if (riderId) {
+      const rIdx = riders.findIndex(r => r.id === riderId);
+      if (rIdx !== -1) {
+        riders[rIdx].status = 'BUSY';
+      }
+    }
+
+    return { success: true, order };
+  },
+
+  reassignRider: (orderId, newRiderId) => {
+    const oIdx = orders.findIndex(o => o.id === orderId);
+    if (oIdx === -1) return null;
+
+    const oldRiderId = orders[oIdx].assigned_rider_id;
+    if (oldRiderId) {
+      const oldRIdx = riders.findIndex(r => r.id === oldRiderId);
+      if (oldRIdx !== -1) {
+        riders[oldRIdx].is_available = true;
+        riders[oldRIdx].status = 'AVAILABLE';
+        riders[oldRIdx].current_order_id = null;
+      }
+    }
+
+    if (newRiderId) {
+      return module.exports.assignRiderToOrder(orderId, newRiderId);
+    } else {
+      orders[oIdx].assigned_rider_id = null;
+      orders[oIdx].riderName = null;
+      orders[oIdx].riderPhone = null;
+      orders[oIdx].riderPlate = null;
+      orders[oIdx].rider_handover_status = 'unassigned';
+      orders[oIdx].verification_pin = null;
+      orders[oIdx].assigned_at = null;
+      return { order: orders[oIdx] };
+    }
   },
 
   cancelOrder: (id) => {
-    const idx = orders.findIndex(o => String(o.id) === String(id));
+    const idx = orders.findIndex(o => o.id === id);
     if (idx === -1) return null;
-
+    
     // Check 120-second grace period
     const elapsedSeconds = (Date.now() - new Date(orders[idx].createdAt).getTime()) / 1000;
     if (elapsedSeconds > 120) {
       return { error: 'Grace period expired. Order cannot be cancelled after 2 minutes.' };
     }
     orders[idx].status = 'cancelled';
-    return store.serializeOrder(orders[idx]);
+    const riderId = orders[idx].assigned_rider_id;
+    if (riderId) {
+      const rIdx = riders.findIndex(r => r.id === riderId);
+      if (rIdx !== -1) {
+        riders[rIdx].is_available = true;
+        riders[rIdx].status = 'AVAILABLE';
+        riders[rIdx].current_order_id = null;
+      }
+    }
+    return orders[idx];
   },
 
   // Voucher Verification Query
@@ -264,5 +410,3 @@ const store = {
     return riderLocations[riderName];
   }
 };
-
-module.exports = store;

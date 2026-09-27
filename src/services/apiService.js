@@ -1,5 +1,5 @@
 // HotPot Delights Persistent Data Service Layer
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api';
 
 const STORAGE_KEYS = {
   MEALS: 'hotpot_meals_v1',
@@ -252,21 +252,31 @@ export const apiService = {
     }
   },
 
-  // Vouchers API
-  getVouchers: async () => {
-    const res = await fetch(`${API_BASE_URL}/vouchers`);
-    if (!res.ok) throw new Error('Failed to fetch vouchers');
-    return res.json();
+  // Reviews & Ratings API
+  getReviews: async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reviews`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      console.error('Error fetching reviews:', e);
+      return [];
+    }
   },
 
-  createVoucher: async (voucherData, token) => {
-    const res = await fetch(`${API_BASE_URL}/vouchers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(voucherData)
-    });
-    if (!res.ok) throw new Error('Failed to create voucher');
-    return res.json();
+  submitReview: async (reviewData) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData)
+      });
+      if (!res.ok) throw new Error('Failed to submit review');
+      return await res.json();
+    } catch (e) {
+      console.error('Error submitting review:', e);
+      throw e;
+    }
   },
 
   // Admin Analytics API
@@ -275,6 +285,152 @@ export const apiService = {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch analytics');
+    return res.json();
+  },
+
+  // --------------------------------------------------
+  // Smart Dispatch & Rider Fleet Management API
+  // --------------------------------------------------
+  getRiders: async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/riders`);
+      if (!res.ok) throw new Error('Failed to fetch riders');
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.warn('Backend unavailable, using default riders fleet');
+      return [
+        {
+          id: 'rider-1',
+          name: 'Eric Mugisha',
+          phone: '+250 788 123 456',
+          plateNumber: 'RAC 402B',
+          vehicleType: 'Yamaha XTZ 125 (Moto #1)',
+          shift: 'Day Shift (08:00 - 16:00)',
+          is_available: true,
+          status: 'AVAILABLE',
+          current_order_id: null,
+          lat: -1.9702,
+          lng: 30.1250,
+          rating: 4.95,
+          completed_today: 8,
+          earnings_today: 18500
+        },
+        {
+          id: 'rider-2',
+          name: 'Jean-Paul Nshimiyimana',
+          phone: '+250 788 234 567',
+          plateNumber: 'RD 192A',
+          vehicleType: 'TVS Apache 160 (Moto #2)',
+          shift: 'Day Shift (08:00 - 16:00)',
+          is_available: true,
+          status: 'AVAILABLE',
+          current_order_id: null,
+          lat: -1.9510,
+          lng: 30.0920,
+          rating: 4.88,
+          completed_today: 6,
+          earnings_today: 15200
+        },
+        {
+          id: 'rider-3',
+          name: 'Patrick Habimana',
+          phone: '+250 788 345 678',
+          plateNumber: 'RAE 883K',
+          vehicleType: 'Honda Ace 125 (Moto #3)',
+          shift: 'Evening Shift (16:00 - 00:00)',
+          is_available: true,
+          status: 'AVAILABLE',
+          current_order_id: null,
+          lat: -1.9620,
+          lng: 30.1100,
+          rating: 4.92,
+          completed_today: 4,
+          earnings_today: 12000
+        },
+        {
+          id: 'rider-4',
+          name: 'Fabrice Manzi',
+          phone: '+250 788 456 789',
+          plateNumber: 'RAG 311P',
+          vehicleType: 'Bajaj Boxer 150 (Moto #4)',
+          shift: 'Night Shift (18:00 - 02:00)',
+          is_available: false,
+          status: 'OFF_DUTY',
+          current_order_id: null,
+          lat: -1.9420,
+          lng: 30.0750,
+          rating: 4.85,
+          completed_today: 0,
+          earnings_today: 0
+        }
+      ];
+    }
+  },
+
+  createRider: async (riderData) => {
+    const res = await fetch(`${API_BASE_URL}/riders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(riderData)
+    });
+    if (!res.ok) throw new Error('Failed to create rider');
+    return res.json();
+  },
+
+  toggleRiderAvailability: async (riderId, is_available) => {
+    const res = await fetch(`${API_BASE_URL}/riders/${riderId}/availability`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_available })
+    });
+    if (!res.ok) throw new Error('Failed to toggle rider availability');
+    return res.json();
+  },
+
+  updateRider: async (riderId, data) => {
+    const res = await fetch(`${API_BASE_URL}/riders/${riderId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update rider');
+    return res.json();
+  },
+
+  assignRiderToOrder: async (orderId, riderId) => {
+    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/assign-rider`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ riderId })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to assign rider');
+    }
+    return res.json();
+  },
+
+  verifyHandoverPickup: async (orderId, verificationPin) => {
+    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/handover-pickup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verificationPin })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to verify handover pickup');
+    }
+    return res.json();
+  },
+
+  reassignRider: async (orderId, newRiderId) => {
+    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/reassign-rider`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newRiderId })
+    });
+    if (!res.ok) throw new Error('Failed to reassign rider');
     return res.json();
   }
 };

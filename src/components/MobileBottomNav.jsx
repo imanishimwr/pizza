@@ -1,7 +1,7 @@
 import React from 'react';
 import { Home, Sparkles, Clock, User, ShoppingBag } from 'lucide-react';
 
-export default function MobileBottomNav({ activeTab, setActiveTab, cartCount, onOpenCart, onOpenCustomBuilder, onOpenProfile }) {
+export default function MobileBottomNav({ activeTab, setActiveTab, cartCount, onOpenCart, onOpenProfile, hasOrders = false }) {
   return (
     <div className="mobile-bottom-nav" style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, height: '64px',
@@ -22,29 +22,33 @@ export default function MobileBottomNav({ activeTab, setActiveTab, cartCount, on
         <span style={{ fontSize: '0.68rem', fontWeight: activeTab === 'menu' ? 700 : 500 }}>Menu</span>
       </button>
 
-      {/* Custom Pizza Builder Tab */}
-      <button
-        onClick={onOpenCustomBuilder}
-        style={{
-          background: 'none', border: 'none', color: '#f59e0b',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer'
-        }}
-      >
-        <Sparkles size={20} />
-        <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>Create</span>
-      </button>
+      {/* Orders History Tab — only visible once user has ordered */}
+      {hasOrders && (
+        <button
+          onClick={() => setActiveTab('orders')}
+          style={{
+            background: 'none', border: 'none', color: activeTab === 'orders' ? '#f97316' : '#a1a1aa',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer'
+          }}
+        >
+          <Clock size={20} />
+          <span style={{ fontSize: '0.68rem', fontWeight: activeTab === 'orders' ? 700 : 500 }}>Orders</span>
+        </button>
+      )}
 
-      {/* Active Orders / Live Tracking */}
-      <button
-        onClick={() => setActiveTab('tracking')}
-        style={{
-          background: 'none', border: 'none', color: activeTab === 'tracking' ? '#f97316' : '#a1a1aa',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer'
-        }}
-      >
-        <Clock size={20} />
-        <span style={{ fontSize: '0.68rem', fontWeight: activeTab === 'tracking' ? 700 : 500 }}>Track</span>
-      </button>
+      {/* Active Orders / Live Tracking — only visible once user has ordered */}
+      {hasOrders && (
+        <button
+          onClick={() => setActiveTab('tracking')}
+          style={{
+            background: 'none', border: 'none', color: activeTab === 'tracking' ? '#f97316' : '#a1a1aa',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'pointer'
+          }}
+        >
+          <Clock size={20} />
+          <span style={{ fontSize: '0.68rem', fontWeight: activeTab === 'tracking' ? 700 : 500 }}>Track</span>
+        </button>
+      )}
 
       {/* Profile */}
       <button

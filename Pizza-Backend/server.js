@@ -31,10 +31,10 @@ app.use(morgan('combined'));
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Rate Limiting Security Protection (150 requests per 15 min per IP)
+// Rate Limiting Security Protection (5000 requests per 15 min per IP to support real-time polling)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 150,
+  max: 5000,
   message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
 });
 // Read polling (GET /api/meals, /api/orders, /api/kitchen/*) runs every ~3.5s for live
@@ -327,8 +327,96 @@ app.post('/api/vouchers/validate', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// 6. Live Rider Fleet & Admin Analytics (/api/riders)
+// 6. Live Rider Fleet & Smart Handover API (/api/riders)
 // ----------------------------------------------------
+app.get('/api/riders', (req, res) => {
+  res.json(db.getRiders());
+});
+
+app.post('/api/riders', (req, res) => {
+  const { name, phone, plateNumber, vehicleType, shift } = req.body;
+  if (!name) return res.status(400).json({ error: 'Rider name is required.' });
+  const newRider = db.createRider({ name, phone, plateNumber, vehicleType, shift });
+  io.emit('rider_fleet_updated', db.getRiders());
+  res.status(201).json(newRider);
+});
+
+app.patch('/api/riders/:id/availability', (req, res) => {
+  const { is_available } = req.body;
+  const updatedRider = db.toggleRiderAvailability(req.params.id, is_available);
+  if (!updatedRider) return res.status(404).json({ error: 'Rider not found.' });
+
+  io.emit('rider_availability_updated', {
+    riderId: updatedRider.id,
+    is_available: updatedRider.is_available,
+    status: updatedRider.status,
+    rider: updatedRider
+  });
+  io.emit('rider_fleet_updated', db.getRiders());
+  res.json(updatedRider);
+});
+
+app.patch('/api/riders/:id', (req, res) => {
+  const updatedRider = db.updateRider(req.params.id, req.body);
+  if (!updatedRider) return res.status(404).json({ error: 'Rider not found.' });
+  io.emit('rider_fleet_updated', db.getRiders());
+  res.json(updatedRider);
+});
+
+// Smart Dispatch: Assign Rider to Order with 4-digit PIN
+app.post('/api/orders/:id/assign-rider', (req, res) => {
+  const { id } = req.params;
+  const { riderId } = req.body;
+  if (!riderId) return res.status(400).json({ error: 'riderId is required.' });
+
+  const result = db.assignRiderToOrder(id, riderId);
+  if (!result) return res.status(400).json({ error: 'Could not assign order to rider.' });
+
+  // Broadcast to kitchen, admin, and specific rider
+  io.emit('order_assigned_to_rider', result);
+  io.emit('order_status_updated', result.order);
+  io.emit('rider_fleet_updated', db.getRiders());
+  io.to(`order_${id}`).emit('live_order_status', result.order);
+
+  res.json(result);
+});
+
+// Smart Dispatch: Rider Verifies 4-digit PIN and Picks Up Package
+app.post('/api/orders/:id/handover-pickup', (req, res) => {
+  const { id } = req.params;
+  const { verificationPin } = req.body;
+
+  const result = db.verifyHandoverPickup(id, verificationPin);
+  if (result.error) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  io.emit('order_handed_over_to_rider', { orderId: id, order: result.order });
+  io.emit('order_status_updated', result.order);
+  io.emit('rider_fleet_updated', db.getRiders());
+  io.to(`order_${id}`).emit('live_order_status', result.order);
+
+  res.json(result);
+});
+
+// Smart Dispatch: Reassign Courier (Timeout or Breakdown)
+app.post('/api/orders/:id/reassign-rider', (req, res) => {
+  const { id } = req.params;
+  const { newRiderId } = req.body;
+
+  const result = db.reassignRider(id, newRiderId);
+  if (!result) return res.status(400).json({ error: 'Could not reassign order.' });
+
+  io.emit('order_reassigned', { orderId: id, result });
+  if (result.order) {
+    io.emit('order_status_updated', result.order);
+    io.to(`order_${id}`).emit('live_order_status', result.order);
+  }
+  io.emit('rider_fleet_updated', db.getRiders());
+
+  res.json(result);
+});
+
 app.get('/api/riders/live-gps', (req, res) => {
   res.json(db.getRiderLocations());
 });
@@ -336,15 +424,62 @@ app.get('/api/riders/live-gps', (req, res) => {
 app.get('/api/admin/analytics', authMiddleware(['ADMIN']), async (req, res) => {
   try {
     const data = await neonClient.getAdminAnalytics();
+    const onlineRidersCount = db.getRiders().filter(r => r.is_available).length;
     res.json({
       totalRevenueRWF: Number(data.totalRevenueRWF) || 0,
       totalOrdersCount: Number(data.totalOrdersCount) || 0,
       activeOrdersCount: Number(data.activeOrdersCount) || 0,
-      ridersOnline: 3,
+      ridersOnline: onlineRidersCount,
       topSellingCategory: 'Gourmet Pizzas'
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch analytics from DB' });
+  }
+});
+
+// ----------------------------------------------------
+// 6b. Reviews / Ratings Endpoint (/api/reviews)
+// ----------------------------------------------------
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { orderId, pizzaRating, riderRating, comment, userId } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+
+    const pizza = Math.min(5, Math.max(1, parseInt(pizzaRating) || 5));
+    const rider = Math.min(5, Math.max(1, parseInt(riderRating) || 5));
+    const combined = Math.round((pizza + rider) / 2);
+    const id = `feedback-${Date.now()}`;
+
+    if (neonClient.sql) {
+      // Upsert so re-submits update rather than error
+      await neonClient.sql`
+        INSERT INTO feedbacks (id, order_id, user_id, pizza_rating, rider_rating, rating, comment, created_at)
+        VALUES (${id}, ${orderId}, ${userId || null}, ${pizza}, ${rider}, ${combined}, ${comment || null}, NOW())
+        ON CONFLICT (order_id) DO UPDATE
+          SET pizza_rating = EXCLUDED.pizza_rating,
+              rider_rating = EXCLUDED.rider_rating,
+              rating = EXCLUDED.rating,
+              comment = EXCLUDED.comment;
+      `;
+    }
+
+    res.json({ success: true, pizzaRating: pizza, riderRating: rider });
+  } catch (err) {
+    console.error('Review save error:', err);
+    res.status(500).json({ error: 'Failed to save review' });
+  }
+});
+
+app.get('/api/reviews', async (req, res) => {
+  try {
+    if (!neonClient.sql) return res.json([]);
+    const rows = await neonClient.sql`
+      SELECT id, order_id, pizza_rating, rider_rating, rating, comment, created_at
+      FROM feedbacks ORDER BY created_at DESC;
+    `;
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch reviews' });
   }
 });
 
@@ -417,7 +552,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 server.listen(PORT, () => {
   console.log(`🚀 HotPot Full Production Server running with Security & WebSockets on port ${PORT}`);
 });

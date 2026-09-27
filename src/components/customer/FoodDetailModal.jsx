@@ -25,7 +25,7 @@ export default function FoodDetailModal({ meal, onClose, onAddToCart }) {
       selectedSpice,
       selectedBroth,
       specialNote,
-      totalPrice: (meal.price ?? 0) * quantity
+      totalPrice: meal.price * quantity
     });
     onClose();
   };
@@ -63,7 +63,7 @@ export default function FoodDetailModal({ meal, onClose, onAddToCart }) {
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-xl font-extrabold text-text-main">{meal.name}</h2>
               <span className="text-xl font-mono font-extrabold text-primary whitespace-nowrap">
-                {(meal.price ?? 0).toLocaleString()} RWF
+                {meal.price?.toLocaleString() ?? ''} RWF
               </span>
             </div>
             <p className="text-xs text-text-muted mt-2 leading-relaxed">
@@ -164,7 +164,7 @@ export default function FoodDetailModal({ meal, onClose, onAddToCart }) {
             className="flex-1 btn-primary text-xs py-3"
           >
             <ShoppingBag className="w-4 h-4" />
-            Add to Order • {((meal.price ?? 0) * quantity).toLocaleString()} RWF
+            Add to Order • {(meal.price * quantity)?.toLocaleString() ?? ''} RWF
           </button>
         </div>
       </div>

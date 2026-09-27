@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Lock, User, Mail, LogIn, ArrowRight, Flame, Phone, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Lock, User, Mail, LogIn, ArrowRight, Flame, Phone, Eye, EyeOff, CheckCircle2, AlertCircle, Sparkles, ShieldCheck } from 'lucide-react';
 import { apiService } from '../../services/apiService';
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
@@ -18,40 +18,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (isOpen && googleClientId && typeof window !== 'undefined' && window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response) => {
-            try {
-              const res = await fetch('http://localhost:5000/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: response.credential })
-              });
-              const data = await res.json();
-              if (data.user) {
-                if (data.token) localStorage.setItem('token', data.token);
-                onLoginSuccess(data.user);
-                onClose();
-              } else {
-                setErrorMsg(data.error || 'Google authentication failed.');
-              }
-            } catch (e) {
-              setErrorMsg('Google Sign-In server connection error.');
-            }
-          }
-        });
-
-        // Prompt One-Tap if allowed
-        window.google.accounts.id.prompt();
-      } catch (err) {
-        console.warn('Google Identity error:', err);
-      }
-    }
-  }, [isOpen]);
 
   const handleResetSubmit = (e) => {
     e.preventDefault();
@@ -67,36 +33,10 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     }, 2500);
   };
 
-  const handleGoogleSignIn = () => {
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-    if (googleClientId && window.google && window.google.accounts) {
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: async (response) => {
-          try {
-            const res = await fetch('http://localhost:5000/api/auth/google', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ idToken: response.credential })
-            });
-            const data = await res.json();
-            if (data.user) {
-              if (data.token) localStorage.setItem('token', data.token);
-              onLoginSuccess(data.user);
-              onClose();
-            } else {
-              setErrorMsg(data.error || 'Google authentication failed.');
-            }
-          } catch (e) {
-            setErrorMsg('Google Sign-In service unavailable. Please use email/password.');
-          }
-        }
-      });
-      window.google.accounts.id.prompt();
-    } else {
-      setErrorMsg('Google Client ID not loaded. Please ensure VITE_GOOGLE_CLIENT_ID is active.');
-    }
+  const handleQuickFill = (demoEmail, demoPassword) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setErrorMsg('');
   };
 
   const handleSubmit = async (e) => {
@@ -165,326 +105,346 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       setIsSubmitting(false);
       setErrorMsg(
         err.message?.includes('Failed to fetch')
-          ? 'Cannot connect to server on port 5000. Please ensure the backend is running.'
+          ? 'Cannot connect to backend server. Please ensure the backend is running.'
           : (err.message || 'Authentication error occurred.')
       );
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-1200 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
       <div 
-        className="bg-surface-dark border border-white/10 rounded-2xl max-w-sm sm:max-w-md w-full p-4 sm:p-5 shadow-2xl space-y-3 max-h-[96vh] overflow-y-auto"
+        className="relative w-full max-w-md bg-[#16161a] border border-white/10 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-primary to-orange-500 flex items-center justify-center text-white shadow-md">
-              <Flame className="w-4 h-4" />
+        {/* Subtle decorative glowing background accents */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-0 w-48 h-48 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Modal Header */}
+        <div className="relative px-6 pt-6 pb-4 border-b border-white/5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-linear-to-tr from-primary to-orange-500 flex items-center justify-center text-white shadow-lg shadow-primary/30 ring-2 ring-primary/20">
+              <Flame className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-white leading-tight">
-                {isForgot ? 'Reset Password' : isRegister ? 'Create HotPot Account' : 'Welcome to HotPot'}
+              <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
+                {isForgot ? 'Reset Password' : isRegister ? 'Join HotPot Delights' : 'Welcome Back'}
               </h2>
-              <p className="text-[10px] text-text-muted">Authentic Gourmet Delivery in Kigali</p>
+              <p className="text-xs text-text-muted">
+                {isForgot 
+                  ? 'We will send you a reset link' 
+                  : isRegister 
+                  ? 'Create your account for Kigali fast gourmet delivery' 
+                  : 'Sign in to track orders and order delicious meals'}
+              </p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white flex items-center justify-center transition-colors"
             aria-label="Close dialog"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab Switcher (Sign In vs Register) */}
-        {!isForgot && (
-          <div className="grid grid-cols-2 p-1 bg-black/40 border border-white/10 rounded-xl text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => { setIsRegister(false); setErrorMsg(''); }}
-              className={`py-1.5 rounded-lg transition-all text-center ${
-                !isRegister 
-                  ? 'bg-primary text-white shadow-sm font-extrabold' 
-                  : 'text-text-muted hover:text-white'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => { setIsRegister(true); setErrorMsg(''); }}
-              className={`py-1.5 rounded-lg transition-all text-center ${
-                isRegister 
-                  ? 'bg-primary text-white shadow-sm font-extrabold' 
-                  : 'text-text-muted hover:text-white'
-              }`}
-            >
-              Create Account
-            </button>
-          </div>
-        )}
-
-        {/* Error / Feedback Banners */}
-        {errorMsg && (
-          <div className="p-2.5 bg-red-950/80 border border-red-500/40 rounded-xl text-[11px] font-semibold text-red-300 flex items-start gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {resetSent && (
-          <div className="p-2.5 bg-emerald-950/80 border border-emerald-500/40 rounded-xl text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Password reset link sent to {email}!</span>
-          </div>
-        )}
-
-        {/* Forgot Password Screen */}
-        {isForgot ? (
-          <form onSubmit={handleResetSubmit} className="space-y-3">
-            <p className="text-xs text-text-muted">
-              Enter your account email and we'll send you a secure link to reset your password.
-            </p>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-text-muted block">Email Address</label>
-              <div className="relative">
-                <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="yourname@domain.com"
-                  required
-                  className="w-full bg-surface-card border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="w-full btn-primary text-xs py-2.5 font-bold">
-              Send Reset Link
-            </button>
-
-            <div className="text-center pt-1">
+        {/* Scrollable Form Body */}
+        <div className="px-6 py-5 overflow-y-auto space-y-4 flex-1">
+          {/* Segmented Tab Switcher */}
+          {!isForgot && (
+            <div className="grid grid-cols-2 p-1 bg-black/40 border border-white/10 rounded-2xl">
               <button
                 type="button"
-                onClick={() => setIsForgot(false)}
-                className="text-xs text-primary font-bold hover:underline"
+                onClick={() => { setIsRegister(false); setErrorMsg(''); }}
+                className={`py-2 rounded-xl text-xs font-extrabold transition-all text-center flex items-center justify-center gap-1.5 ${
+                  !isRegister 
+                    ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-primary/20' 
+                    : 'text-text-muted hover:text-white'
+                }`}
               >
-                ← Back to Sign In
+                <LogIn className="w-3.5 h-3.5" />
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsRegister(true); setErrorMsg(''); }}
+                className={`py-2 rounded-xl text-xs font-extrabold transition-all text-center flex items-center justify-center gap-1.5 ${
+                  isRegister 
+                    ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-primary/20' 
+                    : 'text-text-muted hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Create Account
               </button>
             </div>
-          </form>
-        ) : (
-          <>
-            {/* Google Quick Sign-In */}
-            <button
-              onClick={handleGoogleSignIn}
-              type="button"
-              className="w-full py-2 px-3 rounded-xl bg-white text-gray-900 font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-100 transition-all shadow-sm"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-              </svg>
-              Continue with Google
-            </button>
+          )}
 
-            {/* Divider */}
-            <div className="relative flex items-center justify-center my-0.5">
-              <div className="border-t border-white/10 w-full" />
-              <span className="bg-surface-dark px-2 text-[10px] uppercase font-bold text-text-subdued absolute">
-                {isRegister ? 'or register with email' : 'or with email'}
-              </span>
+          {/* Feedback & Alert Messages */}
+          {errorMsg && (
+            <div className="p-3 bg-red-950/80 border border-red-500/40 rounded-2xl text-xs font-semibold text-red-200 flex items-start gap-2.5 shadow-sm animate-fade-in">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <span className="leading-snug">{errorMsg}</span>
             </div>
+          )}
 
-            {/* Email & Password Form */}
-            <form onSubmit={handleSubmit} className="space-y-2">
-              {isRegister && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-0.5">
-                    <label className="text-[10px] font-bold text-text-muted block">Full Name</label>
-                    <div className="relative">
-                      <User className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                      <input
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
-                        placeholder="e.g. Aline Uwase"
-                        className="w-full bg-surface-card border border-white/10 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
-                      />
-                    </div>
-                  </div>
+          {resetSent && (
+            <div className="p-3 bg-emerald-950/80 border border-emerald-500/40 rounded-2xl text-xs font-semibold text-emerald-200 flex items-center gap-2.5 shadow-sm animate-fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Password reset link sent to <strong>{email}</strong>!</span>
+            </div>
+          )}
 
-                  <div className="space-y-0.5">
-                    <label className="text-[10px] font-bold text-text-muted block">Phone (Rwanda)</label>
-                    <div className="relative">
-                      <Phone className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="0788 123 456"
-                        className="w-full bg-surface-card border border-white/10 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-0.5">
-                <label className="text-[10px] font-bold text-text-muted block">Email Address</label>
+          {/* Forgot Password Flow */}
+          {isForgot ? (
+            <form onSubmit={handleResetSubmit} className="space-y-4 pt-1">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                  Registered Email Address
+                </label>
                 <div className="relative">
-                  <Mail className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="customer@hotpot.com"
+                    placeholder="name@example.com"
                     required
-                    className="w-full bg-surface-card border border-white/10 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                   />
                 </div>
               </div>
 
-              {isRegister ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-0.5">
-                    <label className="text-[10px] font-bold text-text-muted block">Password (min. 6)</label>
-                    <div className="relative">
-                      <Lock className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                        className="w-full bg-surface-card border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-white p-0.5"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      </button>
-                    </div>
-                  </div>
+              <button 
+                type="submit" 
+                className="w-full bg-linear-to-r from-primary to-orange-600 hover:from-primary-hover hover:to-orange-500 text-white text-sm py-3 font-bold rounded-xl shadow-lg shadow-primary/25 transition-all flex items-center justify-center gap-2"
+              >
+                Send Reset Link
+              </button>
 
-                  <div className="space-y-0.5">
-                    <label className="text-[10px] font-bold text-text-muted block">Confirm Password</label>
-                    <div className="relative">
-                      <Lock className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                        className="w-full bg-surface-card border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-white p-0.5"
-                        tabIndex={-1}
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      </button>
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsForgot(false)}
+                  className="text-xs text-primary font-bold hover:underline"
+                >
+                  ← Back to Sign In
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {/* Google Sign In Container (when available) */}
+              <div id="google-signin-btn-container" className="w-full flex justify-center empty:hidden"></div>
+
+              {/* Main Auth Form */}
+              <form onSubmit={handleSubmit} className="space-y-3.5">
+                {isRegister && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                        Full Name
+                      </label>
+                      <div className="relative">
+                        <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                        <input
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          required
+                          placeholder="e.g. Marie Claire Uwase"
+                          className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        />
+                      </div>
                     </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                        Phone Number (Rwanda)
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="0788 123 456"
+                          className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="customer@hotpot.com"
+                      required
+                      className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                    />
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-0.5">
+
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold text-text-muted block">Password</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsForgot(true)}
-                      className="text-[10px] text-amber-400 hover:underline"
-                    >
-                      Forgot password?
-                    </button>
+                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                      {isRegister ? 'Password (min. 6 chars)' : 'Password'}
+                    </label>
+                    {!isRegister && (
+                      <button
+                        type="button"
+                        onClick={() => setIsForgot(true)}
+                        className="text-xs text-amber-400 hover:text-amber-300 font-semibold transition-colors"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
                   </div>
                   <div className="relative">
-                    <Lock className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="w-full bg-surface-card border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-text-main focus:outline-none focus:border-primary transition-all"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-white p-0.5"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-white p-1"
                       tabIndex={-1}
+                      aria-label="Toggle password visibility"
                     >
-                      {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {isRegister && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-white p-1"
+                        tabIndex={-1}
+                        aria-label="Toggle confirm password visibility"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {confirmPassword && password !== confirmPassword && (
+                      <p className="text-xs text-red-400 font-semibold mt-1">Passwords do not match</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full mt-2 bg-linear-to-r from-primary to-orange-600 hover:from-primary-hover hover:to-orange-500 text-white font-extrabold text-sm py-3 px-4 rounded-xl shadow-lg shadow-primary/25 transition-all transform active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>{isRegister ? 'Creating your account...' : 'Signing you in...'}</span>
+                    </span>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      <span>{isRegister ? 'Create HotPot Account' : 'Sign In to HotPot'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Quick Demo Credentials Assistant */}
+              {!isRegister && (
+                <div className="pt-2 border-t border-white/5 space-y-1.5">
+                  <div className="text-[11px] font-bold text-text-muted flex items-center justify-between">
+                    <span>⚡ Quick Demo Logins:</span>
+                    <span className="text-[10px] text-text-subdued">Click to autofill</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickFill('customer@hotpot.com', 'customer123')}
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-amber-300 font-medium transition-colors"
+                    >
+                      👤 Customer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickFill('cooker@hotpot.com', 'cooker123')}
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-emerald-300 font-medium transition-colors"
+                    >
+                      👨‍🍳 Cooker
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickFill('admin@hotpot.com', 'admin123')}
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-purple-300 font-medium transition-colors"
+                    >
+                      👑 Admin
                     </button>
                   </div>
                 </div>
               )}
 
-              {isRegister && confirmPassword && password !== confirmPassword && (
-                <p className="text-[10px] text-red-400 font-semibold">Passwords do not match</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full btn-primary text-xs py-2 font-bold shadow-md flex items-center justify-center gap-1.5 mt-2"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    {isRegister ? 'Creating Account...' : 'Signing In...'}
-                  </span>
+              {/* Bottom Switcher */}
+              <div className="text-center text-xs text-text-muted pt-2 border-t border-white/5">
+                {isRegister ? (
+                  <div>
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setIsRegister(false); setErrorMsg(''); }}
+                      className="text-primary font-bold hover:underline"
+                    >
+                      Sign In
+                    </button>
+                  </div>
                 ) : (
-                  <>
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>{isRegister ? 'Create HotPot Account' : 'Sign In to HotPot'}</span>
-                  </>
+                  <div>
+                    Don't have an account yet?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setIsRegister(true); setErrorMsg(''); }}
+                      className="text-primary font-bold hover:underline"
+                    >
+                      Create one now
+                    </button>
+                  </div>
                 )}
-              </button>
-            </form>
-
-            {/* Bottom helper text */}
-            <div className="text-center text-[11px] text-text-muted pt-1 border-t border-white/10">
-              {isRegister ? (
-                <div>
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setIsRegister(false); setErrorMsg(''); }}
-                    className="text-primary font-bold hover:underline"
-                  >
-                    Sign In
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  Don't have an account yet?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setIsRegister(true); setErrorMsg(''); }}
-                    className="text-primary font-bold hover:underline"
-                  >
-                    Create Account
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

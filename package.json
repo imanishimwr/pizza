@@ -12,6 +12,10 @@
   "dependencies": {
     "focus-trap-react": "^12.0.3",
     "framer-motion": "^13.4.0",
+    "globby": "^16.2.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.344.0",
     "puppeteer": "^25.11.0",
@@ -28,6 +32,6 @@
     "@vitejs/plugin-react": "^4.2.1",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4.3.3",
-    "vite": "^5.1.6"
+    "vite": "^8.3.1"
   }
 }

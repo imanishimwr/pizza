@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapPin, Phone, Clock, ChefHat, Bike, CheckCircle2, ShieldCheck, FileText, AlertTriangle, Edit3, XCircle, Star, Heart } from 'lucide-react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { MapPin, Phone, Clock, ChefHat, Bike, CheckCircle2, ShieldCheck, FileText, AlertTriangle, Edit3, XCircle, Star, Heart, Download, ThumbsUp } from 'lucide-react';
 import L from 'leaflet';
 import ReceiptModal from '../../components/customer/ReceiptModal';
 import PostDeliveryFeedbackModal from '../../components/customer/PostDeliveryFeedbackModal';
+import { downloadOrderReceiptPdf } from '../../utils/receiptGenerator';
 
-export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
+export default function LiveTracking({ order, onCancelOrder, onModifyOrder, onUpdateStatus }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const riderMarkerRef = useRef(null);
@@ -16,6 +17,7 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
   const [customNote, setCustomNote] = useState(order?.items?.[0]?.specialNote || '');
   const [riderSpeed, setRiderSpeed] = useState('38 km/h');
   const [riderDistanceRemaining, setRiderDistanceRemaining] = useState('1.8 km');
+  const [isConfirmingDelivery, setIsConfirmingDelivery] = useState(false);
 
   // Time-lock for cancellation (2 minutes = 120s grace window from order creation)
   const orderTimeMs = order?.createdAtTimestamp || Date.now();
@@ -27,14 +29,22 @@ export default function LiveTracking({ order, onCancelOrder, onModifyOrder }) {
   // Exact Hot Pot Kigali Coordinates from Google Maps (-1.97022762, 30.12498964)
   const restaurantCoords = useMemo(() => [-1.97022762, 30.12498964], []);
 
-  // Dynamic Client Delivery Coordinates: real GPS from the scanned order,
-// otherwise the exact GPS embedded in the delivery address
-const deliveryCoords = useMemo(() => {
+  // Dynamic Client Delivery Coordinates based on customer address
+  const deliveryCoords = useMemo(() => {
     if (order?.lat && order?.lng) return [Number(order.lat), Number(order.lng)];
-    const gpsMatch = String(order?.deliveryAddress || order?.address || '').match(/GPS:\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)/i);
-    if (gpsMatch) return [Number(gpsMatch[1]), Number(gpsMatch[2])];
-    return restaurantCoords; // no real location on record; keep map centered on origin
-  }, [order, restaurantCoords]);
+    const addr = String(order?.deliveryAddress || order?.address || '').toLowerCase();
+    if (addr.includes('nyarutarama')) return [-1.9360, 30.0980];
+    if (addr.includes('kiyovu')) return [-1.9536, 30.0605];
+    if (addr.includes('kimihurura')) return [-1.9560, 30.0880];
+    if (addr.includes('kacyiru')) return [-1.9420, 30.0750];
+    if (addr.includes('remera')) return [-1.9580, 30.1150];
+    if (addr.includes('gisozi')) return [-1.9280, 30.0620];
+    if (addr.includes('kicukiro')) return [-1.9800, 30.0950];
+    if (addr.includes('gikondo')) return [-1.9750, 30.0680];
+    if (addr.includes('nyamirambo')) return [-1.9850, 30.0450];
+    if (addr.includes('kanombe')) return [-1.9750, 30.1450];
+    return [-1.9360, 30.0820]; // Default Kigali Delivery Destination
+  }, [order]);
 
   // Reactive step calculation based on order status (5 full steps)
   const currentStep = 
@@ -158,6 +168,21 @@ const deliveryCoords = useMemo(() => {
     setIsEditingNote(false);
   };
 
+  const handleConfirmDelivery = async () => {
+    if (!order || isConfirmingDelivery) return;
+    setIsConfirmingDelivery(true);
+    try {
+      if (onUpdateStatus) {
+        await onUpdateStatus(order.id, 'delivered');
+      }
+      setShowFeedbackModal(true);
+    } catch (e) {
+      console.error('Delivery confirmation error:', e);
+    } finally {
+      setIsConfirmingDelivery(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Cancelled Banner */}
@@ -189,15 +214,14 @@ const deliveryCoords = useMemo(() => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {currentStep === 4 && (
-            <button
-              onClick={() => setShowFeedbackModal(true)}
-              className="btn-primary text-xs bg-emerald-600 hover:bg-emerald-500 border-emerald-400"
-            >
-              <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-              Rate Rider & Tip
-            </button>
-          )}
+          <button
+            onClick={() => downloadOrderReceiptPdf(order)}
+            className="btn-primary text-xs bg-amber-600 hover:bg-amber-500 border-amber-400 font-bold flex items-center gap-1.5"
+            title="Download PDF Receipt"
+          >
+            <Download className="w-3.5 h-3.5 text-white" />
+            Download PDF
+          </button>
 
           <button
             onClick={() => setShowReceipt(true)}
@@ -206,16 +230,86 @@ const deliveryCoords = useMemo(() => {
             <FileText className="w-3.5 h-3.5 text-primary" />
             View Receipt
           </button>
+
+          {currentStep === 4 && (
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              className="btn-primary text-xs bg-emerald-600 hover:bg-emerald-500 border-emerald-400"
+            >
+              <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+              Rate Rider
+            </button>
+          )}
           
           <a
             href="tel:0781122334"
-            className="btn-primary text-xs"
+            className="btn-secondary text-xs"
           >
             <Phone className="w-3.5 h-3.5" />
-            Call Rider (0781122334)
+            Call Rider
           </a>
         </div>
       </div>
+
+      {/* Customer Delivery Confirmation Section (syncs status with kitchen) */}
+      {order?.status !== 'cancelled' && (
+        <div className={`p-5 rounded-2xl border transition-all shadow-xl flex flex-wrap items-center justify-between gap-4 ${
+          order?.status === 'delivered'
+            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
+            : 'bg-linear-to-r from-emerald-950/40 via-surface-card to-surface-card border-emerald-500/40'
+        }`}>
+          <div className="flex items-center gap-3.5">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
+              order?.status === 'delivered' 
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                : 'bg-linear-to-tr from-emerald-500 to-teal-500 text-white shadow-emerald-500/20'
+            }`}>
+              {order?.status === 'delivered' ? (
+                <CheckCircle2 className="w-7 h-7" />
+              ) : (
+                <Bike className="w-6 h-6 animate-bounce" />
+              )}
+            </div>
+            <div>
+              <div className="text-sm font-black text-white flex items-center gap-2">
+                {order?.status === 'delivered' ? '✅ Delivery Confirmed & Completed!' : 'Has your delivery arrived?'}
+                <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase ${
+                  order?.status === 'delivered' 
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                }`}>
+                  {order?.status === 'delivered' ? 'DELIVERED' : 'Awaiting Confirmation'}
+                </span>
+              </div>
+              <p className="text-xs text-text-muted mt-0.5 max-w-xl">
+                {order?.status === 'delivered'
+                  ? 'You confirmed this meal was successfully received. The kitchen dashboard and rider status have been updated to DELIVERED. Murakoze!'
+                  : 'When the courier arrives at your location and hands over your food, click "Confirm Delivery Received" to notify the kitchen that it was received.'}
+              </p>
+            </div>
+          </div>
+
+          {order?.status !== 'delivered' && (
+            <button
+              onClick={handleConfirmDelivery}
+              disabled={isConfirmingDelivery}
+              className="btn-primary text-xs py-3 px-5 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-emerald-400 font-extrabold shadow-xl shadow-emerald-600/30 flex items-center gap-2 cursor-pointer disabled:opacity-60 transition-all transform active:scale-95"
+            >
+              {isConfirmingDelivery ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Updating Kitchen...</span>
+                </span>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Confirm Delivery Received</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Order Grace Window Controls (Cancellation & Modification) */}
       {order?.status !== 'cancelled' && (
@@ -287,11 +381,11 @@ const deliveryCoords = useMemo(() => {
         <div className="lg:col-span-2 h-96 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
           <div ref={mapRef} className="w-full h-full" />
           
-          <div className="absolute top-4 left-4 z-[400] bg-surface-dark/95 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs space-y-1.5 shadow-xl max-w-xs">
+          <div className="absolute top-4 left-4 z-400 bg-surface-dark/95 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs space-y-1.5 shadow-xl max-w-xs">
             <div className="font-bold text-text-main flex items-center justify-between gap-3">
               <span className="flex items-center gap-1.5">
                 <Bike className="w-4 h-4 text-primary animate-bounce" />
-                {order?.riderName || 'Your Rider'}
+                Eric Mugisha (Rider)
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono font-bold">
                 GPS LIVE

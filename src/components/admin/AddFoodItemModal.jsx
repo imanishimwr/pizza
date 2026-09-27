@@ -106,44 +106,36 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(10px)" }}
+      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl rounded-3xl flex flex-col overflow-hidden"
+        className="relative w-full max-w-xl rounded-3xl flex flex-col overflow-hidden bg-[#1A1D24] border border-slate-800 shadow-2xl"
         style={{
           maxHeight: "92vh",
-          background: "linear-gradient(145deg,#1a1625 0%,#16161f 60%,#1c1c24 100%)",
-          border: "1px solid rgba(168,85,247,0.25)",
-          boxShadow: "0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(168,85,247,0.1)",
           animation: "modalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Ambient purple glow */}
+        {/* Ambient gold glow */}
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle,rgba(168,85,247,0.1) 0%,transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle,rgba(249,115,22,0.1) 0%,transparent 70%)" }} />
 
         {/* ─── Header ─── */}
-        <div className="flex items-center justify-between px-6 py-5"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", boxShadow: "0 8px 20px rgba(124,58,237,0.4)" }}>
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg shadow-orange-500/25">
               <UtensilsCrossed className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-base font-extrabold text-white tracking-tight">Add New Food Item</h2>
-              <p className="text-xs mt-0.5" style={{ color: "rgba(196,181,253,0.6)" }}>
+              <p className="text-xs text-slate-400 mt-0.5">
                 Publish to the live Kigali menu
               </p>
             </div>
           </div>
           <button type="button" onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-            style={{ background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-[#1F242D] border border-slate-700/50 text-slate-400 hover:text-white"
           >
             <X className="w-4 h-4" />
           </button>
@@ -156,59 +148,43 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
           {/* Name + Price */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2"
-                style={{ color: "#9ca3af" }}>
-                Dish Name <span style={{ color: "#f87171" }}>*</span>
+              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
+                Dish Name <span className="text-red-400">*</span>
               </label>
               <input
                 ref={firstInputRef}
                 type="text" value={name} required
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Spicy Beef Hotpot"
-                className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 transition-all outline-none"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.09)",
-                }}
-                onFocus={e => e.target.style.borderColor = "#7c3aed"}
-                onBlur={e  => e.target.style.borderColor = "rgba(255,255,255,0.09)"}
+                className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2"
-                style={{ color: "#9ca3af" }}>
-                Price (RWF) <span style={{ color: "#f87171" }}>*</span>
+              <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
+                Price (RWF) <span className="text-red-400">*</span>
               </label>
               <input
                 type="number" value={price} required min="0"
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="16000"
-                className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 transition-all outline-none"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.09)",
-                }}
-                onFocus={e => e.target.style.borderColor = "#7c3aed"}
-                onBlur={e  => e.target.style.borderColor = "rgba(255,255,255,0.09)"}
+                className="w-full rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-slate-500 bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
               />
             </div>
           </div>
 
           {/* Category */}
           <div>
-            <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2"
-              style={{ color: "#9ca3af" }}>
-              <Tag className="w-3 h-3" /> Category
+            <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
+              <Tag className="w-3 h-3 text-orange-400" /> Category
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CATEGORIES.map((cat) => (
                 <button key={cat.value} type="button" onClick={() => setCategory(cat.value)}
-                  className="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left"
-                  style={{
-                    background:  category === cat.value ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.04)",
-                    borderColor: category === cat.value ? "#7c3aed" : "rgba(255,255,255,0.08)",
-                    color:       category === cat.value ? "#c4b5fd" : "#6b7280",
-                  }}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left ${
+                    category === cat.value
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-sm ring-1 ring-amber-500/30"
+                      : "bg-[#1F242D] text-slate-300 hover:text-white border-slate-700/50 hover:border-slate-500"
+                  }`}
                 >
                   {cat.label}
                 </button>
@@ -218,29 +194,21 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
 
           {/* Description */}
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-widest mb-2"
-              style={{ color: "#9ca3af" }}>
+            <label className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
               Description
             </label>
             <textarea
               value={desc} rows={2}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="e.g. Authentic simmering broth packed with fresh meat and aromatic herbs..."
-              className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 resize-none transition-all outline-none"
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.09)",
-              }}
-              onFocus={e => e.target.style.borderColor = "#7c3aed"}
-              onBlur={e  => e.target.style.borderColor = "rgba(255,255,255,0.09)"}
+              className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 resize-none bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
             />
           </div>
 
           {/* Image Upload */}
           <div>
-            <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2"
-              style={{ color: "#9ca3af" }}>
-              <ImageIcon className="w-3 h-3" /> Food Photo
+            <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
+              <ImageIcon className="w-3 h-3 text-orange-400" /> Food Photo
             </label>
             <div className="grid grid-cols-2 gap-3">
               {/* Drop Zone */}
@@ -249,27 +217,26 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
-                className="cursor-pointer rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 py-6 transition-all"
-                style={{
-                  borderColor: dragOver ? "#7c3aed" : "rgba(255,255,255,0.1)",
-                  background:  dragOver ? "rgba(124,58,237,0.08)" : "rgba(255,255,255,0.02)",
-                }}
+                className={`cursor-pointer rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 py-6 transition-all ${
+                  dragOver
+                    ? "border-amber-500 bg-amber-500/10"
+                    : "border-slate-700/60 hover:border-slate-500 bg-[#12141A]"
+                }`}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: "rgba(124,58,237,0.15)" }}>
-                  <Upload className="w-4 h-4 text-purple-400" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-500/20 text-orange-400">
+                  <Upload className="w-4 h-4" />
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-semibold text-white">Click or drag & drop</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "#6b7280" }}>PNG, JPG, WEBP</p>
+                  <p className="text-[10px] mt-0.5 text-slate-500">PNG, JPG, WEBP</p>
                 </div>
                 <input ref={fileInputRef} type="file" accept="image/*"
                   onChange={(e) => applyFile(e.target.files[0])} className="hidden" />
               </div>
 
               {/* Preview */}
-              <div className="rounded-2xl overflow-hidden flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", minHeight: "120px" }}>
+              <div className="rounded-2xl overflow-hidden flex items-center justify-center bg-[#12141A] border border-slate-800"
+                style={{ minHeight: "120px" }}>
                 {imagePreview ? (
                   <div className="relative w-full h-full group">
                     <img src={imagePreview} alt="Preview"
@@ -280,13 +247,12 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
                       className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <X className="w-3 h-3" />
                     </button>
-                    <div className="absolute bottom-0 inset-x-0 text-center text-[10px] text-white py-0.5"
-                      style={{ background: "rgba(0,0,0,0.5)" }}>
+                    <div className="absolute bottom-0 inset-x-0 text-center text-[10px] text-white py-0.5 bg-black/70">
                       ✓ Preview ready
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-1" style={{ color: "#4b5563" }}>
+                  <div className="flex flex-col items-center gap-1 text-slate-600">
                     <ImageIcon className="w-7 h-7 opacity-40" />
                     <span className="text-[10px]">No image</span>
                   </div>
@@ -296,40 +262,37 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
 
             {/* Image URL input (alternative to upload) */}
             <div className="mt-2">
-              <label className="block text-[10px] font-bold uppercase tracking-widest mb-1.5"
-                style={{ color: "#6b7280" }}>Or paste image URL</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest mb-1.5 text-slate-400">
+                Or paste image URL
+              </label>
               <input
                 type="url"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://images.unsplash.com/..."
-                className="w-full rounded-xl px-4 py-2 text-xs text-white placeholder-gray-600 transition-all outline-none"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.09)",
-                }}
-                onFocus={e => e.target.style.borderColor = "#7c3aed"}
-                onBlur={e  => e.target.style.borderColor = "rgba(255,255,255,0.09)"}
+                className="w-full rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
               />
             </div>
           </div>
 
           {/* Spicy Toggle */}
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl border cursor-pointer select-none transition-all"
-            style={{
-              background:  isSpicy ? "rgba(239,68,68,0.07)" : "rgba(255,255,255,0.03)",
-              borderColor: isSpicy ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.07)",
-            }}
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl border cursor-pointer select-none transition-all ${
+              isSpicy
+                ? "bg-red-500/10 border-red-500/40"
+                : "bg-[#1F242D] border-slate-700/50"
+            }`}
             onClick={() => setIsSpicy(!isSpicy)}
           >
-            <div className="relative w-10 h-5 rounded-full transition-all flex-shrink-0"
-              style={{ background: isSpicy ? "#ef4444" : "rgba(255,255,255,0.12)" }}>
-              <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
-                style={{ left: isSpicy ? "22px" : "2px" }} />
+            <div className={`relative w-10 h-5 rounded-full transition-all flex-shrink-0 ${
+              isSpicy ? "bg-red-500" : "bg-slate-700"
+            }`}>
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                isSpicy ? "left-[22px]" : "left-[2px]"
+              }`} />
             </div>
-            <Flame className={`w-4 h-4 transition-colors ${isSpicy ? "text-red-400" : "text-gray-600"}`} />
-            <span className={`text-sm font-semibold transition-colors ${isSpicy ? "text-red-300" : "text-gray-500"}`}>
+            <Flame className={`w-4 h-4 transition-colors ${isSpicy ? "text-red-400" : "text-slate-500"}`} />
+            <span className={`text-sm font-semibold transition-colors ${isSpicy ? "text-red-300" : "text-slate-400"}`}>
               Mark as Spicy Recipe 🌶️
             </span>
           </div>
@@ -338,33 +301,24 @@ export default function AddFoodItemModal({ isOpen, onClose, onSave }) {
 
         {/* ─── Footer ─── */}
         {errorMsg && (
-          <div className="mx-6 mb-0 px-4 py-2.5 rounded-xl text-xs font-medium"
-            style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>
+          <div className="mx-6 mb-0 px-4 py-2.5 rounded-xl text-xs font-medium bg-red-500/15 border border-red-500/30 text-red-300">
             ⚠️ {errorMsg}
           </div>
         )}
-        <div className="flex items-center justify-between gap-3 px-6 py-4"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.25)" }}>
-          <p className="text-xs" style={{ color: "#6b7280" }}>
-            Fields marked <span style={{ color: "#f87171" }}>*</span> are required
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-800 bg-[#12141A]">
+          <p className="text-xs text-slate-400">
+            Fields marked <span className="text-red-400">*</span> are required
           </p>
           <div className="flex gap-2">
             <button type="button" onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all"
-              style={{ borderColor: "rgba(255,255,255,0.1)", color: "#9ca3af", background: "transparent" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold border border-slate-700/50 text-slate-300 hover:text-white bg-[#1F242D] hover:bg-slate-700/50 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit" form="add-food-form"
               disabled={saving || !name.trim() || !price}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
-                boxShadow: saving ? "none" : "0 6px 20px rgba(124,58,237,0.45)",
-              }}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
