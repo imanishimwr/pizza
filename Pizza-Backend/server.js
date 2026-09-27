@@ -436,6 +436,29 @@ app.get('/api/reviews', async (req, res) => {
   }
 });
 
+// Live GPS Telemetry Broadcast from Rider Console
+app.post('/api/orders/:id/location', (req, res) => {
+  const { id } = req.params;
+  const { lat, lng, speed, heading, distanceRemaining, eta } = req.body;
+
+  const payload = {
+    orderId: id,
+    lat: Number(lat),
+    lng: Number(lng),
+    speed: Number(speed) || 0,
+    heading: Number(heading) || 0,
+    distanceRemaining,
+    eta,
+    timestamp: new Date().toISOString()
+  };
+
+  io.to(`order_${id}`).emit('rider_location_broadcast', payload);
+  io.emit('rider_location_broadcast', payload);
+  io.emit('admin_rider_gps_updated', payload);
+
+  res.json({ success: true, telemetry: payload });
+});
+
 // ----------------------------------------------------
 // 7. WebSockets Event Streams
 // ----------------------------------------------------
@@ -446,9 +469,15 @@ io.on('connection', (socket) => {
     socket.join(`order_${orderId}`);
   });
 
-  socket.on('stream_rider_gps', ({ orderId, lat, lng }) => {
-    io.to(`order_${orderId}`).emit('rider_gps_updated', { orderId, lat, lng });
-    io.emit('admin_rider_gps_updated', { orderId, lat, lng });
+  socket.on('stream_rider_gps', ({ orderId, lat, lng, speed, heading, distanceRemaining, eta }) => {
+    const payload = { orderId, lat, lng, speed, heading, distanceRemaining, eta, timestamp: new Date().toISOString() };
+    io.to(`order_${orderId}`).emit('rider_location_broadcast', payload);
+    io.emit('rider_location_broadcast', payload);
+    io.emit('admin_rider_gps_updated', payload);
+  });
+
+  socket.on('rider_location_broadcast', (data) => {
+    io.emit('rider_location_broadcast', data);
   });
 
   socket.on('disconnect', () => {
