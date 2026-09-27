@@ -5,7 +5,7 @@ import {
   Flame, UtensilsCrossed, ShoppingBag, Eye, Phone, MapPin, Check,
   Timer, Layers, BookOpen, AlertTriangle, ShieldCheck, ChevronRight,
   ChevronLeft, X, Bike, SlidersHorizontal, Radio, ArrowLeft, Home, Store,
-  Menu
+  Menu, UserPlus, Plus, Edit3, UserCheck, Hash
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { apiService } from '../../services/apiService';
@@ -191,6 +191,51 @@ export default function KitchenBoard({
     }
   };
 
+  // Manual / Custom Courier Assignment Modal State & Handlers
+  const [manualRiderOrder, setManualRiderOrder] = useState(null);
+  const [manualRiderForm, setManualRiderForm] = useState({
+    name: '',
+    phone: '',
+    plateNumber: '',
+    vehicleType: 'Motorcycle Express',
+    verificationPin: '',
+    shift: 'Kitchen On-Demand'
+  });
+  const [isSubmittingManualRider, setIsSubmittingManualRider] = useState(false);
+
+  const openManualRiderModal = (order) => {
+    setManualRiderOrder(order);
+    setManualRiderForm({
+      name: order.riderName || '',
+      phone: order.riderPhone || '',
+      plateNumber: order.riderPlate || '',
+      vehicleType: order.riderVehicle || 'Motorcycle Express',
+      verificationPin: order.verification_pin || Math.floor(1000 + Math.random() * 9000).toString(),
+      shift: 'Kitchen On-Demand'
+    });
+  };
+
+  const handleAssignManualRider = async (e) => {
+    if (e) e.preventDefault();
+    if (!manualRiderOrder) return;
+    if (!manualRiderForm.name.trim() || !manualRiderForm.phone.trim()) {
+      triggerToast("⚠️ Courier Name and Phone Number are required.");
+      return;
+    }
+    setIsSubmittingManualRider(true);
+    try {
+      const result = await apiService.assignManualRiderToOrder(manualRiderOrder.id, manualRiderForm);
+      if (soundEnabled) notificationService.playChime('order_ready');
+      triggerToast(`🛵 Courier ${manualRiderForm.name} assigned to Order #${manualRiderOrder.id}! Handover PIN: ${result.verificationPin || manualRiderForm.verificationPin}`);
+      setManualRiderOrder(null);
+      await loadRiders();
+    } catch (err) {
+      triggerToast(`⚠️ Failed to assign courier: ${err.message || 'Server error'}`);
+    } finally {
+      setIsSubmittingManualRider(false);
+    }
+  };
+
   // Item checklist toggle
   const toggleCheckItem = (orderId, idx) => {
     const key = `${orderId}-${idx}`;
@@ -359,7 +404,7 @@ export default function KitchenBoard({
     <div className="h-screen w-screen overflow-hidden flex bg-[#0c0d12] text-text-main">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed top-4 right-4 z-[9999] p-3.5 px-4 rounded-xl bg-amber-950/95 border border-amber-500/50 text-white shadow-2xl backdrop-blur-md flex items-center gap-2.5 text-xs font-bold animate-toast-enter">
+        <div className="fixed top-4 right-4 z-9999 p-3.5 px-4 rounded-xl bg-amber-950/95 border border-amber-500/50 text-white shadow-2xl backdrop-blur-md flex items-center gap-2.5 text-xs font-bold animate-toast-enter">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           <span>{toastMsg}</span>
         </div>
@@ -395,7 +440,7 @@ export default function KitchenBoard({
                   setIsMobileDrawerOpen(false);
                   if (onSwitchRole) onSwitchRole('customer');
                 }}
-                className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-white border border-amber-500/40 flex items-center justify-center shrink-0 shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500/50 min-h-[38px] min-w-[38px]"
+                className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-white border border-amber-500/40 flex items-center justify-center shrink-0 shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500/50 min-h-9.5 min-w-9.5"
                 title="Return to Customer Store Menu"
                 aria-label="Home / Return to Store Menu"
               >
@@ -416,7 +461,7 @@ export default function KitchenBoard({
                 setIsMobileDrawerOpen(false);
                 if (onSwitchRole) onSwitchRole('customer');
               }}
-              className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-white border border-amber-500/40 flex items-center justify-center mx-auto shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500/50 min-h-[38px] min-w-[38px]"
+              className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-white border border-amber-500/40 flex items-center justify-center mx-auto shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500/50 min-h-9.5 min-w-9.5"
               title="Return to Customer Store Menu"
               aria-label="Home / Return to Store Menu"
             >
@@ -427,7 +472,7 @@ export default function KitchenBoard({
           {/* Close button for mobile slide-over drawer */}
           <button
             onClick={() => setIsMobileDrawerOpen(false)}
-            className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0 ml-auto"
+            className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center shrink-0 ml-auto"
             aria-label="Close Mobile Navigation"
           >
             <X className="w-5 h-5 text-amber-400" />
@@ -459,7 +504,7 @@ export default function KitchenBoard({
         )}
 
         {/* Scrollable Sidebar Body without internal scrollbars */}
-        <div className="flex-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-2.5 space-y-3.5">
+        <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-2.5 space-y-3.5">
           {/* SECTION A: TOP NAVIGATION LINKS */}
           <div className="space-y-1">
             {!isSidebarCollapsed && (
@@ -474,9 +519,9 @@ export default function KitchenBoard({
                 setActiveTab('kanban');
                 setIsMobileDrawerOpen(false);
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/40 ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-primary/40 ${
                 activeTab === 'kanban'
-                  ? 'bg-gradient-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
+                  ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
                   : 'text-text-muted hover:text-white hover:bg-white/5'
               } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
               title="Live Kanban Dispatch"
@@ -494,9 +539,9 @@ export default function KitchenBoard({
                 setActiveTab('archive');
                 setIsMobileDrawerOpen(false);
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/40 ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-primary/40 ${
                 activeTab === 'archive'
-                  ? 'bg-gradient-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
+                  ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
                   : 'text-text-muted hover:text-white hover:bg-white/5'
               } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
               title="Order History / Recall"
@@ -514,9 +559,9 @@ export default function KitchenBoard({
                 setActiveTab('recipes');
                 setIsMobileDrawerOpen(false);
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/40 ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-primary/40 ${
                 activeTab === 'recipes'
-                  ? 'bg-gradient-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
+                  ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
                   : 'text-text-muted hover:text-white hover:bg-white/5'
               } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
               title="Recipe & Prep Guides"
@@ -531,9 +576,9 @@ export default function KitchenBoard({
                 setActiveTab('station');
                 setIsMobileDrawerOpen(false);
               }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-[44px] focus:outline-none focus:ring-1 focus:ring-primary/40 ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-primary/40 ${
                 activeTab === 'station'
-                  ? 'bg-gradient-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
+                  ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-orange-500/20'
                   : 'text-text-muted hover:text-white hover:bg-white/5'
               } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
               title="Station Item Totals"
@@ -568,7 +613,7 @@ export default function KitchenBoard({
                   <button
                     key={s.id}
                     onClick={() => setActiveStation(s.id)}
-                    className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all text-center border truncate min-h-[44px] flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-amber-400/50 ${
+                    className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all text-center border truncate min-h-11 flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-amber-400/50 ${
                       activeStation === s.id
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-sm ring-1 ring-amber-500/30'
                         : 'bg-surface-card border-white/10 text-text-muted hover:text-white hover:bg-white/5 hover:border-white/20'
@@ -596,7 +641,7 @@ export default function KitchenBoard({
                   <button
                     key={t.id}
                     onClick={() => setOrderTypeFilter(t.id)}
-                    className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all text-center border truncate min-h-[44px] flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-blue-400/50 ${
+                    className={`py-2 px-2 rounded-lg text-[11px] font-bold transition-all text-center border truncate min-h-11 flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-blue-400/50 ${
                       orderTypeFilter === t.id
                         ? 'bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-sm ring-1 ring-blue-500/30'
                         : 'bg-surface-card border-white/10 text-text-muted hover:text-white hover:bg-white/5 hover:border-white/20'
@@ -612,7 +657,7 @@ export default function KitchenBoard({
             <div className="px-1 pt-0.5">
               <button
                 onClick={() => setPriorityOnly(!priorityOnly)}
-                className={`w-full py-2.5 px-3 rounded-lg border text-xs font-bold flex items-center justify-between transition-all min-h-[44px] focus:outline-none focus:ring-1 ${
+                className={`w-full py-2.5 px-3 rounded-lg border text-xs font-bold flex items-center justify-between transition-all min-h-11 focus:outline-none focus:ring-1 ${
                   priorityOnly
                     ? 'bg-red-950/80 border-red-500 text-red-300 shadow-md shadow-red-500/20 ring-1 ring-red-500'
                     : 'bg-surface-card border-white/10 text-text-muted hover:text-white hover:bg-white/5 hover:border-white/20'
@@ -634,7 +679,7 @@ export default function KitchenBoard({
           {/* Audio Alerts Toggle */}
           <button
             onClick={handleToggleSound}
-            className={`w-full flex items-center gap-2 p-2.5 rounded-lg text-xs font-bold border transition-all min-h-[44px] focus:outline-none focus:ring-1 ${
+            className={`w-full flex items-center gap-2 p-2.5 rounded-lg text-xs font-bold border transition-all min-h-11 focus:outline-none focus:ring-1 ${
               soundEnabled
                 ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300 hover:bg-emerald-950'
                 : 'bg-surface-card border-white/10 text-text-muted hover:text-white'
@@ -666,7 +711,7 @@ export default function KitchenBoard({
                 setIsMobileDrawerOpen(false);
                 onSwitchRole('customer');
               }}
-              className={`w-full py-2.5 px-3 rounded-lg bg-surface-card hover:bg-amber-500/10 active:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-text-muted hover:text-amber-300 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm group min-h-[44px] focus:outline-none focus:ring-1 focus:ring-amber-400/50 ${
+              className={`w-full py-2.5 px-3 rounded-lg bg-surface-card hover:bg-amber-500/10 active:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-text-muted hover:text-amber-300 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm group min-h-11 focus:outline-none focus:ring-1 focus:ring-amber-400/50 ${
                 isSidebarCollapsed ? 'md:p-2' : ''
               }`}
               title="Return to Store Menu"
@@ -689,7 +734,7 @@ export default function KitchenBoard({
             {/* Mobile Hamburger Drawer Toggle (screens < 768px) */}
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden p-2 rounded-lg bg-surface-card hover:bg-white/10 border border-white/10 text-amber-400 hover:text-white transition-all min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0 shadow-sm active:scale-95"
+              className="md:hidden p-2 rounded-lg bg-surface-card hover:bg-white/10 border border-white/10 text-amber-400 hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center shrink-0 shadow-sm active:scale-95"
               title="Open Navigation Menu"
               aria-label="Toggle Navigation Drawer"
             >
@@ -699,7 +744,7 @@ export default function KitchenBoard({
             {/* Mobile Quick Home Button */}
             <button
               onClick={() => onSwitchRole && onSwitchRole('customer')}
-              className="md:hidden p-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-white border border-amber-500/40 min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
+              className="md:hidden p-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-white border border-amber-500/40 min-h-11 min-w-11 flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
               title="Return to Customer Store Menu"
               aria-label="Home"
             >
@@ -783,7 +828,7 @@ export default function KitchenBoard({
             {/* Sync Trigger Button */}
             <button
               onClick={handleManualRefresh}
-              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-surface-card hover:bg-white/10 border border-white/10 text-text-main text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 shrink-0"
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-surface-card hover:bg-white/10 border border-white/10 text-text-main text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 shrink-0"
               title="Quick Sync with Neon PostgreSQL"
               aria-label="Sync Database"
             >
@@ -804,7 +849,7 @@ export default function KitchenBoard({
               <div className="md:hidden flex items-center gap-1.5 p-2 bg-surface-card/95 backdrop-blur-md border-b border-white/10 shrink-0 sticky top-0 z-10">
                 <button
                   onClick={() => setMobileColumn('pending')}
-                  className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-[44px] border ${
+                  className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-11 border ${
                     mobileColumn === 'pending'
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-md ring-1 ring-amber-500/40'
                       : 'bg-black/30 border-white/5 text-text-muted hover:text-white'
@@ -818,7 +863,7 @@ export default function KitchenBoard({
                 </button>
                 <button
                   onClick={() => setMobileColumn('preparing')}
-                  className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-[44px] border ${
+                  className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-11 border ${
                     mobileColumn === 'preparing'
                       ? 'bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-md ring-1 ring-blue-500/40'
                       : 'bg-black/30 border-white/5 text-text-muted hover:text-white'
@@ -832,13 +877,13 @@ export default function KitchenBoard({
                 </button>
                 <button
                   onClick={() => setMobileColumn('ready')}
-                  className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-[44px] border ${
+                  className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-11 border ${
                     mobileColumn === 'ready'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/40'
                       : 'bg-black/30 border-white/5 text-text-muted hover:text-white'
                   }`}
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span className="truncate">Ready</span>
                   <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/60 text-white font-bold">
                     {readyOrders.length}
@@ -887,7 +932,7 @@ export default function KitchenBoard({
                             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-black text-amber-400 text-sm">#{order.id}</span>
-                                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[140px]">
+                                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-35">
                                   {order.customerName || 'Customer'}
                                 </span>
                               </div>
@@ -898,7 +943,7 @@ export default function KitchenBoard({
                                 </span>
                                 <button
                                   onClick={() => setSelectedOrder(order)}
-                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
                                   title="View Details"
                                   aria-label="View Details"
                                 >
@@ -926,7 +971,7 @@ export default function KitchenBoard({
                                     <span className="px-2 py-0.5 rounded-lg bg-black text-amber-300 font-mono font-black text-xs border border-amber-500/40 shrink-0 shadow-sm">
                                       {item.qty || 1}x
                                     </span>
-                                    <span className="text-xs sm:text-sm md:text-base font-extrabold text-white leading-tight break-words">
+                                    <span className="text-xs sm:text-sm md:text-base font-extrabold text-white leading-tight wrap-break-word">
                                       {item.name}
                                     </span>
                                   </div>
@@ -939,14 +984,14 @@ export default function KitchenBoard({
                               ))}
                             </div>
 
-                            {/* Full-Width High-Contrast Anchored Action Button (min-h-[44px]) */}
+                            {/* Full-Width High-Contrast Anchored Action Button (min-h-11) */}
                             <button
                               disabled={!!processingMap[order.id]}
                               onClick={() => handleAdvanceStatus(order.id, 'preparing')}
-                              className={`w-full py-3 min-h-[44px] rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
+                              className={`w-full py-3 min-h-11 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
                                 processingMap[order.id]
                                   ? 'bg-amber-900/50 text-amber-300/60 cursor-not-allowed'
-                                  : 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white shadow-orange-600/30 hover:shadow-orange-600/50'
+                                  : 'bg-linear-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white shadow-orange-600/30 hover:shadow-orange-600/50'
                               }`}
                             >
                               {processingMap[order.id] ? (
@@ -1011,7 +1056,7 @@ export default function KitchenBoard({
                             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-black text-blue-400 text-sm">#{order.id}</span>
-                                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[140px]">
+                                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-35">
                                   {order.customerName || 'Customer'}
                                 </span>
                               </div>
@@ -1022,7 +1067,7 @@ export default function KitchenBoard({
                                 </span>
                                 <button
                                   onClick={() => setSelectedOrder(order)}
-                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
                                   title="View Details"
                                   aria-label="View Details"
                                 >
@@ -1041,13 +1086,13 @@ export default function KitchenBoard({
                               </div>
                               <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
                                 <div
-                                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-300"
+                                  className="h-full bg-linear-to-r from-blue-500 to-emerald-500 transition-all duration-300"
                                   style={{ width: `${totalItemsCount > 0 ? (checkedCount / totalItemsCount) * 100 : 0}%` }}
                                 />
                               </div>
                             </div>
 
-                            {/* Interactive Item Checklist with min-h-[44px] touch targets */}
+                            {/* Interactive Item Checklist with min-h-11 touch targets */}
                             <div className="space-y-1.5 bg-black/40 p-2 sm:p-2.5 rounded-xl border border-white/5">
                               {(order.items || []).map((item, idx) => {
                                 const isChecked = checkedItems[`${order.id}-${idx}`];
@@ -1055,7 +1100,7 @@ export default function KitchenBoard({
                                   <div
                                     key={idx}
                                     onClick={() => toggleCheckItem(order.id, idx)}
-                                    className={`text-xs sm:text-sm p-2.5 min-h-[44px] rounded-xl flex items-center justify-between cursor-pointer transition-all ${
+                                    className={`text-xs sm:text-sm p-2.5 min-h-11 rounded-xl flex items-center justify-between cursor-pointer transition-all ${
                                       isChecked
                                         ? 'line-through text-emerald-400/70 bg-emerald-950/40 border border-emerald-500/20'
                                         : 'text-text-main hover:bg-white/5 border border-transparent'
@@ -1070,7 +1115,7 @@ export default function KitchenBoard({
                                       <span className="px-2 py-0.5 rounded-md bg-black text-blue-300 font-mono font-black text-xs border border-blue-500/40 shrink-0">
                                         {item.qty || 1}x
                                       </span>
-                                      <span className="font-extrabold text-white text-xs sm:text-sm md:text-base leading-tight break-words">
+                                      <span className="font-extrabold text-white text-xs sm:text-sm md:text-base leading-tight wrap-break-word">
                                         {item.name}
                                       </span>
                                     </div>
@@ -1084,14 +1129,14 @@ export default function KitchenBoard({
                               })}
                             </div>
 
-                            {/* Full-Width High-Contrast Anchored Action Button (min-h-[44px]) */}
+                            {/* Full-Width High-Contrast Anchored Action Button (min-h-11) */}
                             <button
                               disabled={!!processingMap[order.id]}
                               onClick={() => handleAdvanceStatus(order.id, 'ready')}
-                              className={`w-full py-3 min-h-[44px] rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
+                              className={`w-full py-3 min-h-11 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
                                 processingMap[order.id]
                                   ? 'bg-emerald-900/50 text-emerald-300/60 cursor-not-allowed'
-                                  : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white shadow-emerald-600/30 hover:shadow-emerald-600/50'
+                                  : 'bg-linear-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white shadow-emerald-600/30 hover:shadow-emerald-600/50'
                               }`}
                             >
                               {processingMap[order.id] ? (
@@ -1171,7 +1216,7 @@ export default function KitchenBoard({
                             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-black text-emerald-400 text-sm">#{order.id}</span>
-                                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[140px]">
+                                <span className="text-xs sm:text-sm font-bold text-white truncate max-w-35">
                                   {order.customerName || 'Customer'}
                                 </span>
                               </div>
@@ -1190,7 +1235,7 @@ export default function KitchenBoard({
                                 )}
                                 <button
                                   onClick={() => setSelectedOrder(order)}
-                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
                                   title="View Details"
                                   aria-label="View Details"
                                 >
@@ -1213,7 +1258,7 @@ export default function KitchenBoard({
                                     <span className="font-mono font-black text-emerald-400 text-xs shrink-0">
                                       {item.qty || 1}x
                                     </span>
-                                    <span className="font-extrabold text-white text-xs sm:text-sm md:text-base leading-tight break-words">{item.name}</span>
+                                    <span className="font-extrabold text-white text-xs sm:text-sm md:text-base leading-tight wrap-break-word">{item.name}</span>
                                   </span>
                                   <span className="text-[10px] text-emerald-400 font-bold shrink-0">✓ Packed</span>
                                 </div>
@@ -1233,7 +1278,7 @@ export default function KitchenBoard({
 
                             {/* Handover Flow: Courier Assignment vs Handover PIN */}
                             {!isAssigned ? (
-                              <div className="space-y-2 bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
+                              <div className="space-y-2.5 bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                                   <span>Assign / Handover to Courier:</span>
                                   <span className="text-emerald-400 font-mono text-[10px]">
@@ -1241,66 +1286,86 @@ export default function KitchenBoard({
                                   </span>
                                 </label>
 
-                                {availableRiders.length === 0 ? (
-                                  <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs text-center font-semibold">
-                                    ⚠️ All riders are currently busy or off-duty.
+                                {availableRiders.length > 0 && (
+                                  <div className="space-y-1.5">
+                                    <select
+                                      value={selectedRiderId}
+                                      onChange={(e) => setSelectedRiderMap(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                      className="w-full bg-[#12141A] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500"
+                                    >
+                                      {availableRiders.map(r => (
+                                        <option key={r.id} value={r.id}>
+                                          🛵 {r.name} ({r.plateNumber || 'Moto'}) • ON DUTY
+                                        </option>
+                                      ))}
+                                    </select>
+
+                                    <button
+                                      disabled={!!assigningMap[order.id]}
+                                      onClick={() => handleAssignRiderToOrder(order.id, selectedRiderId)}
+                                      className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all min-h-11 bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/20 active:scale-95"
+                                    >
+                                      {assigningMap[order.id] ? (
+                                        <>
+                                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                          <span>Dispatching Courier...</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Bike className="w-4 h-4" />
+                                          <span>Assign Selected Courier</span>
+                                        </>
+                                      )}
+                                    </button>
                                   </div>
-                                ) : (
-                                  <select
-                                    value={selectedRiderId}
-                                    onChange={(e) => setSelectedRiderMap(prev => ({ ...prev, [order.id]: e.target.value }))}
-                                    className="w-full bg-[#12141A] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500"
-                                  >
-                                    {availableRiders.map(r => (
-                                      <option key={r.id} value={r.id}>
-                                        🛵 {r.name} ({r.plateNumber || 'Moto'}) • ON DUTY
-                                      </option>
-                                    ))}
-                                  </select>
                                 )}
 
+                                {availableRiders.length === 0 && (
+                                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center font-medium">
+                                    ⚠️ No active fleet couriers available.
+                                  </div>
+                                )}
+
+                                {/* Manual Courier Entry Option */}
                                 <button
-                                  disabled={availableRiders.length === 0 || !!assigningMap[order.id]}
-                                  onClick={() => handleAssignRiderToOrder(order.id, selectedRiderId)}
-                                  className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all min-h-[44px] ${
-                                    availableRiders.length === 0
-                                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                                      : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/20 active:scale-95'
-                                  }`}
+                                  onClick={() => openManualRiderModal(order)}
+                                  className="w-full py-2 px-3 rounded-xl bg-surface-card hover:bg-white/10 border border-white/15 text-amber-400 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                                  title="Add or assign a specific courier for this order"
                                 >
-                                  {assigningMap[order.id] ? (
-                                    <>
-                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                      <span>Dispatching Courier...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Bike className="w-4 h-4" />
-                                      <span>Handover Order to Courier</span>
-                                    </>
-                                  )}
+                                  <UserPlus className="w-4 h-4" />
+                                  <span>➕ Add / Assign Custom Courier</span>
                                 </button>
                               </div>
                             ) : (
                               <div className="space-y-2 bg-[#1A1D24] p-3 rounded-xl border border-amber-500/40">
-                                {/* Assigned Courier Badge */}
+                                {/* Assigned Courier Badge with Reassign trigger */}
                                 <div className="flex items-center justify-between text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-xs">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
                                       🛵
                                     </div>
-                                    <div>
-                                      <div className="font-bold text-white text-xs">{assignedRider.name}</div>
-                                      <div className="text-[10px] text-slate-400 font-mono">{assignedRider.phone || assignedRider.plateNumber}</div>
+                                    <div className="min-w-0">
+                                      <div className="font-bold text-white text-xs truncate">{assignedRider.name}</div>
+                                      <div className="text-[10px] text-slate-400 font-mono truncate">{assignedRider.phone || assignedRider.plateNumber}</div>
                                     </div>
                                   </div>
-                                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold border border-blue-500/40">
-                                    Assigned
-                                  </span>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={() => openManualRiderModal(order)}
+                                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-amber-400 text-[10px] font-bold border border-white/10 flex items-center gap-1 transition-all"
+                                      title="Edit or Reassign Courier Info"
+                                    >
+                                      <Edit3 className="w-3 h-3" />
+                                      <span>Edit</span>
+                                    </button>
+                                    <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold border border-blue-500/40">
+                                      Assigned
+                                    </span>
+                                  </div>
                                 </div>
 
                                 {/* 4-Digit Verification PIN Strip */}
-                                <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-emerald-500/15 border border-amber-500/40 flex items-center justify-between">
+                                <div className="p-2.5 rounded-xl bg-linear-to-r from-amber-500/15 via-orange-500/15 to-emerald-500/15 border border-amber-500/40 flex items-center justify-between">
                                   <div className="space-y-0.5">
                                     <span className="text-[10px] uppercase font-bold text-amber-300 tracking-wider block">
                                       Pickup Verification PIN
@@ -1316,10 +1381,10 @@ export default function KitchenBoard({
                                 <button
                                   disabled={!!processingMap[order.id]}
                                   onClick={() => handleAdvanceStatus(order.id, 'delivery')}
-                                  className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all min-h-[44px] ${
+                                  className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all min-h-11 ${
                                     processingMap[order.id]
                                       ? 'bg-blue-900/50 text-blue-300/60 cursor-not-allowed'
-                                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-600/30 active:scale-95'
+                                      : 'bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-600/30 active:scale-95'
                                   }`}
                                 >
                                   {processingMap[order.id] ? (
@@ -1388,7 +1453,7 @@ export default function KitchenBoard({
 
                         <button
                           onClick={() => setSelectedOrder(order)}
-                          className="px-3.5 py-2 rounded-xl bg-surface-card hover:bg-white/10 border border-white/10 text-xs font-bold text-white flex items-center justify-center gap-1.5 self-start md:self-auto min-h-[44px] transition-all"
+                          className="px-3.5 py-2 rounded-xl bg-surface-card hover:bg-white/10 border border-white/10 text-xs font-bold text-white flex items-center justify-center gap-1.5 self-start md:self-auto min-h-11 transition-all"
                         >
                           <Eye className="w-4 h-4 text-amber-400" />
                           <span>Inspect</span>
@@ -1525,7 +1590,7 @@ export default function KitchenBoard({
               </div>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="w-10 h-10 min-h-[44px] min-w-[44px] rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors"
+                className="w-10 h-10 min-h-11 min-w-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors"
                 title="Close Modal"
                 aria-label="Close"
               >
@@ -1575,11 +1640,171 @@ export default function KitchenBoard({
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center"
+                className="w-full sm:w-auto min-h-11 px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center"
               >
                 Close Inspector
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* 5. MANUAL / CUSTOM COURIER REGISTRATION & ASSIGN MODAL     */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {manualRiderOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-lg rounded-2xl bg-surface-card border border-amber-500/50 shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center font-black shrink-0">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-base">Assign Courier Manually</h3>
+                  <p className="text-xs text-amber-400 font-mono">Order #{manualRiderOrder.id} • {manualRiderOrder.customerName || 'Customer'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setManualRiderOrder(null)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors"
+                title="Close Modal"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Explanatory Info Card */}
+            <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                The courier details entered below will be sent in real-time to the client so they can see the exact person delivering their order with direct phone contact.
+              </p>
+            </div>
+
+            {/* Courier Assignment Form */}
+            <form onSubmit={handleAssignManualRider} className="space-y-3.5">
+              {/* Rider Full Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                  <ChefHat className="w-3.5 h-3.5 text-amber-400" />
+                  Courier Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={manualRiderForm.name}
+                  onChange={(e) => setManualRiderForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. Jean Paul Nkurunziza"
+                  className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-text-subdued focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              {/* Rider Phone Number */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-amber-400" />
+                  Courier Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={manualRiderForm.phone}
+                  onChange={(e) => setManualRiderForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="e.g. +250 788 123 456"
+                  className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-text-subdued focus:outline-none focus:border-amber-500 transition-colors font-mono"
+                />
+              </div>
+
+              {/* Plate Number & Vehicle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                    <Bike className="w-3.5 h-3.5 text-amber-400" />
+                    Plate / Moto Number
+                  </label>
+                  <input
+                    type="text"
+                    value={manualRiderForm.plateNumber}
+                    onChange={(e) => setManualRiderForm(prev => ({ ...prev, plateNumber: e.target.value }))}
+                    placeholder="e.g. RAE 492 K"
+                    className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-text-subdued focus:outline-none focus:border-amber-500 transition-colors uppercase font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                    <Bike className="w-3.5 h-3.5 text-amber-400" />
+                    Vehicle Type
+                  </label>
+                  <select
+                    value={manualRiderForm.vehicleType}
+                    onChange={(e) => setManualRiderForm(prev => ({ ...prev, vehicleType: e.target.value }))}
+                    className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                  >
+                    <option value="Motorcycle Express">🛵 Motorcycle Express</option>
+                    <option value="Bicycle Courier">🚲 Bicycle Courier</option>
+                    <option value="Car / Van Delivery">🚗 Car / Van Delivery</option>
+                    <option value="HotPot Foot Runner">🏃 Foot Runner</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 4-Digit Pickup Verification PIN */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 text-amber-400" />
+                    Pickup Verification PIN (4 Digits)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setManualRiderForm(prev => ({ ...prev, verificationPin: Math.floor(1000 + Math.random() * 9000).toString() }))}
+                    className="text-[10px] text-amber-400 hover:underline"
+                  >
+                    Generate New PIN
+                  </button>
+                </label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  value={manualRiderForm.verificationPin}
+                  onChange={(e) => setManualRiderForm(prev => ({ ...prev, verificationPin: e.target.value.replace(/[^0-9]/g, '').slice(0, 4) }))}
+                  placeholder="e.g. 4829"
+                  className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-amber-300 font-mono font-bold tracking-widest text-center focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              {/* Form Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setManualRiderOrder(null)}
+                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-text-muted hover:text-white transition-colors min-h-11"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingManualRider}
+                  className="px-6 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/25 active:scale-95 transition-all min-h-11 disabled:opacity-60"
+                >
+                  {isSubmittingManualRider ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Assigning Courier...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      <span>Assign Courier & Notify Client 🛵</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

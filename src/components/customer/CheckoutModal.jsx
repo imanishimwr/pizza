@@ -1,182 +1,342 @@
-import React, { useState } from 'react';
-import { X, MapPin, Phone, CreditCard, Smartphone, DollarSign, CheckCircle2, ShieldCheck, AlertCircle, User } from 'lucide-react';
-import { getDeviceLocation, distanceKmBetween } from '../../services/gpsService';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  X,
+  MapPin,
+  Phone,
+  CreditCard,
+  Smartphone,
+  DollarSign,
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle,
+  User,
+  Loader2
+} from 'lucide-react';
 
-// Exact Hot Pot Kigali Restaurant origin (Google Maps: -1.97022762, 30.12498964)
-const RESTAURANT_COORDS = { lat: -1.97022762, lng: 30.12498964 };
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])'
+].join(', ');
 
-export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPlaced }) {
-  if (!isOpen || !checkoutData) return null;
+const KIGALI_AREAS = [
+  { name: 'Nyarutarama', distKm: 3.5, estMin: 18 },
+  { name: 'Kimironko', distKm: 5.2, estMin: 22 },
+  { name: 'Kacyiru', distKm: 4.1, estMin: 20 },
+  { name: 'Remera', distKm: 4.8, estMin: 21 },
+  { name: 'Kiyovu (CBD)', distKm: 6.5, estMin: 28 },
+  { name: 'Gikondo', distKm: 7.1, estMin: 30 },
+  { name: 'Kanombe', distKm: 9.4, estMin: 35 },
+  { name: 'Nyamirambo', distKm: 8.3, estMin: 32 }
+];
 
-  const [detectedPlace, setDetectedPlace] = useState(''); // real city/province from the device GPS reverse-address
-  // Prefill from the real location saved at login (from the post-login location scan)
-  const [addressDetail, setAddressDetail] = useState(() => {
-    try {
-      const saved = localStorage.getItem('hotpot_user_v1');
-      const u = saved ? JSON.parse(saved) : null;
-      return u?.location || '';
-    } catch { return ''; }
+const PAYMENT_LABELS = {
+  momo: 'MTN Mobile Money',
+  airtel: 'Airtel Money',
+  card: 'Visa / Mastercard',
+  cash: 'Cash on Delivery'
+};
+
+const rwf = (value) => Number(value || 0).toLocaleString();
+
+const validatePhone = (num) => /^(078|079|072|073)\d{7}$/.test(String(num || '').replace(/\s+/g, ''));
+
+function useOverlayA11y(isOpen, onClose) {
+  const panelRef = useRef(null);
+  const closeRef = useRef(onClose);
+
+  useEffect(() => {
+    closeRef.current = onClose;
   });
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const panel = panelRef.current;
+    const first = panel ? panel.querySelector(FOCUSABLE_SELECTOR) : null;
+    if (first instanceof HTMLElement) first.focus();
+    else if (panel instanceof HTMLElement) panel.focus();
+    return () => {
+      if (trigger && document.contains(trigger)) trigger.focus();
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (typeof closeRef.current === 'function') closeRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const nodes = Array.from(panel.querySelectorAll(FOCUSABLE_SELECTOR));
+      if (nodes.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || active === panel || !panel.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !panel.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen]);
+
+  return panelRef;
+}
+
+/**
+ * `onOrderPlaced(draft)` is async and REJECTS when the server refuses the
+ * order. This modal awaits it, keeps itself open on failure and shows the real
+ * message, and only closes once the order genuinely exists.
+ */
+export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPlaced, busy = false, user }) {
+  const open = Boolean(isOpen) && Boolean(checkoutData);
+
+  const [selectedKigaliArea, setSelectedKigaliArea] = useState('');
+  const [addressDetail, setAddressDetail] = useState('');
+  const [notes, setNotes] = useState('');
+  const [coords, setCoords] = useState({ lat: null, lng: null });
   const [isScanningGps, setIsScanningGps] = useState(false);
-  const [gpsFix, setGpsFix] = useState(() => {
-    try {
-      const saved = localStorage.getItem('hotpot_user_v1');
-      const u = saved ? JSON.parse(saved) : null;
-      if (u && u.lat != null && u.lng != null) return { lat: Number(u.lat), lng: Number(u.lng) };
-    } catch {}
-    return null;
-  }); // { lat, lng } of the exact scanned device location
-  const [customerName, setCustomerName] = useState(() => {
-    try {
-      const saved = localStorage.getItem('hotpot_user_v1');
-      const u = saved ? JSON.parse(saved) : null;
-      return u?.name || '';
-    } catch { return ''; }
-  });
+  const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('momo'); // momo | airtel | card | cash
-  const [momoNumber, setMomoNumber] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('momo');
+  const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleScanCurrentLocation = async () => {
+  const panelRef = useOverlayA11y(open, onClose);
+  const geoRequestId = useRef(0);
+  const isBusy = submitting || Boolean(busy);
+  const busyRef = useRef(isBusy);
+
+  useEffect(() => {
+    busyRef.current = isBusy;
+  }, [isBusy]);
+
+  // Seed the form from the signed-in user (never from localStorage directly) and
+  // from the address already on the account.
+  useEffect(() => {
+    if (!open) return;
+    geoRequestId.current += 1;
+    setIsScanningGps(false);
+    setSubmitting(false);
+    setErrorMsg('');
+    setCoords({ lat: Number(user?.lat) || null, lng: Number(user?.lng) || null });
+    setCustomerName((prev) => prev || user?.name || '');
+    setPhone((prev) => prev || user?.phone || '');
+    setAddressDetail((prev) => prev || user?.location || '');
+  }, [open, user]);
+
+  // While a request is in flight, closing would hide the outcome from the user.
+  const requestClose = useCallback(() => {
+    if (busyRef.current) return;
+    if (typeof onClose === 'function') onClose();
+  }, [onClose]);
+
+  const handleScanCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setErrorMsg('Geolocation is not supported by your browser. Please enter your address manually.');
+      return;
+    }
     setIsScanningGps(true);
     setErrorMsg('');
-    try {
-      // Real location straight from the device GPS + live reverse geocoding (no hardcoded districts/areas)
-      const { lat, lng, data, address, accuracy } = await getDeviceLocation();
-      setGpsFix({ lat, lng, accuracy: Math.round(accuracy || 0) });
+    geoRequestId.current += 1;
+    const requestId = geoRequestId.current;
 
-      const a = data?.address || {};
-      const place = a.city || a.town || a.village || a.state || a.province || a.suburb || a.county || a.country || '';
-      setDetectedPlace(place);
-
-      setAddressDetail(address
-        ? `${address} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
-        : `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-    } catch (err) {
-      setErrorMsg(err.message || 'Could not detect your location. Please turn on Location and try again.');
-    } finally {
-      setIsScanningGps(false);
-    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        if (requestId !== geoRequestId.current) return;
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setCoords({ lat, lng });
+        setIsScanningGps(false);
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          );
+          if (!res.ok) throw new Error(`Reverse geocoding failed (${res.status}).`);
+          const data = await res.json();
+          if (requestId !== geoRequestId.current) return;
+          const road = data.address?.road || data.address?.suburb || data.address?.neighbourhood;
+          const city =
+            data.address?.city || data.address?.town || data.address?.village || data.address?.county;
+          const sector = data.address?.suburb || data.address?.city_district || '';
+          const matched = KIGALI_AREAS.find((area) =>
+            String(sector).toLowerCase().includes(area.name.toLowerCase())
+          );
+          if (matched) setSelectedKigaliArea(matched.name);
+          const parts = [road, city].filter(Boolean);
+          setAddressDetail(
+            parts.length > 0
+              ? `${parts.join(', ')} (GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)})`
+              : `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`
+          );
+        } catch {
+          if (requestId !== geoRequestId.current) return;
+          setAddressDetail(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          setErrorMsg('Could not fetch address details for those coordinates. Check the address below.');
+        }
+      },
+      (error) => {
+        if (requestId !== geoRequestId.current) return;
+        setIsScanningGps(false);
+        setErrorMsg(`Location access denied or unavailable (${error?.message || 'permission denied'}). Please enter it manually.`);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
-  // Real distance & ETA computed from the restaurant to the actual scanned device GPS
-  const gpsDistKm = gpsFix ? distanceKmBetween(RESTAURANT_COORDS.lat, RESTAURANT_COORDS.lng, gpsFix.lat, gpsFix.lng) : null;
-  const dynamicEta = gpsDistKm != null
-    ? Math.max(15, Math.round(15 + gpsDistKm * 4))
-    : 20;
-  const deliveryDistanceKm = gpsDistKm != null ? gpsDistKm : 3.8;
-  const deliveryAreaLabel = detectedPlace
-    || (gpsFix ? `GPS ${gpsFix.lat.toFixed(4)}, ${gpsFix.lng.toFixed(4)}` : '');
-  const fullDeliveryAddress = addressDetail;
+  const currentAreaInfo = KIGALI_AREAS.find((a) => a.name === selectedKigaliArea) || KIGALI_AREAS[0];
 
-  const validatePhone = (num) => {
-    const rwandaRegex = /^(078|079|072|073)\d{7}$/;
-    return rwandaRegex.test(num.replace(/\s+/g, ''));
-  };
-
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
+  const handlePlaceOrder = async (event) => {
+    event.preventDefault();
+    if (isBusy) return;
     setErrorMsg('');
 
     if (!customerName.trim()) {
       setErrorMsg('Please enter your name for the order.');
       return;
     }
-
     if (!validatePhone(phone)) {
       setErrorMsg('Use a valid Rwanda phone number (078/079/072/073 + 7 digits).');
       return;
     }
-
     if (!addressDetail.trim()) {
       setErrorMsg('Please enter your delivery address.');
       return;
     }
 
-    setIsSubmitting(true);
-
     const now = new Date();
-    const etaDate = new Date(now.getTime() + dynamicEta * 60000);
-    const etaTimeString = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const cartLines = Array.isArray(checkoutData?.cart) ? checkoutData.cart : [];
+    const fullDeliveryAddress = [addressDetail.trim(), selectedKigaliArea].filter(Boolean).join(', ');
 
-    const newOrder = {
+    const draft = {
       customerName: customerName.trim(),
-      phone: phone,
-      items: checkoutData.cart.map((c) => ({
-        id: c.meal.id,
-        name: c.meal.name,
-        qty: c.quantity,
-        price: c.meal.price,
-        spice: c.selectedSpice || null,
-        broth: c.selectedBroth || null,
-        specialNote: c.specialNote || '',
-      })),
-      totalRWF: checkoutData.grandTotal,
-      status: 'pending',
+      phone: phone.replace(/\s+/g, ''),
       address: fullDeliveryAddress,
-      area: deliveryAreaLabel,
-      distanceKm: deliveryDistanceKm,
-      lat: gpsFix ? gpsFix.lat : null,
-      lng: gpsFix ? gpsFix.lng : null,
-      etaMinutes: dynamicEta,
-      etaTime: etaTimeString,
-      orderTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      paymentMethod:
-        paymentMethod === 'momo'
-          ? 'MTN Mobile Money'
-          : paymentMethod === 'airtel'
-          ? 'Airtel Money'
-          : paymentMethod === 'card'
-          ? 'Visa / Mastercard'
-          : 'Cash on Delivery',
+      area: selectedKigaliArea,
+      lat: coords.lat,
+      lng: coords.lng,
+      status: 'pending',
+      orderType: 'delivery',
+      notes: notes.trim(),
+      totalRWF: Number(checkoutData.grandTotal) || 0,
+      distanceKm: currentAreaInfo.distKm,
+      paymentMethod: PAYMENT_LABELS[paymentMethod] || PAYMENT_LABELS.cash,
       paymentStatus: paymentMethod === 'cash' ? 'PENDING' : 'PAID',
+      orderTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      items: cartLines.map((line) => ({
+        id: line?.meal?.id,
+        mealId: line?.meal?.id,
+        name: line?.meal?.name,
+        qty: Number(line?.quantity) || 1,
+        price: Number(line?.meal?.price) || 0,
+        spice: line?.selectedSpice || null,
+        broth: line?.selectedBroth || null,
+        specialNote: line?.specialNote || ''
+      }))
     };
 
-    // Order is created by App.jsx via onOrderPlaced -> apiService.createOrder
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onOrderPlaced(newOrder);
-      onClose();
-    }, 800);
+    setSubmitting(true);
+    try {
+      // Throws when the server rejects the order — we do not close on failure.
+      await onOrderPlaced(draft);
+      if (typeof onClose === 'function') onClose();
+    } catch (err) {
+      setErrorMsg(err?.message || 'We could not place your order. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
+  if (!open) return null;
+
+  const grandTotal = Number(checkoutData.grandTotal) || 0;
+
   return (
-    <div className="fixed inset-0 z-1000 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-surface-dark border border-white/10 rounded-2xl max-w-xl w-full max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
-        
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md transition-opacity duration-200"
+      onClick={requestClose}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="checkout-modal-title"
+        tabIndex={-1}
+        onClick={(event) => event.stopPropagation()}
+        className="bg-surface-dark border border-white/10 rounded-2xl max-w-xl w-full max-h-[96vh] flex flex-col shadow-2xl overflow-hidden"
+      >
         {/* Header */}
-        <div className="p-3.5 sm:p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+        <div className="p-3.5 sm:p-4 border-b border-white/10 flex items-center justify-between gap-2 shrink-0">
           <div>
-            <h2 className="text-sm sm:text-base font-bold text-text-main flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
+            <h2 id="checkout-modal-title" className="text-sm sm:text-base font-bold text-text-main flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" aria-hidden="true" focusable="false" />
               Complete Your Checkout
             </h2>
-            <p className="text-[11px] text-text-muted">Kigali Express Food & Hotpot Delivery</p>
+            <p className="text-[11px] text-text-muted">Kigali Express Food &amp; Hotpot Delivery</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-text-muted hover:text-white rounded-lg hover:bg-white/5">
-            <X className="w-4 h-4" />
+          <button
+            type="button"
+            onClick={requestClose}
+            aria-label="Close checkout"
+            className="p-1.5 text-text-muted hover:text-white rounded-lg hover:bg-white/5"
+          >
+            <X className="w-4 h-4" aria-hidden="true" focusable="false" />
           </button>
         </div>
 
         {/* Form Body - Scrollable */}
         <form onSubmit={handlePlaceOrder} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
-          {errorMsg && (
-            <div className="p-2.5 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
+          <div role="alert" aria-live="assertive">
+            {errorMsg && (
+              <div className="p-2.5 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-semibold flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" focusable="false" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+          </div>
 
           {/* Customer Name */}
           <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-primary" />
+            <label
+              htmlFor="checkout-name"
+              className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1"
+            >
+              <User className="w-3.5 h-3.5 text-primary" aria-hidden="true" focusable="false" />
               Your Name
             </label>
             <input
+              id="checkout-name"
               type="text"
+              name="name"
+              autoComplete="name"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               required
@@ -185,67 +345,88 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
             />
           </div>
 
-          {/* Delivery Address & GPS Scan */}
+          {/* Delivery Address & Geocoding Sector Selector */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-primary" />
-                Delivery Address
+              <label
+                htmlFor="checkout-address"
+                className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1"
+              >
+                <MapPin className="w-3.5 h-3.5 text-primary" aria-hidden="true" focusable="false" />
+                Kigali Sector &amp; Address
               </label>
 
               <button
                 type="button"
                 onClick={handleScanCurrentLocation}
-                disabled={isScanningGps}
-                className="px-2.5 py-1 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-[11px] font-bold flex items-center gap-1 transition-all"
+                disabled={isScanningGps || isBusy}
+                className="px-2.5 py-1 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-[11px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isScanningGps ? (
                   <>
-                    <span className="w-2.5 h-2.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" aria-hidden="true" focusable="false" />
                     Scanning GPS...
                   </>
                 ) : (
                   <>
-                    <MapPin className="w-3 h-3" />
+                    <MapPin className="w-3 h-3" aria-hidden="true" focusable="false" />
                     Scan GPS Location
                   </>
                 )}
               </button>
             </div>
 
-            {!gpsFix && (
-              <p className="text-[10px] text-text-muted leading-relaxed">
-                For your exact address, turn on Location on this device and tap <span className="text-primary font-bold">Scan GPS Location</span>. Otherwise type your address below.
-              </p>
-            )}
-
-            {gpsFix && (
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded-lg px-2 py-1.5">
-                <MapPin className="w-3 h-3 shrink-0" />
-                <span className="truncate">
-                  Real location locked: {gpsFix.lat.toFixed(4)}, {gpsFix.lng.toFixed(4)}{gpsFix.accuracy ? ` (±${gpsFix.accuracy} m)` : ''}{detectedPlace ? ` • ${detectedPlace}` : ''}
-                </span>
-              </div>
-            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5" role="group" aria-label="Delivery sector">
+              {KIGALI_AREAS.map((area) => (
+                <button
+                  type="button"
+                  key={area.name}
+                  onClick={() => setSelectedKigaliArea(area.name)}
+                  aria-pressed={selectedKigaliArea === area.name}
+                  className={`p-1.5 px-2 rounded-lg border text-left transition-all ${
+                    selectedKigaliArea === area.name
+                      ? 'bg-primary/20 border-primary text-white font-bold'
+                      : 'bg-surface-card border-white/10 text-text-muted hover:border-white/20'
+                  }`}
+                >
+                  <span className="block text-xs truncate">{area.name}</span>
+                  <span className="block text-[9px] text-text-subdued font-mono">
+                    {area.estMin} min &bull; {area.distKm}km
+                  </span>
+                </button>
+              ))}
+            </div>
 
             <input
+              id="checkout-address"
               type="text"
+              name="address"
+              autoComplete="street-address"
               value={addressDetail}
               onChange={(e) => setAddressDetail(e.target.value)}
               required
-              placeholder="Full address (House No., Street, Sector, City / Landmark)"
+              placeholder="House Number, Street / Landmark (e.g. KG 9 Ave, House 42)"
               className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
             />
           </div>
 
           {/* Phone Number */}
           <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
-              <Phone className="w-3.5 h-3.5 text-primary" />
+            <label
+              htmlFor="checkout-phone"
+              className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1"
+            >
+              <Phone className="w-3.5 h-3.5 text-primary" aria-hidden="true" focusable="false" />
               Rwanda Contact Phone
             </label>
             <input
-              type="text"
+              id="checkout-phone"
+              type="tel"
+              name="phone"
+              autoComplete="tel"
+              inputMode="tel"
+              pattern="0(78|79|72|73)[0-9]{7}"
+              title="Enter a Rwanda phone number: 078, 079, 072 or 073 followed by 7 digits."
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               required
@@ -254,138 +435,105 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
             />
           </div>
 
-          {/* Payment Method Selector */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">
-              Payment Method
+          {/* Order Notes */}
+          <div className="space-y-1">
+            <label
+              htmlFor="checkout-notes"
+              className="text-[11px] font-bold uppercase tracking-wider text-text-muted block"
+            >
+              Note for the kitchen (optional)
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              
-              {/* MTN Mobile Money */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('momo')}
-                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
-                  paymentMethod === 'momo'
-                    ? 'bg-amber-500/15 border-amber-500 text-amber-300 shadow-md'
-                    : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
-                }`}
-              >
-                <Smartphone className="w-4 h-4 text-amber-400 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-xs font-bold truncate">MTN MoMo</div>
-                  <div className="text-[9px] opacity-75 truncate">Push Prompt</div>
-                </div>
-              </button>
-
-              {/* Airtel Money */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('airtel')}
-                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
-                  paymentMethod === 'airtel'
-                    ? 'bg-red-500/15 border-red-500 text-red-400 shadow-md'
-                    : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
-                }`}
-              >
-                <Smartphone className="w-4 h-4 text-red-500 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-xs font-bold truncate">Airtel</div>
-                  <div className="text-[9px] opacity-75 truncate">Mobile Wallet</div>
-                </div>
-              </button>
-
-              {/* Credit / Debit Card */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
-                  paymentMethod === 'card'
-                    ? 'bg-blue-500/15 border-blue-500 text-blue-400 shadow-md'
-                    : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
-                }`}
-              >
-                <CreditCard className="w-4 h-4 text-blue-400 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-xs font-bold truncate">Card</div>
-                  <div className="text-[9px] opacity-75 truncate">Visa / MC</div>
-                </div>
-              </button>
-
-              {/* Cash on Delivery */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('cash')}
-                className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
-                  paymentMethod === 'cash'
-                    ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-md'
-                    : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
-                }`}
-              >
-                <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-xs font-bold truncate">Cash</div>
-                  <div className="text-[9px] opacity-75 truncate">On Delivery</div>
-                </div>
-              </button>
-            </div>
+            <textarea
+              id="checkout-notes"
+              name="notes"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. No coriander, extra dipping sauce"
+              className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary resize-none"
+            />
           </div>
 
-          {(paymentMethod === 'momo' || paymentMethod === 'airtel') && (
-            <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
-              <label className="text-[11px] font-bold text-text-muted block">
-                {paymentMethod === 'momo' ? 'MTN MoMo' : 'Airtel'} Phone Number for Payment Request
-              </label>
-              <input
-                type="text"
-                value={momoNumber}
-                onChange={(e) => setMomoNumber(e.target.value)}
-                placeholder="0788000001"
-                className="w-full bg-surface-card border border-white/10 rounded-lg px-3 py-1.5 text-xs text-text-main"
-              />
-              <p className="text-[10px] text-amber-400/80">
-                ⚡ You will receive a USSD prompt on your phone to enter your PIN.
-              </p>
+          {/* Payment Method Selector */}
+          <fieldset className="space-y-1.5">
+            <legend className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-1.5">
+              Payment Method
+            </legend>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { key: 'momo', title: 'MTN MoMo', sub: 'Push Prompt', Icon: Smartphone, active: 'bg-amber-500/15 border-amber-500 text-amber-300 shadow-md' },
+                { key: 'airtel', title: 'Airtel', sub: 'Mobile Wallet', Icon: Smartphone, active: 'bg-red-500/15 border-red-500 text-red-400 shadow-md' },
+                { key: 'card', title: 'Card', sub: 'Visa / MC', Icon: CreditCard, active: 'bg-blue-500/15 border-blue-500 text-blue-400 shadow-md' },
+                { key: 'cash', title: 'Cash', sub: 'On Delivery', Icon: DollarSign, active: 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-md' }
+              ].map(({ key, title, sub, Icon, active }) => (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => setPaymentMethod(key)}
+                  aria-pressed={paymentMethod === key}
+                  className={`p-2 rounded-xl border text-left transition-all flex items-center gap-2 ${
+                    paymentMethod === key
+                      ? active
+                      : 'bg-surface-card border-white/5 text-text-muted hover:border-white/20'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" aria-hidden="true" focusable="false" />
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold truncate">{title}</span>
+                    <span className="block text-[9px] opacity-75 truncate">{sub}</span>
+                  </span>
+                </button>
+              ))}
             </div>
-          )}
+
+            {(paymentMethod === 'momo' || paymentMethod === 'airtel') && (
+              <p className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-[10px] text-amber-400/90">
+                You will receive a USSD prompt on {phone || 'your phone number'} to approve the
+                payment and enter your PIN.
+              </p>
+            )}
+          </fieldset>
 
           {/* Grand Total Bar */}
-          <div className="p-3 rounded-xl bg-surface-card border border-white/10 flex items-center justify-between">
+          <div className="p-3 rounded-xl bg-surface-card border border-white/10 flex items-center justify-between gap-2">
             <div>
               <span className="text-[9px] text-text-subdued uppercase font-bold block">Total Amount Due</span>
               <span className="text-base font-extrabold font-mono text-primary">
-                {(checkoutData.grandTotal ?? 0)?.toLocaleString() ?? ''} RWF
+                {rwf(grandTotal)} RWF
               </span>
             </div>
             <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Secure 256-Bit
+              <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" focusable="false" />
+              Secure Payment
             </span>
           </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose} className="btn-secondary text-xs flex-1 py-2.5">
+            <button
+              type="button"
+              onClick={requestClose}
+              disabled={isBusy}
+              className="btn-secondary text-xs flex-1 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="btn-primary text-xs flex-2 py-2.5 font-bold"
+              disabled={isBusy}
+              className="btn-primary text-xs flex-2 py-2.5 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
+              {isBusy ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Processing...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" focusable="false" />
+                  Placing your order...
                 </span>
               ) : (
-                `Confirm & Pay ${(checkoutData.grandTotal ?? 0)?.toLocaleString() ?? ''} RWF`
+                `Confirm & Pay ${rwf(grandTotal)} RWF`
               )}
             </button>
           </div>
-
         </form>
-
       </div>
     </div>
   );

@@ -1,104 +1,156 @@
-# 🍲 HotPot & Gourmet Pizza Delivery Platform (Kigali)
+# 🍲 HotPot & Gourmet Pizza Delivery (Kigali)
 
-[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38BDF8?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
-
-A state-of-the-art, full-featured web application for **HotPot Delights** — Kigali's premier gourmet hotpot and artisanal pizza delivery service. Built with high-performance modern web practices, responsive design system, multi-role access (Customer, Kitchen Staff, Delivery Rider, Admin), Google Sign-In authentication, real-time order tracking, and receipt generation.
+Ordering, kitchen dispatch, rider handover and administration for **HotPot Delights** — a gourmet
+hotpot and artisanal pizza delivery service in Kigali, Rwanda.
 
 ---
 
-## ✨ Features Breakdown
+## Architecture
 
-### 📱 1. Customer Application & Portal
-- **Interactive Food Catalog**: Browse authentic hotpot broths, spicy meats, fresh vegetables, handcrafted pizzas, sides, and drinks with custom category filters and instant live search.
-- **Google & Multi-Method Authentication**: Fast login/register with simulated Google Auth or email/password credentials.
-- **Automatic Geolocation Modal**: Prompt on login asking customers to allow current GPS location or choose custom Kigali neighborhoods (Nyarutarama, Kimironko, Gacuriro, Kiyovu, Kacyiru).
-- **Smart Customization Drawer**: Add custom broth spiciness levels (Mild, Medium, Szechuan Extra Spicy), extra toppings, and delivery notes.
-- **Dedicated Client Dashboard**:
-  - Personal VIP Tier Badge (*Gold VIP*) & HotPot Loyalty Rewards points balance.
-  - Active in-progress order tracking cards.
-  - Complete order history with digital receipt generator & print support.
-  - Favorite items list with 1-click reordering.
-  - Referral voucher generator (5,000 RWF reward vouchers).
+```
+src/                     React 18 + Vite single-page app
+  App.jsx                Shell: routing, session, polling, realtime, cart
+  services/apiService.js The only place that talks to the API. Throws; never fakes data.
+  services/eventBus.js   Cross-tab event fan-out (BroadcastChannel)
+  data/mockData.js       UI configuration only — no meals, orders or revenue
+Pizza-Backend/
+  server.js              Express 5 + Socket.IO. All authorization lives here.
+  neonClient.js          The only data access layer. All SQL lives here.
+  migrate.js             The single authoritative, idempotent schema.
+  seed.js                Inserts only. Emits no DDL.
+  test/                  Unit tests for the pure data-layer rules
+```
 
-### 👨‍🍳 2. Kitchen Staff Board
-- Real-time kanban board displaying incoming customer orders.
-- Single-click status transitions (`Pending` &rarr; `In Preparation` &rarr; `Ready for Pickup`).
-- Item breakdown & special kitchen notes highlight.
+### Two rules worth knowing
 
-### 🛵 3. Delivery Rider Dashboard
-- Dedicated delivery dispatch portal for riders.
-- Interactive order list with customer delivery location, phone number, and items list.
-- One-click status updates (`Accept Order` &rarr; `Picked Up / Out for Delivery` &rarr; `Mark Delivered`).
-- Earnings and completed deliveries counter.
+1. **Authorization is server-side.** Roles come from the signed JWT. The URL picks which *view*
+   renders; it never grants access. `GET /api/orders` returns only your own orders unless you are
+   staff. Editing a menu item, assigning a rider or reading analytics all require the matching role.
+2. **A failed request is an error, not an empty list.** `apiService` throws on every non-2xx and on
+   network failure. There is no silent `localStorage` fallback and no hardcoded rider fleet, because
+   both previously produced dashboards showing "0 orders, 0 revenue" while looking perfectly healthy.
 
-### 🛡️ 4. Admin Management Portal
-- Comprehensive administrative control panel.
-- **Food Catalog Management**: Add new meals, edit prices, descriptions, images, or delete items.
-- **Order Analytics**: Live revenue charts, total orders count, and status distribution across Kigali.
+### Data conventions
 
----
+| Concern | Rule |
+| --- | --- |
+| Database columns | `snake_case` |
+| API responses | `camelCase` only — mapped in one place, in `neonClient.js` |
+| Money | `NUMERIC` in Postgres, integer RWF in JS. No floating point. |
+| `orders.status` | lowercase, DB `CHECK` enforced: `pending`, `preparing`, `ready`, `delivery`, `delivered`, `cancelled` |
+| Roles | lowercase: `customer`, `kitchen`, `delivery`, `admin` |
 
-## 🛠️ Tech Stack & Architecture
+Order status moves forward only (`pending → preparing → ready → delivery → delivered`),
+`cancelled` is reachable from any non-terminal state, and `delivered`/`cancelled` are terminal.
+The transition is validated in the data layer, so no client can skip the kitchen.
 
-- **Frontend**: React 18 (Hooks, Context/State Management), Vite 5
-- **Styling**: Vanilla CSS Design Tokens, Tailwind CSS, Lucide Icons, Glassmorphic Dark Aesthetics
-- **State & Storage**: Browser `localStorage` persistence with `apiService` & Event Bus pattern
-- **Live Backend API**: Integrated with `https://hotpot-backend-tsae.onrender.com`
+### The handover PIN
 
----
-
-## 🚀 Getting Started Locally
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v16+ recommended)
-- `npm` or `yarn`
-
-### Installation
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/imanishimwr/pizza.git
-   cd pizza
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the Development Server**
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your browser to view the app.
-
-4. **Build for Production**
-   ```bash
-   npm run build
-   ```
+Assigning a rider mints a 6-digit code. The customer and staff can read it; **the rider never can**.
+To collect the order, the rider has to type in the number the customer gave them. A blank code is
+an error, not a bypass, and the correct code is never included in the failure message.
 
 ---
 
-## 🔐 Demo Test Accounts (Quick Role Switcher)
+## Getting started
 
-You can switch between any role instantly using the demo bar at the top of the app:
+Requires Node.js 20 or newer.
 
-| Role | Email | Password | Access Rights |
-| :--- | :--- | :--- | :--- |
-| **Customer** | `user@hotpot.rw` | `user123` | Order hotpot/pizza, track order, manage dashboard & rewards |
-| **Kitchen Staff** | `kitchen@hotpot.rw` | `kitchen123` | View kitchen orders & update preparation statuses |
-| **Delivery Rider**| `rider@hotpot.rw` | `rider123` | Accept deliveries, view map addresses, mark delivered |
-| **Admin** | `admin@hotpot.rw` | `admin123` | Manage menu items, view revenue & order analytics |
+```bash
+# 1. Install
+npm install
+npm --prefix Pizza-Backend install
+
+# 2. Configure
+cp .env.example .env.local
+cp Pizza-Backend/.env.example Pizza-Backend/.env
+# then fill in DATABASE_URL and JWT_SECRET in Pizza-Backend/.env
+
+# 3. Create the schema and the menu, plus any staff accounts
+npm run setup:api
+
+# 4. Run both processes (two terminals)
+npm run server    # API + realtime on :5002
+npm run dev       # app on :3000
+```
+
+Generate a signing key with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+The API **refuses to start** if `JWT_SECRET` is missing or under 32 characters, or if
+`DATABASE_URL` is unset. There is no fallback secret.
+
+### Staff accounts
+
+`npm run seed` creates an admin, kitchen and delivery account from the `ADMIN_*`, `KITCHEN_*` and
+`DELIVERY_*` environment variables. If those are unset it seeds only the menu and says so. There
+are no credentials in this repository.
+
+To promote an existing account, sign in as an admin and use
+`PATCH /api/admin/users/:id/role`. Self-registration can only ever create a `customer` — the `role`
+field is not read from the request body.
+
+### Optional integrations
+
+Both are off by default and the app degrades honestly rather than pretending:
+
+- **Google Sign-In** — set `VITE_GOOGLE_CLIENT_ID` (frontend) and `GOOGLE_CLIENT_ID` (backend).
+  Without it the button is hidden and only email/password works. The backend verifies the ID token
+  against Google; there is no demo fallback that accepts an arbitrary string.
+- **Mobile Money checkout** — `POST /api/payments/momo-checkout` returns `501 Not Implemented`.
+  It never returns a fake `PENDING_USER_PIN` receipt. Wire up an MTN merchant account and call
+  `PATCH /api/orders/:id/payment` from their webhook to enable it.
 
 ---
 
-## 📄 License
+## Commands
 
-Distributed under the MIT License. See `LICENSE` for more information.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server on :3000 |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint, including `react-hooks/rules-of-hooks` |
+| `npm test` | Vitest (API client, receipt generation, auth modal) |
+| `npm run verify` | lint + test + build — the full gate |
+| `npm --prefix Pizza-Backend test` | Data-layer unit tests (no database needed) |
+| `npm --prefix Pizza-Backend run migrate` | Apply the schema (idempotent) |
+| `npm --prefix Pizza-Backend run seed` | Seed the menu and staff accounts |
+
+`react-hooks/rules-of-hooks` is an **error**, not a warning. Several screens used to call `useState`
+after an early `return`, which threw at runtime; that class of bug now fails the build.
 
 ---
 
-Made with ❤️ for HotPot & Pizza Lovers in Kigali.
+## ⚠️ Rotate anything that was ever committed
+
+Earlier revisions of this repository contained live credentials in tracked files. They are removed
+from the working tree but **still exist in git history**, and one of them was a real JWT signing
+key that was duplicated across three source files. If this repository was ever deployed or shared:
+
+1. **Rotate `JWT_SECRET`.** Every previously issued token was signed with the committed value, so
+   they are all forgeable. Setting a new one invalidates them all.
+2. **Rotate every seeded staff password** (`admin@hotpot.rw`, `cooker@hotpot.rw`, `chef@hotpot.rw`)
+   and the `admin@hotpotdelights.rw` account whose bcrypt hash was committed in source.
+3. **Rotate the database credentials** in `DATABASE_URL` and check the Neon access logs.
+4. Purge the secrets from history (`git filter-repo`, or rewrite and force-push) if the repository
+   is or was public.
+
+Rotating the signing key is the single most important step: it is what makes the leaked session
+material worthless.
+
+---
+
+## Notes on the map
+
+Live tracking uses Leaflet with OpenStreetMap tiles. Marker icons are built with `divIcon` and all
+interpolated customer data is escaped — an order's `customerName` is attacker-controlled input and
+was previously injected raw into the popup HTML.
+
+---
+
+## License
+
+UNLICENSED.

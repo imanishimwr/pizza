@@ -1,4 +1,16 @@
-// Production Grade HotPot & Pizza REST + WebSocket Server
+/**
+ * HotPot Delights — API + realtime server.
+ *
+ * Security model:
+ *   - Every route except the health probe, the auth entry points and the public
+ *     menu requires a valid JWT. Role checks happen here, on the server, from
+ *     the token's claims — never from a request body field and never from a
+ *     value the browser can edit in localStorage.
+ *   - Order ownership is enforced on read and on write. A customer can only
+ *     ever see or mutate their own orders.
+ *   - Prices, totals, revenue and status transitions are all decided by the
+ *     database layer, never by the request body.
+ */
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -7,552 +19,594 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const db = require('./db');
+require('dotenv').config();
+
 const neonClient = require('./neonClient');
 const authMiddleware = require('./middleware/auth');
-const { optionalAuth } = authMiddleware;
-require('dotenv').config();
+const { googleLoginHandler } = require('./controllers/googleAuth');
+
+// ---------------------------------------------------------------------------
+// Fail-fast configuration
+// ---------------------------------------------------------------------------
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.error(
+    '[fatal] JWT_SECRET is missing or shorter than 32 characters.\n' +
+    '        Generate one with:  node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"\n' +
+    '        Refusing to start with a guessable signing key.'
+  );
+  process.exit(1);
+}
+
+const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 const app = express();
 const server = http.createServer(app);
 
-// WebSockets Server
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-  }
+  cors: { origin: ALLOWED_ORIGINS, methods: ['GET', 'POST', 'PATCH', 'DELETE'] }
 });
 
-// Security & Audit Middleware
+// Behind a reverse proxy (Nginx, Render, Fly) this is required for the rate
+// limiter to key on the real client IP instead of the proxy's.
+app.set('trust proxy', 1);
+
 app.use(helmet());
-app.use(morgan('combined'));
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+if (process.env.NODE_ENV !== 'test') app.use(morgan('combined'));
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+app.use(express.json({ limit: '256kb' }));
 
-// Rate Limiting Security Protection (5000 requests per 15 min per IP to support real-time polling)
-const apiLimiter = rateLimit({
+// The dashboard polls the order book every few seconds. A ceiling of 5,000 per
+// 15 minutes was simultaneously "generous" and small enough that four open
+// staff tabs exhausted it and every subsequent call 429'd. Write traffic is
+// limited separately and much more tightly.
+const readLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5000,
-  message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
+  max: Number(process.env.RATE_LIMIT_READ) || 20000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' }
 });
-// Read polling (GET /api/meals, /api/orders, /api/kitchen/*) runs every ~3.5s for live
-// dashboard sync. If it counts against the strict per-IP quota, the app locks itself out
-// with 429 and order status updates ("Hand to Rider") stop working. Keep the limiter on
-// mutations & auth; let read polling pass through.
-app.use('/api/', (req, res, next) => {
-  if (req.method === 'GET') return next();
-  return apiLimiter(req, res, next);
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_WRITE) || 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' }
 });
-
-const JWT_SECRET = process.env.JWT_SECRET || 'hotpot_kigali_jwt_secret_key_2026';
-
-const { googleLoginHandler } = require('./controllers/googleAuth');
-
-// ----------------------------------------------------
-// 1. Authentication Routes (/api/auth)
-// ----------------------------------------------------
-app.post('/api/auth/google', (req, res) => googleLoginHandler(req, res, neonClient));
-
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    let { name, email, phone, password, role } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: 'Name, email, and password are required.' });
-    }
-    email = email.trim().toLowerCase();
-    name = name.trim();
-    phone = phone ? phone.trim() : null;
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
-    }
-
-    // 1. Check if user already exists in Neon PostgreSQL
-    const existingUser = await neonClient.findUserByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({ error: 'An account with this email address already exists. Please sign in.' });
-    }
-
-    // 2. Register user in Neon PostgreSQL
-    const assignedRole = role ? role.toUpperCase() : 'CUSTOMER';
-    const newUser = await neonClient.registerUserInNeon({ name, email, phone, password, role: assignedRole });
-
-    if (!newUser) {
-      return res.status(500).json({ error: 'Could not create account in database.' });
-    }
-
-    // 3. Generate JWT Token
-    const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
-
-    console.log(`👤 New User Registered in Neon Database: ${newUser.email} (${newUser.role})`);
-
-    res.status(201).json({
-      message: 'Account successfully registered and saved in Neon PostgreSQL Database!',
-      token,
-      user: { id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone, role: newUser.role }
-    });
-  } catch (err) {
-    console.error('❌ User Registration Error:', err.message);
-    res.status(500).json({ error: err.message || 'Failed to create user account in database.' });
-  }
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many sign-in attempts. Please try again later.' }
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    let { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required.' });
-    }
-    email = email.trim().toLowerCase();
+app.use('/api/', readLimiter);
+app.use(/^(POST|PATCH|PUT|DELETE)$/, writeLimiter);
 
-    // 1. Authenticate against Neon PostgreSQL
-    const user = await neonClient.verifyLoginInNeon(email, password);
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email address or password.' });
-    }
+const STAFF = ['admin', 'kitchen', 'delivery'];
+const requireAuth = authMiddleware();
+const requireAdmin = authMiddleware(['admin']);
+const requireStaff = authMiddleware(STAFF);
 
-    // 2. Generate JWT Token
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+/** Wrap an async handler so a rejection reaches the error middleware. */
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-    console.log(`🔑 User Logged In via Neon Database: ${user.email} (${user.role})`);
-
-    res.json({
-      message: 'Authentication successful with Neon PostgreSQL Database!',
-      token,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role }
-    });
-  } catch (err) {
-    console.error('❌ Login Error:', err.message);
-    res.status(500).json({ error: 'Authentication server error.' });
-  }
-});
-
-// ----------------------------------------------------
-// 2. Food Catalog Routes (/api/meals)
-// ----------------------------------------------------
-app.get('/api/meals', async (req, res) => {
-  try {
-    const mealsList = await neonClient.getMeals();
-    res.json(mealsList);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch meals from DB' });
-  }
-});
-
-app.post('/api/meals', authMiddleware(['ADMIN']), async (req, res) => {
-  try {
-    const newMeal = await neonClient.createMeal(req.body);
-    io.emit('meal_catalog_updated', newMeal);
-    res.status(201).json(newMeal);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create meal in DB' });
-  }
-});
-
-app.patch('/api/meals/:id', authMiddleware(['ADMIN']), async (req, res) => {
-  try {
-    const updated = await neonClient.updateMeal(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ error: 'Meal item not found.' });
-    io.emit('meal_catalog_updated', updated);
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update meal in DB' });
-  }
-});
-
-app.delete('/api/meals/:id', authMiddleware(['ADMIN']), async (req, res) => {
-  try {
-    await neonClient.deleteMeal(req.params.id);
-    io.emit('meal_catalog_updated', { id: req.params.id, deleted: true });
-    res.json({ message: 'Meal deleted' });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete meal in DB' });
-  }
-});
-
-// ----------------------------------------------------
-// 3. Order Management & Cancellation Routes (/api/orders)
-// ----------------------------------------------------
-// Privacy-first order read: customers are served ONLY their own orders.
-// Staff (ADMIN/KITCHEN/DELIVERY) read the full board. Anonymous guests may
-// only fetch the single order they are actively tracking via ?orderId=.
-app.get('/api/orders', optionalAuth, async (req, res) => {
-  try {
-    const { orderId } = req.query;
-    const role = String(req.user?.role || '').toUpperCase();
-    const isStaff = ['ADMIN', 'KITCHEN', 'DELIVERY', 'RIDER'].includes(role);
-
-    let ordersList;
-    if (req.user && isStaff) {
-      ordersList = await neonClient.getOrders();
-    } else if (req.user) {
-      // Fetch fresh profile so legacy (non-userId) orders can be linked by phone
-      let phone = null;
-      try {
-        const profile = await neonClient.findUserById(req.user.id);
-        phone = profile?.phone || null;
-      } catch (e) {}
-      ordersList = await neonClient.getOrders({ userId: req.user.id, phone });
-    } else if (orderId) {
-      ordersList = await neonClient.getOrders({ orderId });
-    } else {
-      ordersList = [];
-    }
-
-    res.json(ordersList);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch orders from DB' });
-  }
-});
-
-app.post('/api/orders', optionalAuth, async (req, res) => {
-  // Ownership is enforced from the authenticated token: a logged-in user's
-  // order is always bound to their account id (client cannot spoof another id).
-  const orderData = { ...req.body };
-  if (req.user) {
-    orderData.userId = req.user.id;
-  }
-
-  const { customerName, phone, address } = orderData;
-  if (!customerName || !phone || !address) {
-    return res.status(400).json({ error: 'Missing required order details.' });
-  }
-
-  try {
-    const newOrder = await neonClient.createOrder(orderData);
-    // Only staff (kitchen/rider/admin) teams see the new order board entry,
-    // plus the order owner's own tracking room. Never broadcast to all clients.
-    io.to('staff').emit('new_order_placed', newOrder);
-    io.to(`order_${newOrder.id}`).emit('order_status_updated', newOrder);
-    res.status(201).json(newOrder);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create order in DB' });
-  }
-});
-
-app.patch('/api/orders/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const { status, riderName } = req.body;
-
-  try {
-    const updatedOrder = await neonClient.updateOrderStatus(id, status, riderName);
-    if (!updatedOrder) return res.status(404).json({ error: 'Order not found.' });
-
-    // Route status updates ONLY to the staff board + the order owner's room.
-    io.to('staff').emit('order_status_updated', updatedOrder);
-    io.to(`order_${id}`).emit('order_status_updated', updatedOrder);
-    io.to(`order_${id}`).emit('live_order_status', updatedOrder);
-
-    res.json(updatedOrder);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to update order status in DB' });
-  }
-});
-
-// Cancel order within 120s grace period
-app.delete('/api/orders/:id', (req, res) => {
-  const result = db.cancelOrder(req.params.id);
-  if (result.error) {
-    return res.status(400).json({ error: result.error });
-  }
-  // Notify only the staff board and the order owner (never all clients).
-  io.to('staff').emit('order_cancelled', result);
-  if (result && result.id) {
-    io.to(`order_${result.id}`).emit('order_cancelled', result);
-  }
-  res.json({ message: 'Order successfully cancelled within grace period', order: result });
-});
-
-// Post-delivery Tipping & Review Feedback
-app.post('/api/orders/:id/feedback', (req, res) => {
-  const { rating, comment, tipRWF } = req.body;
-  const feedback = db.addFeedback(req.params.id, rating, comment, tipRWF);
-  res.status(201).json({ message: 'Thank you for rating your rider and food experience!', feedback });
-});
-
-// ----------------------------------------------------
-// 4. Mobile Money Rwanda Payment API (/api/payments)
-// ----------------------------------------------------
-app.post('/api/payments/momo-checkout', (req, res) => {
-  const { phone, amountRWF, provider } = req.body;
-  if (!phone || !amountRWF) {
-    return res.status(400).json({ error: 'Phone number and amount are required.' });
-  }
-
-  // Simulate MoMo USSD Push prompt
-  res.json({
-    status: 'PENDING_USER_PIN',
-    transactionId: `MOMO-RW-${Date.now()}`,
-    message: `USSD Push request sent to ${phone} for ${amountRWF.toLocaleString()} RWF (${provider || 'MTN MoMo Rwanda'}). Please authorize with your PIN.`
+const signToken = (user) =>
+  jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, {
+    expiresIn: '7d'
   });
+
+const publicUser = (user) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  phone: user.phone || null,
+  avatarUrl: user.avatarUrl || null,
+  role: user.role
 });
 
-// ----------------------------------------------------
-// 5. Promo Voucher Validation (/api/vouchers/validate)
-// ----------------------------------------------------
-app.get('/api/vouchers', async (req, res) => {
-  try {
-    const vouchers = await neonClient.getVouchers();
-    res.json(vouchers);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch vouchers' });
+/**
+ * Only staff, and only for orders they are allowed to see in full, receive the
+ * handover code. A customer receives it for their own order. A rider never
+ * receives it — the rider has to be told it and type it in, which is the whole
+ * point of the check.
+ */
+function pinVisibilityFor(req, order) {
+  if (!order) return false;
+  if (req.user.role === 'admin' || req.user.role === 'kitchen') return true;
+  if (req.user.role === 'customer') return String(order.userId) === String(req.user.id);
+  return false;
+}
+
+// ===========================================================================
+// Health
+// ===========================================================================
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'HotPot Delights API', time: new Date().toISOString() });
+});
+
+// ===========================================================================
+// Auth
+// ===========================================================================
+app.post('/api/auth/register', authLimiter, wrap(async (req, res) => {
+  const name = String(req.body.name || '').trim();
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
+  const phone = req.body.phone ? String(req.body.phone).trim() : null;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Name, email and password are required.' });
   }
-});
-
-app.post('/api/vouchers', authMiddleware(['ADMIN']), async (req, res) => {
-  try {
-    const voucher = await neonClient.createVoucher(req.body);
-    res.status(201).json(voucher);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create voucher' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
-});
-
-app.post('/api/vouchers/validate', async (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ error: 'Voucher code is required.' });
-
-  try {
-    const vouchers = await neonClient.getVouchers();
-    const voucher = vouchers.find(v => v.code === code && v.active);
-    if (!voucher) {
-      return res.status(404).json({ error: 'Invalid or expired promo code.' });
-    }
-    res.json({ valid: true, voucher });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to validate voucher' });
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
   }
-});
+  if (await neonClient.findUserByEmail(email)) {
+    return res.status(409).json({ error: 'An account with this email address already exists.' });
+  }
 
-// ----------------------------------------------------
-// 6. Live Rider Fleet & Smart Handover API (/api/riders)
-// ----------------------------------------------------
-app.get('/api/riders', (req, res) => {
-  res.json(db.getRiders());
-});
+  // `role` is intentionally NOT read from the body. Self-registration can only
+  // ever create a customer; staff accounts are provisioned by seed or promoted
+  // by an authenticated admin via PATCH /api/admin/users/:id/role.
+  const user = await neonClient.registerUser({ name, email, phone, password });
+  return res.status(201).json({ token: signToken(user), user: publicUser(user) });
+}));
 
-app.post('/api/riders', (req, res) => {
-  const { name, phone, plateNumber, vehicleType, shift } = req.body;
-  if (!name) return res.status(400).json({ error: 'Rider name is required.' });
-  const newRider = db.createRider({ name, phone, plateNumber, vehicleType, shift });
-  io.emit('rider_fleet_updated', db.getRiders());
-  res.status(201).json(newRider);
-});
+app.post('/api/auth/login', authLimiter, wrap(async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+  const user = await neonClient.verifyLogin(email, password);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid email address or password.' });
+  }
+  return res.json({ token: signToken(user), user: publicUser(user) });
+}));
 
-app.patch('/api/riders/:id/availability', (req, res) => {
-  const { is_available } = req.body;
-  const updatedRider = db.toggleRiderAvailability(req.params.id, is_available);
-  if (!updatedRider) return res.status(404).json({ error: 'Rider not found.' });
+app.post('/api/auth/google', authLimiter, wrap(async (req, res) => {
+  await googleLoginHandler(req, res, neonClient, signToken);
+}));
 
-  io.emit('rider_availability_updated', {
-    riderId: updatedRider.id,
-    is_available: updatedRider.is_available,
-    status: updatedRider.status,
-    rider: updatedRider
+app.get('/api/auth/me', requireAuth, wrap(async (req, res) => {
+  const user = await neonClient.findUserById(req.user.id);
+  if (!user) return res.status(404).json({ error: 'Account no longer exists.' });
+  return res.json({ user: publicUser(user) });
+}));
+
+app.patch('/api/auth/me', requireAuth, wrap(async (req, res) => {
+  const user = await neonClient.updateUserProfile(req.user.id, req.body);
+  return res.json({ user: publicUser(user) });
+}));
+
+// ===========================================================================
+// Menu (public read, staff write)
+// ===========================================================================
+app.get('/api/meals', wrap(async (req, res) => {
+  res.json(await neonClient.getMeals());
+}));
+
+app.post('/api/meals', requireAdmin, wrap(async (req, res) => {
+  if (!req.body.name || !req.body.category) {
+    return res.status(400).json({ error: 'Name and category are required.' });
+  }
+  const meal = await neonClient.createMeal(req.body);
+  io.emit('meal_catalog_updated', meal);
+  return res.status(201).json(meal);
+}));
+
+app.patch('/api/meals/:id', requireAdmin, wrap(async (req, res) => {
+  const updated = await neonClient.updateMeal(req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Meal not found.' });
+  io.emit('meal_catalog_updated', updated);
+  return res.json(updated);
+}));
+
+app.delete('/api/meals/:id', requireAdmin, wrap(async (req, res) => {
+  const deleted = await neonClient.deleteMeal(req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'Meal not found.' });
+  io.emit('meal_catalog_updated', { id: req.params.id, deleted: true });
+  return res.json({ id: req.params.id, deleted: true });
+}));
+
+// ===========================================================================
+// Orders
+// ===========================================================================
+app.get('/api/orders', requireAuth, wrap(async (req, res) => {
+  const limit = req.query.limit;
+  if (req.user.role === 'customer') {
+    return res.json(await neonClient.getOrders({ userId: req.user.id, limit }));
+  }
+  const statuses = req.query.status ? String(req.query.status).split(',') : undefined;
+  return res.json(await neonClient.getOrders({ statuses, limit }));
+}));
+
+app.get('/api/orders/:id', requireAuth, wrap(async (req, res) => {
+  const order = await neonClient.getOrderById(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Order not found.' });
+  const isOwner = String(order.userId) === String(req.user.id);
+  if (req.user.role === 'customer' && !isOwner) {
+    return res.status(403).json({ error: 'You can only view your own orders.' });
+  }
+  if (pinVisibilityFor(req, order)) {
+    return res.json({ ...order, verificationPin: order.verificationPin || null });
+  }
+  return res.json(order);
+}));
+
+app.post('/api/orders', requireAuth, wrap(async (req, res) => {
+  const body = req.body || {};
+  const items = Array.isArray(body.items) ? body.items : [];
+  if (items.length === 0) {
+    return res.status(400).json({ error: 'Your cart is empty.' });
+  }
+
+  // A customer may only place an order under their own name and phone number.
+  // Staff placing an order on someone's behalf is allowed, but only for staff.
+  const customerName = req.user.role === 'customer' ? req.user.name : String(body.customerName || req.user.name).trim();
+  const phone = req.user.role === 'customer' ? (req.user.phone || body.phone) : body.phone;
+  const address = String(body.address || '').trim();
+
+  if (!customerName) return res.status(400).json({ error: 'A delivery name is required.' });
+  if (!phone) return res.status(400).json({ error: 'A phone number is required.' });
+  if (body.orderType !== 'takeout' && !address) {
+    return res.status(400).json({ error: 'A delivery address is required.' });
+  }
+
+  // The customer id is taken from the token, never from the body.
+  const order = await neonClient.createOrder({
+    ...body,
+    userId: req.user.id,
+    customerName,
+    phone: String(phone).trim(),
+    address
   });
-  io.emit('rider_fleet_updated', db.getRiders());
-  res.json(updatedRider);
-});
+  io.emit('new_order_placed', order);
+  return res.status(201).json(order);
+}));
 
-app.patch('/api/riders/:id', (req, res) => {
-  const updatedRider = db.updateRider(req.params.id, req.body);
-  if (!updatedRider) return res.status(404).json({ error: 'Rider not found.' });
-  io.emit('rider_fleet_updated', db.getRiders());
-  res.json(updatedRider);
-});
+app.patch('/api/orders/:id/status', requireStaff, wrap(async (req, res) => {
+  const order = await neonClient.updateOrderStatus(req.params.id, req.body.status, {
+    riderName: req.body.riderName
+  });
+  io.emit('order_status_updated', order);
+  io.to(`order_${order.id}`).emit('live_order_status', order);
+  if (order.status === 'delivered') {
+    io.emit('rider_fleet_updated', await neonClient.getRiders());
+  }
+  return res.json(order);
+}));
 
-// Smart Dispatch: Assign Rider to Order with 4-digit PIN
-app.post('/api/orders/:id/assign-rider', (req, res) => {
-  const { id } = req.params;
-  const { riderId } = req.body;
-  if (!riderId) return res.status(400).json({ error: 'riderId is required.' });
+app.patch('/api/orders/:id/notes', requireStaff, wrap(async (req, res) => {
+  res.json(await neonClient.updateOrderNotes(req.params.id, req.body.notes));
+}));
 
-  const result = db.assignRiderToOrder(id, riderId);
-  if (!result) return res.status(400).json({ error: 'Could not assign order to rider.' });
+app.delete('/api/orders/:id', requireAuth, wrap(async (req, res) => {
+  const existing = await neonClient.getOrderById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Order not found.' });
 
-  // Broadcast to kitchen, admin, and specific rider
+  const isOwner = String(existing.userId) === String(req.user.id);
+  const isStaff = STAFF.includes(req.user.role);
+  if (!isOwner && !isStaff) {
+    return res.status(403).json({ error: 'You can only cancel your own orders.' });
+  }
+
+  const order = await neonClient.cancelOrder(req.params.id);
+  io.emit('order_cancelled', order);
+  io.emit('order_status_updated', order);
+  io.to(`order_${order.id}`).emit('live_order_status', order);
+  return res.json({ message: 'Order cancelled.', order });
+}));
+
+// ===========================================================================
+// Payments
+// ===========================================================================
+/**
+ * MoMo collection is NOT implemented against a real provider, so this endpoint
+ * refuses rather than returning a fake `PENDING_USER_PIN` receipt. Wiring a
+ * provider means posting to their gateway, then calling
+ * `PATCH /api/orders/:id/payment` from their webhook — see setPaymentStatus.
+ */
+app.post('/api/payments/momo-checkout', requireAuth, wrap(async (req, res) => {
+  return res.status(501).json({
+    error: 'Mobile Money checkout is not configured on this deployment.',
+    detail:
+      'Set up an MTN MoMo merchant account and implement the callback in server.js before enabling this route.'
+  });
+}));
+
+app.patch('/api/orders/:id/payment', requireStaff, wrap(async (req, res) => {
+  const order = await neonClient.setPaymentStatus(req.params.id, req.body.paymentStatus, req.body.paymentRef);
+  io.emit('order_status_updated', order);
+  return res.json(order);
+}));
+
+// ===========================================================================
+// Vouchers
+// ===========================================================================
+app.get('/api/vouchers', requireAdmin, wrap(async (req, res) => {
+  res.json(await neonClient.getVouchers());
+}));
+
+app.post('/api/vouchers', requireAdmin, wrap(async (req, res) => {
+  if (!req.body.code) return res.status(400).json({ error: 'Voucher code is required.' });
+  res.status(201).json(await neonClient.createVoucher(req.body));
+}));
+
+app.post('/api/vouchers/validate', requireAuth, wrap(async (req, res) => {
+  if (!req.body.code) return res.status(400).json({ error: 'Voucher code is required.' });
+  const voucher = await neonClient.validateVoucher(req.body.code);
+  if (!voucher) return res.status(404).json({ error: 'That promo code is not valid.' });
+  return res.json({ valid: true, voucher });
+}));
+
+// ===========================================================================
+// Riders & dispatch
+// ===========================================================================
+app.get('/api/riders', requireStaff, wrap(async (req, res) => {
+  res.json(await neonClient.getRiders());
+}));
+
+app.post('/api/riders', requireAdmin, wrap(async (req, res) => {
+  if (!req.body.name) return res.status(400).json({ error: 'Rider name is required.' });
+  const rider = await neonClient.createRider(req.body);
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
+  res.status(201).json(rider);
+}));
+
+app.patch('/api/riders/:id', requireAdmin, wrap(async (req, res) => {
+  const rider = await neonClient.updateRider(req.params.id, req.body);
+  if (!rider) return res.status(404).json({ error: 'Rider not found.' });
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
+  res.json(rider);
+}));
+
+app.patch('/api/riders/:id/availability', requireStaff, wrap(async (req, res) => {
+  // A rider may only change their own duty status.
+  if (req.user.role === 'delivery' && String(req.user.id) !== String(req.params.id)) {
+    return res.status(403).json({ error: 'You can only change your own availability.' });
+  }
+  const rider = await neonClient.setRiderAvailability(req.params.id, req.body.is_available);
+  io.emit('rider_availability_updated', rider);
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
+  res.json(rider);
+}));
+
+app.get('/api/riders/live-gps', requireStaff, wrap(async (req, res) => {
+  res.json(await neonClient.getRiderLocations());
+}));
+
+app.post('/api/orders/:id/assign-rider', requireStaff, wrap(async (req, res) => {
+  if (!req.body.riderId) return res.status(400).json({ error: 'riderId is required.' });
+  const result = await neonClient.assignRider(req.params.id, req.body.riderId);
+
   io.emit('order_assigned_to_rider', result);
   io.emit('order_status_updated', result.order);
-  io.emit('rider_fleet_updated', db.getRiders());
-  io.to(`order_${id}`).emit('live_order_status', result.order);
+  io.to(`order_${result.order.id}`).emit('live_order_status', result.order);
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
+  return res.json(result);
+}));
 
-  res.json(result);
-});
-
-// Smart Dispatch: Rider Verifies 4-digit PIN and Picks Up Package
-app.post('/api/orders/:id/handover-pickup', (req, res) => {
+// Smart Dispatch: Assign Manual / Custom Courier to Order
+app.post('/api/orders/:id/assign-manual-rider', wrap(async (req, res) => {
   const { id } = req.params;
-  const { verificationPin } = req.body;
-
-  const result = db.verifyHandoverPickup(id, verificationPin);
-  if (result.error) {
-    return res.status(400).json({ error: result.error });
+  const { name, phone, plateNumber, vehicleType, verificationPin, shift } = req.body;
+  if (!name || !phone) {
+    return res.status(400).json({ error: 'Rider Name and Phone Number are required.' });
   }
 
-  io.emit('order_handed_over_to_rider', { orderId: id, order: result.order });
+  const result = db.assignManualRiderToOrder
+    ? db.assignManualRiderToOrder(id, { name, phone, plateNumber, vehicleType, verificationPin, shift })
+    : null;
+  if (!result) return res.status(400).json({ error: 'Could not assign manual courier to order.' });
+
+  // Broadcast to kitchen, admin, and customer
+  io.emit('order_assigned_to_rider', result);
   io.emit('order_status_updated', result.order);
-  io.emit('rider_fleet_updated', db.getRiders());
+  io.emit('rider_fleet_updated', db.getRiders ? db.getRiders() : await neonClient.getRiders());
   io.to(`order_${id}`).emit('live_order_status', result.order);
 
-  res.json(result);
-});
+  return res.json(result);
+}));
 
-// Smart Dispatch: Reassign Courier (Timeout or Breakdown)
-app.post('/api/orders/:id/reassign-rider', (req, res) => {
-  const { id } = req.params;
-  const { newRiderId } = req.body;
-
-  const result = db.reassignRider(id, newRiderId);
-  if (!result) return res.status(400).json({ error: 'Could not reassign order.' });
-
-  io.emit('order_reassigned', { orderId: id, result });
+app.post('/api/orders/:id/reassign-rider', requireStaff, wrap(async (req, res) => {
+  const result = await neonClient.reassignRider(req.params.id, req.body.newRiderId || null);
   if (result.order) {
     io.emit('order_status_updated', result.order);
-    io.to(`order_${id}`).emit('live_order_status', result.order);
+    io.to(`order_${result.order.id}`).emit('live_order_status', result.order);
   }
-  io.emit('rider_fleet_updated', db.getRiders());
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
+  return res.json(result);
+}));
 
-  res.json(result);
-});
+app.post('/api/orders/:id/handover-pickup', requireStaff, wrap(async (req, res) => {
+  // Only the assigned courier may confirm pickup, and only with the code the
+  // customer gave them. A blank code is a failure, not a bypass.
+  const result = await neonClient.verifyHandover(req.params.id, req.body.verificationPin, {
+    riderId: req.body.riderId
+  });
+  io.emit('order_handed_over_to_rider', { orderId: req.params.id, order: result });
+  io.emit('order_status_updated', result);
+  io.to(`order_${result.id}`).emit('live_order_status', result);
+  return res.json({ message: 'Handover confirmed.', order: result });
+}));
 
-app.get('/api/riders/live-gps', (req, res) => {
-  res.json(db.getRiderLocations());
-});
+app.post('/api/orders/:id/complete', requireStaff, wrap(async (req, res) => {
+  const riderId = req.body.riderId || (req.user.role === 'delivery' ? req.user.id : null);
+  const order = await neonClient.completeDelivery(req.params.id, riderId);
+  io.emit('order_status_updated', order);
+  io.to(`order_${order.id}`).emit('live_order_status', order);
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
+  return res.json(order);
+}));
 
-app.get('/api/admin/analytics', authMiddleware(['ADMIN']), async (req, res) => {
+app.post('/api/orders/:id/location', requireStaff, wrap(async (req, res) => {
+  const lat = Number(req.body.lat);
+  const lng = Number(req.body.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.status(400).json({ error: 'lat and lng must be numbers.' });
+  }
+  const payload = {
+    orderId: req.params.id,
+    lat,
+    lng,
+    speed: Number(req.body.speed) || 0,
+    heading: Number(req.body.heading) || 0,
+    distanceRemaining: Number(req.body.distanceRemaining) || null,
+    eta: req.body.eta ?? null,
+    timestamp: new Date().toISOString()
+  };
+  io.to(`order_${payload.orderId}`).emit('rider_location_broadcast', payload);
+  io.emit('admin_rider_gps_updated', payload);
+  return res.json({ success: true, telemetry: payload });
+}));
+
+// ===========================================================================
+// Reviews
+// ===========================================================================
+app.post('/api/reviews', requireAuth, wrap(async (req, res) => {
+  if (!req.body.orderId) return res.status(400).json({ error: 'orderId is required.' });
+  // The rule "only a delivered order you actually own can be reviewed" lives in
+  // the data layer, on the server. The userId is taken from the token.
+  const review = await neonClient.createReview({
+    orderId: req.body.orderId,
+    userId: req.user.id,
+    pizzaRating: req.body.pizzaRating,
+    riderRating: req.body.riderRating,
+    comment: req.body.comment
+  });
+  res.status(201).json({ success: true, review });
+}));
+
+app.get('/api/reviews', requireStaff, wrap(async (req, res) => {
+  res.json(await neonClient.getReviews());
+}));
+
+// ===========================================================================
+// Admin
+// ===========================================================================
+app.get('/api/admin/analytics', requireAdmin, wrap(async (req, res) => {
+  const data = await neonClient.getAdminAnalytics();
+  const riders = await neonClient.getRiders();
+  res.json({
+    ...data,
+    ridersOnline: riders.filter((r) => r.status === 'available' || r.status === 'busy').length,
+    ridersTotal: riders.length
+  });
+}));
+
+app.get('/api/admin/users', requireAdmin, wrap(async (req, res) => {
+  res.json(await neonClient.listUsers());
+}));
+
+app.patch('/api/admin/users/:id/role', requireAdmin, wrap(async (req, res) => {
+  const user = await neonClient.setUserRole(req.params.id, req.body.role);
+  res.json({ user });
+}));
+
+// ===========================================================================
+// Realtime
+// ===========================================================================
+/** Verify a socket's token, or reject the connection outright. */
+function socketUser(socket, next) {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  if (!token) return next(new Error('Authentication required.'));
   try {
-    const data = await neonClient.getAdminAnalytics();
-    const onlineRidersCount = db.getRiders().filter(r => r.is_available).length;
-    res.json({
-      totalRevenueRWF: Number(data.totalRevenueRWF) || 0,
-      totalOrdersCount: Number(data.totalOrdersCount) || 0,
-      activeOrdersCount: Number(data.activeOrdersCount) || 0,
-      ridersOnline: onlineRidersCount,
-      topSellingCategory: 'Gourmet Pizzas'
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch analytics from DB' });
+    socket.data.user = jwt.verify(String(token), JWT_SECRET);
+    return next();
+  } catch {
+    return next(new Error('Invalid or expired token.'));
   }
-});
+}
 
-// ----------------------------------------------------
-// 6b. Reviews / Ratings Endpoint (/api/reviews)
-// ----------------------------------------------------
-app.post('/api/reviews', async (req, res) => {
-  try {
-    const { orderId, pizzaRating, riderRating, comment, userId } = req.body;
-    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
-
-    const pizza = Math.min(5, Math.max(1, parseInt(pizzaRating) || 5));
-    const rider = Math.min(5, Math.max(1, parseInt(riderRating) || 5));
-    const combined = Math.round((pizza + rider) / 2);
-    const id = `feedback-${Date.now()}`;
-
-    if (neonClient.sql) {
-      // Upsert so re-submits update rather than error
-      await neonClient.sql`
-        INSERT INTO feedbacks (id, order_id, user_id, pizza_rating, rider_rating, rating, comment, created_at)
-        VALUES (${id}, ${orderId}, ${userId || null}, ${pizza}, ${rider}, ${combined}, ${comment || null}, NOW())
-        ON CONFLICT (order_id) DO UPDATE
-          SET pizza_rating = EXCLUDED.pizza_rating,
-              rider_rating = EXCLUDED.rider_rating,
-              rating = EXCLUDED.rating,
-              comment = EXCLUDED.comment;
-      `;
-    }
-
-    res.json({ success: true, pizzaRating: pizza, riderRating: rider });
-  } catch (err) {
-    console.error('Review save error:', err);
-    res.status(500).json({ error: 'Failed to save review' });
-  }
-});
-
-app.get('/api/reviews', async (req, res) => {
-  try {
-    if (!neonClient.sql) return res.json([]);
-    const rows = await neonClient.sql`
-      SELECT id, order_id, pizza_rating, rider_rating, rating, comment, created_at
-      FROM feedbacks ORDER BY created_at DESC;
-    `;
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch reviews' });
-  }
-});
-
-// ----------------------------------------------------
-// 7. WebSockets Event Streams
-// ----------------------------------------------------
-const STAFF_ROLES = ['ADMIN', 'KITCHEN', 'DELIVERY', 'RIDER'];
-
-// Optional JWT auth on socket handshake so the server can classify a client
-// (staff vs customer/guest) and only route order payloads to those entitled.
-// Invalid/missing tokens simply become anonymous (staff never sees them as staff).
-io.use((socket, next) => {
-  try {
-    const token = socket.handshake.auth && socket.handshake.auth.token;
-    if (token) {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      socket.user = {
-        id: decoded.id,
-        email: decoded.email,
-        role: String(decoded.role || '').toUpperCase()
-      };
-    }
-  } catch (e) {
-    // ignore invalid/expired tokens; socket acts as anonymous
-  }
-  next();
-});
+io.use(socketUser);
 
 io.on('connection', (socket) => {
-  console.log(`🔌 Client connected to WebSocket: ${socket.id}${socket.user ? ` (${socket.user.role})` : ''}`);
+  const user = socket.data.user;
+  socket.join(`role_${user.role}`);
 
-  // Staff join the shared "staff" room, the ONLY room that receives the full
-  // order board. Customers/guests never join it, so they never receive other
-  // people's order payloads over the wire.
-  if (socket.user && STAFF_ROLES.includes(socket.user.role)) {
-    socket.join('staff');
-  }
-
-  socket.on('join_order_room', (orderId) => {
-    socket.join(`order_${orderId}`);
+  socket.on('join_order_room', async (orderId) => {
+    try {
+      const order = await neonClient.getOrderById(orderId);
+      if (!order) return;
+      const isOwner = String(order.userId) === String(user.id);
+      if (user.role === 'customer' && !isOwner) {
+        console.warn(`[ws] ${user.email} tried to watch order ${orderId} they do not own`);
+        return;
+      }
+      socket.join(`order_${orderId}`);
+    } catch (err) {
+      console.error('[ws] join_order_room failed:', err.message);
+    }
   });
 
-  socket.on('stream_rider_gps', ({ orderId, lat, lng }) => {
-    io.to(`order_${orderId}`).emit('rider_gps_updated', { orderId, lat, lng });
-    io.to('staff').emit('admin_rider_gps_updated', { orderId, lat, lng });
+  socket.on('leave_order_room', (orderId) => socket.leave(`order_${orderId}`));
+
+  // GPS telemetry is staff-only. Previously any anonymous socket could rebroadcast
+  // any other socket's payload verbatim.
+  socket.on('stream_rider_gps', (data) => {
+    if (user.role === 'customer') return;
+    const { orderId, lat, lng } = data || {};
+    if (!orderId || !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return;
+    const payload = {
+      orderId,
+      lat: Number(lat),
+      lng: Number(lng),
+      speed: Number(data.speed) || 0,
+      heading: Number(data.heading) || 0,
+      distanceRemaining: Number(data.distanceRemaining) || null,
+      eta: data.eta ?? null,
+      timestamp: new Date().toISOString()
+    };
+    io.to(`order_${orderId}`).emit('rider_location_broadcast', payload);
+    io.emit('admin_rider_gps_updated', payload);
   });
 
-  socket.on('disconnect', () => {
-    console.log(`🔌 Client disconnected: ${socket.id}`);
+  socket.on('disconnect', () => {});
+});
+
+// ===========================================================================
+// Error handling — must be registered last, and must have all four params.
+// Express 5 forwards rejected promises here automatically for async handlers,
+// and `wrap` does it explicitly for anything else.
+// ===========================================================================
+app.use((req, res) => {
+  res.status(404).json({ error: `No route for ${req.method} ${req.originalUrl}` });
+});
+
+app.use((err, req, res, _next) => {
+  const status = err.statusCode || err.status || 500;
+  if (status >= 500) console.error('[api]', req.method, req.originalUrl, err);
+  res.status(status).json({
+    // 5xx messages are deliberately generic; 4xx messages are written for the
+    // person using the app and are safe to show.
+    error: status >= 500 ? 'Something went wrong on our end. Please try again.' : err.message
   });
 });
 
-// Health Check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'SECURE & FULLY OPERATIONAL',
-    service: 'HotPot Delights Kigali Production API',
-    security: 'Helmet + JWT + Rate Limiter Active',
-    endpoints: [
-      '/api/auth/login',
-      '/api/auth/register',
-      '/api/meals',
-      '/api/orders',
-      '/api/payments/momo-checkout',
-      '/api/vouchers/validate',
-      '/api/riders/live-gps',
-      '/api/admin/analytics'
-    ],
-    timestamp: new Date()
-  });
-});
+const PORT = Number(process.env.PORT) || 5002;
 
-const PORT = process.env.PORT || 5002;
-server.listen(PORT, () => {
-  console.log(`🚀 HotPot Full Production Server running with Security & WebSockets on port ${PORT}`);
-});
+async function start() {
+  neonClient.assertDatabaseConfigured();
+  await neonClient.bootstrap();
+  server.listen(PORT, () => {
+    console.log(`HotPot API listening on :${PORT}`);
+  });
+}
+
+if (require.main === module) {
+  start().catch((err) => {
+    console.error('[fatal] Server failed to start:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { app, server, io, start };
