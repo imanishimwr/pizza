@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { X, Lock, User, Mail, LogIn, ArrowRight, Flame, Phone, Eye, EyeOff, AlertCircle, Sparkles, KeyRound } from 'lucide-react';
 import { login, register, loginWithGoogle } from '../../services/apiService';
+import QuickLoginHelper from '../auth/QuickLoginHelper';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const MIN_PASSWORD = 8;
@@ -193,6 +194,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
       onSuccess?.(user);
     } catch (err) {
       setErrorMsg(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInstantLogin = async (demoEmail, demoPass) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      const user = await login({ email: demoEmail.trim().toLowerCase(), password: demoPass });
+      onSuccess?.(user);
+    } catch (err) {
+      setErrorMsg(err.message || 'Authentication failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -515,6 +531,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                 )}
               </button>
             </form>
+          )}
+
+          {mode === 'signin' && (
+            <QuickLoginHelper
+              disabled={isSubmitting}
+              onSelect={(demoEmail, demoPass) => {
+                setEmail(demoEmail);
+                setPassword(demoPass);
+              }}
+              onInstantLogin={handleInstantLogin}
+            />
           )}
 
           {mode !== 'forgot' && (

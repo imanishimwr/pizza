@@ -175,28 +175,54 @@ async function seed() {
   }
   console.log(`  ${MEALS.length} menu items ensured.`);
 
-  console.log('Seeding staff accounts...');
+  console.log('Seeding staff and test accounts...');
   await seedStaffAccount({
-    name: process.env.ADMIN_NAME,
-    email: process.env.ADMIN_EMAIL,
-    password: process.env.ADMIN_PASSWORD,
-    phone: process.env.ADMIN_PHONE,
+    name: process.env.ADMIN_NAME || 'System Admin',
+    email: process.env.ADMIN_EMAIL || 'admin@hotpot.rw',
+    password: process.env.ADMIN_PASSWORD || 'Admin1234!',
+    phone: process.env.ADMIN_PHONE || '+250 788 000 001',
     role: 'admin'
   });
   await seedStaffAccount({
-    name: process.env.KITCHEN_NAME,
-    email: process.env.KITCHEN_EMAIL,
-    password: process.env.KITCHEN_PASSWORD,
-    phone: process.env.KITCHEN_PHONE,
+    name: process.env.KITCHEN_NAME || 'Head Chef',
+    email: process.env.KITCHEN_EMAIL || 'kitchen@hotpot.rw',
+    password: process.env.KITCHEN_PASSWORD || 'Kitchen1234!',
+    phone: process.env.KITCHEN_PHONE || '+250 788 000 003',
     role: 'kitchen'
   });
-  await seedStaffAccount({
-    name: process.env.DELIVERY_NAME,
-    email: process.env.DELIVERY_EMAIL,
-    password: process.env.DELIVERY_PASSWORD,
-    phone: process.env.DELIVERY_PHONE,
+  const rider = await seedStaffAccount({
+    name: process.env.DELIVERY_NAME || 'Kigali Rider',
+    email: process.env.DELIVERY_EMAIL || 'rider@hotpot.rw',
+    password: process.env.DELIVERY_PASSWORD || 'Rider1234!',
+    phone: process.env.DELIVERY_PHONE || '+250 788 000 004',
     role: 'delivery'
   });
+  await seedStaffAccount({
+    name: process.env.CUSTOMER_NAME || 'HotPot Customer',
+    email: process.env.CUSTOMER_EMAIL || 'user@hotpot.rw',
+    password: process.env.CUSTOMER_PASSWORD || 'Customer1234!',
+    phone: process.env.CUSTOMER_PHONE || '+250 788 000 002',
+    role: 'customer'
+  });
+
+  if (rider) {
+    try {
+      await neonClient.sql`
+        INSERT INTO riders (id, name, email, phone, plate_number, vehicle_type, shift, is_available, status, last_lat, last_lng, updated_at)
+        VALUES (${rider.id}, ${rider.name}, ${rider.email}, ${rider.phone || '+250 788 000 004'}, 'RAD 777 K', 'Motorcycle', 'Day Shift', true, 'available', -1.9441, 30.0619, NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          email = EXCLUDED.email,
+          phone = EXCLUDED.phone,
+          status = 'available',
+          is_available = true,
+          updated_at = NOW();
+      `;
+      console.log(`  - synced rider profile in fleet for ${rider.email}`);
+    } catch (err) {
+      console.warn('  - rider fleet sync note:', err.message);
+    }
+  }
 
   const meals = await neonClient.getMeals();
   const users = await neonClient.listUsers();

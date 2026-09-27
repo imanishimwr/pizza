@@ -395,7 +395,7 @@ module.exports = {
   },
 
   createMeal: async (meal) => {
-    const id = meal.id || makeId('meal');
+    const id = meal.id || require('crypto').randomUUID();
     const rows = await sql`
       INSERT INTO meals (id, name, category, price, rating, reviews_count, description,
                          image, fallback_image, spicy, out_of_stock, spice_levels, broths, updated_at)
