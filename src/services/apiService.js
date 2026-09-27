@@ -382,6 +382,19 @@ export const apiService = {
     return res.json();
   },
 
+  assignManualRiderToOrder: async (orderId, riderData) => {
+    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/assign-manual-rider`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(riderData)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to assign manual rider');
+    }
+    return res.json();
+  },
+
   verifyHandoverPickup: async (orderId, verificationPin) => {
     const res = await fetch(`${API_BASE_URL}/orders/${orderId}/handover-pickup`, {
       method: 'POST',

@@ -306,6 +306,58 @@ module.exports = {
     return { order: orders[oIdx], rider: riders[rIdx], verificationPin: pin };
   },
 
+  assignManualRiderToOrder: (orderId, riderData) => {
+    const oIdx = orders.findIndex(o => o.id === orderId);
+    if (oIdx === -1) return null;
+
+    const pin = (riderData.verificationPin || riderData.pin || Math.floor(1000 + Math.random() * 9000)).toString();
+    const riderId = riderData.id || `rider-manual-${Date.now()}`;
+
+    // Find existing rider by phone or id, or add as a new rider in fleet
+    let rIdx = riders.findIndex(r => (riderData.phone && r.phone === riderData.phone) || (riderData.id && r.id === riderData.id));
+    let rider;
+    if (rIdx === -1) {
+      rider = {
+        id: riderId,
+        name: riderData.name || 'Assigned Courier',
+        phone: riderData.phone || '+250 788 000 000',
+        plateNumber: riderData.plateNumber || 'RAC 000X',
+        vehicleType: riderData.vehicleType || 'Motorcycle',
+        shift: riderData.shift || 'On-Demand Dispatch',
+        is_available: false,
+        status: 'BUSY',
+        current_order_id: orderId,
+        lat: -1.9702,
+        lng: 30.1250,
+        rating: 5.0,
+        completed_today: 0,
+        is_manual: true
+      };
+      riders.push(rider);
+    } else {
+      riders[rIdx].name = riderData.name || riders[rIdx].name;
+      riders[rIdx].phone = riderData.phone || riders[rIdx].phone;
+      riders[rIdx].plateNumber = riderData.plateNumber || riders[rIdx].plateNumber;
+      riders[rIdx].vehicleType = riderData.vehicleType || riders[rIdx].vehicleType;
+      riders[rIdx].status = 'BUSY';
+      riders[rIdx].is_available = false;
+      riders[rIdx].current_order_id = orderId;
+      rider = riders[rIdx];
+    }
+
+    orders[oIdx].assigned_rider_id = rider.id;
+    orders[oIdx].riderName = rider.name;
+    orders[oIdx].riderPhone = rider.phone;
+    orders[oIdx].riderPlate = rider.plateNumber;
+    orders[oIdx].riderVehicle = rider.vehicleType;
+    orders[oIdx].rider_handover_status = 'assigned';
+    orders[oIdx].verification_pin = pin;
+    orders[oIdx].assigned_at = new Date().toISOString();
+    orders[oIdx].status = 'ready';
+
+    return { order: orders[oIdx], rider, verificationPin: pin };
+  },
+
   verifyHandoverPickup: (orderId, enteredPin) => {
     const oIdx = orders.findIndex(o => o.id === orderId);
     if (oIdx === -1) return { error: 'Order not found.' };

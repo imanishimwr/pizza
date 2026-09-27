@@ -334,6 +334,26 @@ app.post('/api/orders/:id/assign-rider', (req, res) => {
   res.json(result);
 });
 
+// Smart Dispatch: Assign Manual / Custom Courier to Order
+app.post('/api/orders/:id/assign-manual-rider', (req, res) => {
+  const { id } = req.params;
+  const { name, phone, plateNumber, vehicleType, verificationPin, shift } = req.body;
+  if (!name || !phone) {
+    return res.status(400).json({ error: 'Rider Name and Phone Number are required.' });
+  }
+
+  const result = db.assignManualRiderToOrder(id, { name, phone, plateNumber, vehicleType, verificationPin, shift });
+  if (!result) return res.status(400).json({ error: 'Could not assign manual courier to order.' });
+
+  // Broadcast to kitchen, admin, and customer
+  io.emit('order_assigned_to_rider', result);
+  io.emit('order_status_updated', result.order);
+  io.emit('rider_fleet_updated', db.getRiders());
+  io.to(`order_${id}`).emit('live_order_status', result.order);
+
+  res.json(result);
+});
+
 // Smart Dispatch: Rider Verifies 4-digit PIN and Picks Up Package
 app.post('/api/orders/:id/handover-pickup', (req, res) => {
   const { id } = req.params;

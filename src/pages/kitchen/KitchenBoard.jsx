@@ -5,7 +5,7 @@ import {
   Flame, UtensilsCrossed, ShoppingBag, Eye, Phone, MapPin, Check,
   Timer, Layers, BookOpen, AlertTriangle, ShieldCheck, ChevronRight,
   ChevronLeft, X, Bike, SlidersHorizontal, Radio, ArrowLeft, Home, Store,
-  Menu
+  Menu, UserPlus, Plus, Edit3, UserCheck, Hash
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { apiService } from '../../services/apiService';
@@ -188,6 +188,51 @@ export default function KitchenBoard({
         delete copy[orderId];
         return copy;
       });
+    }
+  };
+
+  // Manual / Custom Courier Assignment Modal State & Handlers
+  const [manualRiderOrder, setManualRiderOrder] = useState(null);
+  const [manualRiderForm, setManualRiderForm] = useState({
+    name: '',
+    phone: '',
+    plateNumber: '',
+    vehicleType: 'Motorcycle Express',
+    verificationPin: '',
+    shift: 'Kitchen On-Demand'
+  });
+  const [isSubmittingManualRider, setIsSubmittingManualRider] = useState(false);
+
+  const openManualRiderModal = (order) => {
+    setManualRiderOrder(order);
+    setManualRiderForm({
+      name: order.riderName || '',
+      phone: order.riderPhone || '',
+      plateNumber: order.riderPlate || '',
+      vehicleType: order.riderVehicle || 'Motorcycle Express',
+      verificationPin: order.verification_pin || Math.floor(1000 + Math.random() * 9000).toString(),
+      shift: 'Kitchen On-Demand'
+    });
+  };
+
+  const handleAssignManualRider = async (e) => {
+    if (e) e.preventDefault();
+    if (!manualRiderOrder) return;
+    if (!manualRiderForm.name.trim() || !manualRiderForm.phone.trim()) {
+      triggerToast("⚠️ Courier Name and Phone Number are required.");
+      return;
+    }
+    setIsSubmittingManualRider(true);
+    try {
+      const result = await apiService.assignManualRiderToOrder(manualRiderOrder.id, manualRiderForm);
+      if (soundEnabled) notificationService.playChime('order_ready');
+      triggerToast(`🛵 Courier ${manualRiderForm.name} assigned to Order #${manualRiderOrder.id}! Handover PIN: ${result.verificationPin || manualRiderForm.verificationPin}`);
+      setManualRiderOrder(null);
+      await loadRiders();
+    } catch (err) {
+      triggerToast(`⚠️ Failed to assign courier: ${err.message || 'Server error'}`);
+    } finally {
+      setIsSubmittingManualRider(false);
     }
   };
 
@@ -1233,7 +1278,7 @@ export default function KitchenBoard({
 
                             {/* Handover Flow: Courier Assignment vs Handover PIN */}
                             {!isAssigned ? (
-                              <div className="space-y-2 bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
+                              <div className="space-y-2.5 bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                                   <span>Assign / Handover to Courier:</span>
                                   <span className="text-emerald-400 font-mono text-[10px]">
@@ -1241,62 +1286,82 @@ export default function KitchenBoard({
                                   </span>
                                 </label>
 
-                                {availableRiders.length === 0 ? (
-                                  <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs text-center font-semibold">
-                                    ⚠️ All riders are currently busy or off-duty.
+                                {availableRiders.length > 0 && (
+                                  <div className="space-y-1.5">
+                                    <select
+                                      value={selectedRiderId}
+                                      onChange={(e) => setSelectedRiderMap(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                      className="w-full bg-[#12141A] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500"
+                                    >
+                                      {availableRiders.map(r => (
+                                        <option key={r.id} value={r.id}>
+                                          🛵 {r.name} ({r.plateNumber || 'Moto'}) • ON DUTY
+                                        </option>
+                                      ))}
+                                    </select>
+
+                                    <button
+                                      disabled={!!assigningMap[order.id]}
+                                      onClick={() => handleAssignRiderToOrder(order.id, selectedRiderId)}
+                                      className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all min-h-11 bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/20 active:scale-95"
+                                    >
+                                      {assigningMap[order.id] ? (
+                                        <>
+                                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                          <span>Dispatching Courier...</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Bike className="w-4 h-4" />
+                                          <span>Assign Selected Courier</span>
+                                        </>
+                                      )}
+                                    </button>
                                   </div>
-                                ) : (
-                                  <select
-                                    value={selectedRiderId}
-                                    onChange={(e) => setSelectedRiderMap(prev => ({ ...prev, [order.id]: e.target.value }))}
-                                    className="w-full bg-[#12141A] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500"
-                                  >
-                                    {availableRiders.map(r => (
-                                      <option key={r.id} value={r.id}>
-                                        🛵 {r.name} ({r.plateNumber || 'Moto'}) • ON DUTY
-                                      </option>
-                                    ))}
-                                  </select>
                                 )}
 
+                                {availableRiders.length === 0 && (
+                                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center font-medium">
+                                    ⚠️ No active fleet couriers available.
+                                  </div>
+                                )}
+
+                                {/* Manual Courier Entry Option */}
                                 <button
-                                  disabled={availableRiders.length === 0 || !!assigningMap[order.id]}
-                                  onClick={() => handleAssignRiderToOrder(order.id, selectedRiderId)}
-                                  className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all min-h-11 ${
-                                    availableRiders.length === 0
-                                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                                      : 'bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/20 active:scale-95'
-                                  }`}
+                                  onClick={() => openManualRiderModal(order)}
+                                  className="w-full py-2 px-3 rounded-xl bg-surface-card hover:bg-white/10 border border-white/15 text-amber-400 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                                  title="Add or assign a specific courier for this order"
                                 >
-                                  {assigningMap[order.id] ? (
-                                    <>
-                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                      <span>Dispatching Courier...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Bike className="w-4 h-4" />
-                                      <span>Handover Order to Courier</span>
-                                    </>
-                                  )}
+                                  <UserPlus className="w-4 h-4" />
+                                  <span>➕ Add / Assign Custom Courier</span>
                                 </button>
                               </div>
                             ) : (
                               <div className="space-y-2 bg-[#1A1D24] p-3 rounded-xl border border-amber-500/40">
-                                {/* Assigned Courier Badge */}
+                                {/* Assigned Courier Badge with Reassign trigger */}
                                 <div className="flex items-center justify-between text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-xs">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
                                       🛵
                                     </div>
-                                    <div>
-                                      <div className="font-bold text-white text-xs">{assignedRider.name}</div>
-                                      <div className="text-[10px] text-slate-400 font-mono">{assignedRider.phone || assignedRider.plateNumber}</div>
+                                    <div className="min-w-0">
+                                      <div className="font-bold text-white text-xs truncate">{assignedRider.name}</div>
+                                      <div className="text-[10px] text-slate-400 font-mono truncate">{assignedRider.phone || assignedRider.plateNumber}</div>
                                     </div>
                                   </div>
-                                  <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold border border-blue-500/40">
-                                    Assigned
-                                  </span>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={() => openManualRiderModal(order)}
+                                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-amber-400 text-[10px] font-bold border border-white/10 flex items-center gap-1 transition-all"
+                                      title="Edit or Reassign Courier Info"
+                                    >
+                                      <Edit3 className="w-3 h-3" />
+                                      <span>Edit</span>
+                                    </button>
+                                    <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold border border-blue-500/40">
+                                      Assigned
+                                    </span>
+                                  </div>
                                 </div>
 
                                 {/* 4-Digit Verification PIN Strip */}
@@ -1580,6 +1645,166 @@ export default function KitchenBoard({
                 Close Inspector
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* 5. MANUAL / CUSTOM COURIER REGISTRATION & ASSIGN MODAL     */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {manualRiderOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-lg rounded-2xl bg-surface-card border border-amber-500/50 shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center font-black shrink-0">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-base">Assign Courier Manually</h3>
+                  <p className="text-xs text-amber-400 font-mono">Order #{manualRiderOrder.id} • {manualRiderOrder.customerName || 'Customer'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setManualRiderOrder(null)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors"
+                title="Close Modal"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Explanatory Info Card */}
+            <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                The courier details entered below will be sent in real-time to the client so they can see the exact person delivering their order with direct phone contact.
+              </p>
+            </div>
+
+            {/* Courier Assignment Form */}
+            <form onSubmit={handleAssignManualRider} className="space-y-3.5">
+              {/* Rider Full Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                  <ChefHat className="w-3.5 h-3.5 text-amber-400" />
+                  Courier Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={manualRiderForm.name}
+                  onChange={(e) => setManualRiderForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. Jean Paul Nkurunziza"
+                  className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-text-subdued focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              {/* Rider Phone Number */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-amber-400" />
+                  Courier Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={manualRiderForm.phone}
+                  onChange={(e) => setManualRiderForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="e.g. +250 788 123 456"
+                  className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-text-subdued focus:outline-none focus:border-amber-500 transition-colors font-mono"
+                />
+              </div>
+
+              {/* Plate Number & Vehicle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                    <Bike className="w-3.5 h-3.5 text-amber-400" />
+                    Plate / Moto Number
+                  </label>
+                  <input
+                    type="text"
+                    value={manualRiderForm.plateNumber}
+                    onChange={(e) => setManualRiderForm(prev => ({ ...prev, plateNumber: e.target.value }))}
+                    placeholder="e.g. RAE 492 K"
+                    className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-text-subdued focus:outline-none focus:border-amber-500 transition-colors uppercase font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-muted flex items-center gap-1.5">
+                    <Bike className="w-3.5 h-3.5 text-amber-400" />
+                    Vehicle Type
+                  </label>
+                  <select
+                    value={manualRiderForm.vehicleType}
+                    onChange={(e) => setManualRiderForm(prev => ({ ...prev, vehicleType: e.target.value }))}
+                    className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors"
+                  >
+                    <option value="Motorcycle Express">🛵 Motorcycle Express</option>
+                    <option value="Bicycle Courier">🚲 Bicycle Courier</option>
+                    <option value="Car / Van Delivery">🚗 Car / Van Delivery</option>
+                    <option value="HotPot Foot Runner">🏃 Foot Runner</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 4-Digit Pickup Verification PIN */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text-muted flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Hash className="w-3.5 h-3.5 text-amber-400" />
+                    Pickup Verification PIN (4 Digits)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setManualRiderForm(prev => ({ ...prev, verificationPin: Math.floor(1000 + Math.random() * 9000).toString() }))}
+                    className="text-[10px] text-amber-400 hover:underline"
+                  >
+                    Generate New PIN
+                  </button>
+                </label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  value={manualRiderForm.verificationPin}
+                  onChange={(e) => setManualRiderForm(prev => ({ ...prev, verificationPin: e.target.value.replace(/[^0-9]/g, '').slice(0, 4) }))}
+                  placeholder="e.g. 4829"
+                  className="w-full bg-[#12141A] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-amber-300 font-mono font-bold tracking-widest text-center focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              {/* Form Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setManualRiderOrder(null)}
+                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-text-muted hover:text-white transition-colors min-h-11"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingManualRider}
+                  className="px-6 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/25 active:scale-95 transition-all min-h-11 disabled:opacity-60"
+                >
+                  {isSubmittingManualRider ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Assigning Courier...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      <span>Assign Courier & Notify Client 🛵</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
