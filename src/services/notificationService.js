@@ -1,5 +1,9 @@
 // Helper utility for playing web audio chimes and native notifications
 
+// A real file in public/assets. The old value was '/favicon.ico', which does not
+// exist in this repository, so every notification 404'd its own icon.
+const ICON = '/assets/128x128_8h.png';
+
 class NotificationService {
   constructor() {
     this.audioCtx = null;
@@ -73,19 +77,26 @@ class NotificationService {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
     if (Notification.permission === 'default') {
-      await Notification.requestPermission();
+      // The browser only allows this from a user gesture. If it is denied or
+      // dismissed, fall through to the permission check below rather than
+      // assuming success.
+      try {
+        await Notification.requestPermission();
+      } catch {
+        return;
+      }
     }
 
-    if (Notification.permission === 'granted') {
-      try {
-        new Notification(title, {
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
-          ...options,
-        });
-      } catch (e) {
-        console.warn('Desktop notification failed:', e);
-      }
+    if (Notification.permission !== 'granted') return;
+
+    try {
+      new Notification(title, {
+        icon: ICON,
+        badge: ICON,
+        ...options,
+      });
+    } catch (err) {
+      console.warn('Desktop notification failed:', err);
     }
   }
 }

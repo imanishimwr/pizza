@@ -1,381 +1,579 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Bike, MapPin, Phone, CheckCircle2, Navigation, DollarSign,
-  Clock, Shield, PenTool, Camera, X, Check, Menu, Home,
-  ChevronLeft, ChevronRight, AlertCircle, ArrowRight, TrendingUp,
-  User, Settings, Sparkles, ExternalLink, RefreshCw, Layers,
-  Compass, Radio, Calendar, CheckSquare, Award, Key, Bell
+  Bike, MapPin, Phone, CheckCircle2, Navigation, DollarSign, Clock, Shield,
+  X, Check, Menu, Home, ChevronLeft, ChevronRight, AlertCircle, ExternalLink,
+  Settings, Key, Radio, CheckSquare, RefreshCw, User, Package, Wallet
 } from 'lucide-react';
+import {
+  completeDelivery,
+  getRiders,
+  setRiderAvailability,
+  verifyHandover
+} from '../../services/apiService';
+import { eventBus } from '../../services/eventBus';
 import { notificationService } from '../../services/notificationService';
-import { apiService } from '../../services/apiService';
 
-export default function RiderDashboard({
-  orders = [],
-  onUpdateStatus,
-  user: initialUser,
-  onSwitchRole,
-  onExploreMenu
-}) {
-  // Navigation Tabs: 'dispatch' | 'trips' | 'settings'
+// ---------------------------------------------------------------------------
+// Constants and pure helpers
+// ---------------------------------------------------------------------------
+
+const SUCCESS_BANNER_MS = 4000;
+/** The rider roster is our own data, so it is polled — unlike `orders`, which
+ *  is a prop and is refreshed by App.jsx. */
+const PROFILE_POLL_MS = 20000;
+
+/** The server hands out six digits and only six. */
+const HANDOVER_CODE_LENGTH = 6;
+
+/** The only two transitions a courier is allowed to drive, and both of them
+ *  have their own endpoint so the state machine can enforce the handover code
+ *  and the commission. There is deliberately no plain status PATCH here. */
+const PICKUP_STATUSES = ['preparing', 'ready'];
+const DROPOFF_STATUSES = ['delivery'];
+
+const RESTAURANT = Object.freeze({
+  name: 'HotPot Delights Kitchen HQ',
+  address: 'KG 7 Ave, Kimihurura, Kigali'
+});
+
+const STATUS_BADGE = {
+  pending: 'bg-orange-500/20 text-orange-300 border-orange-500/50 font-semibold',
+  preparing: 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold',
+  ready: 'bg-emerald-500/25 text-emerald-300 border-emerald-400/60 font-bold',
+  delivery: 'bg-blue-500/20 text-blue-300 border-blue-500/50 font-semibold',
+  delivered: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-semibold',
+  cancelled: 'bg-red-500/20 text-red-300 border-red-500/50 font-semibold'
+};
+
+const statusBadge = (status) =>
+  STATUS_BADGE[status] || 'bg-slate-700/40 text-slate-300 border-slate-600/50 font-semibold';
+const statusLabel = (status) =>
+  status ? String(status).charAt(0).toUpperCase() + String(status).slice(1) : 'unknown';
+
+const formatRwf = (value) =>
+  Number.isFinite(Number(value)) ? Number(value).toLocaleString('en-US') : '—';
+
+const formatWhen = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString();
+};
+
+const formatClock = (value) => {
+  if (!value) return 'never';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'never' : date.toLocaleTimeString();
+};
+
+const initialsOf = (name) => {
+  const text = String(name || '').trim();
+  return text ? text.charAt(0).toUpperCase() : '?';
+};
+
+/** `tel:` hrefs must not be able to smuggle a scheme in from order data. */
+const telHref = (phone) => {
+  const digits = String(phone || '').replace(/[^\d+]/g, '');
+  return digits ? `tel:${digits}` : null;
+};
+
+const isSameId = (a, b) => a !== null && a !== undefined && b !== null && b !== undefined && String(a) === String(b);
+
+// ---------------------------------------------------------------------------
+// Small presentational pieces
+// ---------------------------------------------------------------------------
+
+function SectionCard({ icon, title, children, className = '' }) {
+  return (
+    <section className={`p-5 rounded-2xl bg-[#14171F] border border-slate-800 shadow-lg space-y-4 ${className}`}>
+      <h3 className="text-sm font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
+        {icon}
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function DetailRow({ label, value, valueClass = 'text-white font-bold' }) {
+  return (
+    <div className="flex justify-between gap-4 py-2 border-b border-slate-800/60 last:border-0">
+      <span className="text-slate-400 shrink-0">{label}</span>
+      <span className={`text-right min-w-0 break-words ${valueClass}`}>{value}</span>
+    </div>
+  );
+}
+
+/** Used for every figure the backend has not told us yet. */
+function UnknownValue({ what }) {
+  return <span className="text-slate-500">&mdash; not reported yet ({what})</span>;
+}
+
+function EmptyState({ icon, title, children }) {
+  return (
+    <div className="p-8 text-center bg-[#14171F] rounded-2xl border border-slate-800 text-slate-400 space-y-2">
+      <span className="inline-flex text-slate-600">{icon}</span>
+      <p className="text-xs font-bold text-white">{title}</p>
+      {children ? <div className="text-[11px] space-y-1">{children}</div> : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function RiderDashboard({ orders = [], user, onGoHome }) {
+  // Navigation / layout
   const [activeTab, setActiveTab] = useState('dispatch');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [mobileViewMode, setMobileViewMode] = useState('list'); // 'list' | 'navigation'
-  const [isOnDuty, setIsOnDuty] = useState(true);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-  const [toastMsg, setToastMsg] = useState('');
+  const [mobileViewMode, setMobileViewMode] = useState('list'); // 'list' | 'route'
 
-  // Modals
-  const [showProofModal, setShowProofModal] = useState(false);
-  const [signature, setSignature] = useState(false);
-  const [photoConfirmed, setPhotoConfirmed] = useState(false);
+  // Announcements. Errors are assertive and stay until replaced.
+  const [banner, setBanner] = useState(null);
+  const bannerTimerRef = useRef(null);
 
-  // New Assignment Popup Alert & Chime
-  const [newAssignmentAlert, setNewAssignmentAlert] = useState(null);
-  const seenOrderIdsRef = useRef(new Set());
+  // This rider's own courier record. Everything about duty, plate and earnings
+  // comes from here; nothing is invented when it is missing.
+  const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState('');
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [dutyPending, setDutyPending] = useState(false);
 
-  // Handover PIN Modal
-  const [showPinModal, setShowPinModal] = useState(false);
+  // Orders
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+
+  // Handover code modal
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pinOrderId, setPinOrderId] = useState(null);
   const [enteredPin, setEnteredPin] = useState('');
   const [pinError, setPinError] = useState('');
-  const [isVerifyingPin, setIsVerifyingPin] = useState(false);
+  const [pinPending, setPinPending] = useState(false);
 
-  // Real-time ticking clock
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+  // Drop-off confirmation modal
+  const [dropOffOpen, setDropOffOpen] = useState(false);
+  const [dropOffOrderId, setDropOffOrderId] = useState(null);
+  const [dropOffPending, setDropOffPending] = useState(false);
+
+  // New-assignment chime
+  const [newAssignment, setNewAssignment] = useState(null);
+  const seenAssignmentsRef = useRef(new Set());
+  const hasSeededAssignmentsRef = useRef(false);
+
+  // -------------------------------------------------------------------------
+  // Announcements
+  // -------------------------------------------------------------------------
+
+  const announce = useCallback((tone, text) => {
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    bannerTimerRef.current = null;
+    setBanner({ tone, text });
+    if (tone === 'success') {
+      bannerTimerRef.current = setTimeout(() => {
+        setBanner((prev) => (prev && prev.tone === 'success' ? null : prev));
+        bannerTimerRef.current = null;
+      }, SUCCESS_BANNER_MS);
+    }
   }, []);
 
-  const triggerToast = (msg) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 3500);
-  };
+  useEffect(() => () => {
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+  }, []);
 
-  const riderUser = initialUser || {
-    id: 'rider-1',
-    name: 'Eric Mugisha',
-    email: 'rider.eric@hotpot.rw',
-    phone: '+250 788 123 456',
-    plateNumber: 'RAC 402B',
-    vehicleModel: 'Yamaha XTZ 125 (Moto #1)'
-  };
+  // -------------------------------------------------------------------------
+  // This rider's courier record
+  // -------------------------------------------------------------------------
 
-  // Filter deliveries
-  const activeDeliveries = useMemo(() => {
-    return orders.filter((o) => o.status === 'ready' || o.status === 'delivery' || o.status === 'preparing');
-  }, [orders]);
+  /**
+   * `getRiders()` is staff-only, so this is also our sign-in check. A rider
+   * account that has no courier record is told so plainly instead of being
+   * handed a fabricated shift summary.
+   */
+  const loadProfile = useCallback(async ({ quiet = false } = {}) => {
+    if (!user?.id) {
+      setProfile(null);
+      setProfileError('You are not signed in, so your courier record cannot be loaded.');
+      setProfileLoading(false);
+      return;
+    }
+    if (!quiet) setProfileLoading(true);
+    try {
+      const roster = await getRiders();
+      const list = Array.isArray(roster) ? roster : [];
+      // The courier id is the id on the courier record. Auth users and courier
+      // records are separate rows, so match on the id first and the email the
+      // account signed up with second. Never guess from the URL or a hardcode.
+      const mine =
+        list.find((r) => isSameId(r.id, user.id)) ||
+        (user.email ? list.find((r) => isSameId(r.email, user.email)) : null) ||
+        null;
+      setProfile(mine);
+      setProfileError(mine ? '' : 'No courier profile is linked to this account yet. Ask an admin to add you to the fleet.');
+    } catch (err) {
+      setProfile(null);
+      setProfileError(err?.message || 'Could not load your courier record.');
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [user?.id, user?.email]);
 
-  const completedDeliveries = useMemo(() => {
-    return orders.filter((o) => o.status === 'delivered');
-  }, [orders]);
-
-  const [selectedOrder, setSelectedOrder] = useState(() => activeDeliveries[0] || null);
-
-  // Detect incoming order assignment & trigger loud WebSocket chime & popup modal
   useEffect(() => {
-    activeDeliveries.forEach(order => {
-      const orderIdStr = String(order.id);
-      if (!seenOrderIdsRef.current.has(orderIdStr) && (order.status === 'ready' || order.assigned_rider_id)) {
-        seenOrderIdsRef.current.add(orderIdStr);
-        notificationService.playChime('order_ready');
-        setNewAssignmentAlert(order);
-        setSelectedOrder(order);
-      }
+    loadProfile();
+  }, [loadProfile]);
+
+  useEffect(() => {
+    const off = eventBus.on('ORDER_STATUS_UPDATE', () => {
+      loadProfile({ quiet: true });
     });
-  }, [activeDeliveries]);
+    const timer = setInterval(() => loadProfile({ quiet: true }), PROFILE_POLL_MS);
+    return () => {
+      off();
+      clearInterval(timer);
+    };
+  }, [loadProfile]);
 
-  // Sync selected order if list updates
+  // -------------------------------------------------------------------------
+  // Order selection
+  // -------------------------------------------------------------------------
+
+  /** Only orders this courier is actually assigned to. The old screen listed
+   *  every `preparing`/`ready` order in the shop, which is not a queue. */
+  const myActiveOrders = useMemo(() => {
+    if (!profile) return [];
+    return orders.filter(
+      (o) => isSameId(o.riderId, profile.id) && PICKUP_STATUSES.concat(DROPOFF_STATUSES).includes(o.status)
+    );
+  }, [orders, profile]);
+
+  const myCompletedOrders = useMemo(() => {
+    if (!profile) return [];
+    return orders.filter((o) => isSameId(o.riderId, profile.id) && o.status === 'delivered');
+  }, [orders, profile]);
+
+  const selectedOrder = useMemo(() => {
+    if (!selectedOrderId) return myActiveOrders[0] || null;
+    return myActiveOrders.find((o) => isSameId(o.id, selectedOrderId)) || myActiveOrders[0] || null;
+  }, [myActiveOrders, selectedOrderId]);
+
+  const isOnDuty = profile ? Boolean(profile.is_available) : false;
+  const earningsToday = profile ? Number(profile.earnings_today) : null;
+  const completedToday = profile ? Number(profile.completed_today) : null;
+  const plateNumber = profile?.plateNumber || null;
+  const vehicleType = profile?.vehicleType || null;
+  const riderName = profile?.name || user?.name || 'Courier';
+
+  // -------------------------------------------------------------------------
+  // New assignment detection
+  // -------------------------------------------------------------------------
+
   useEffect(() => {
-    if (!selectedOrder && activeDeliveries.length > 0) {
-      setSelectedOrder(activeDeliveries[0]);
-    } else if (selectedOrder) {
-      const stillActive = activeDeliveries.find((o) => o.id === selectedOrder.id);
-      if (stillActive) {
-        setSelectedOrder(stillActive);
-      } else if (activeDeliveries.length > 0) {
-        setSelectedOrder(activeDeliveries[0]);
-      }
+    if (!profile) return;
+    // The first pass only records what is already on screen; a chime for work
+    // that predates the login is noise.
+    if (!hasSeededAssignmentsRef.current) {
+      myActiveOrders.forEach((o) => seenAssignmentsRef.current.add(String(o.id)));
+      hasSeededAssignmentsRef.current = true;
+      return;
     }
-  }, [activeDeliveries]);
+    const fresh = myActiveOrders.find((o) => !seenAssignmentsRef.current.has(String(o.id)));
+    myActiveOrders.forEach((o) => seenAssignmentsRef.current.add(String(o.id)));
+    if (!fresh) return;
+    notificationService.playChime('order_ready');
+    setNewAssignment(fresh);
+  }, [myActiveOrders, profile]);
 
-  // Today's Earnings calculation (base 18,500 RWF + 2,000 RWF per completed delivery)
-  const todayEarnings = useMemo(() => {
-    return 18500 + completedDeliveries.length * 2000;
-  }, [completedDeliveries]);
+  // -------------------------------------------------------------------------
+  // Actions
+  // -------------------------------------------------------------------------
 
-  // Duty Toggle handler
-  const handleToggleDuty = async () => {
-    const nextDuty = !isOnDuty;
-    setIsOnDuty(nextDuty);
+  const handleToggleDuty = useCallback(async () => {
+    if (!profile || dutyPending) return;
+    const next = !profile.is_available;
+    setDutyPending(true);
+    setProfile((prev) => (prev ? { ...prev, is_available: next } : prev));
     try {
-      await apiService.toggleRiderAvailability(riderUser.id || 'rider-1', nextDuty);
+      const updated = await setRiderAvailability(profile.id, next);
+      setProfile((prev) => (prev ? { ...prev, ...(updated || {}), is_available: next } : prev));
+      announce('success', next ? 'You are on duty and visible to dispatch.' : 'You are off duty.');
     } catch (err) {
-      console.warn('Could not sync duty status to backend:', err);
+      // Roll the switch back so it never claims a state the server rejected.
+      setProfile((prev) => (prev ? { ...prev, is_available: !next } : prev));
+      announce('error', err?.message || 'Could not change your duty status.');
+    } finally {
+      setDutyPending(false);
     }
-    triggerToast(nextDuty ? '🟢 Status: ON DUTY (Available for orders)' : '⚪ Status: OFF DUTY (Busy)');
-  };
+  }, [profile, dutyPending, announce]);
 
-  // Verify 4-Digit Handover PIN & Transition to IN TRANSIT
-  const handleVerifyHandoverPin = async (e) => {
-    if (e) e.preventDefault();
-    if (!selectedOrder) return;
+  const openPinModal = useCallback((orderId) => {
+    setPinOrderId(orderId);
+    setEnteredPin('');
     setPinError('');
-    setIsVerifyingPin(true);
+    setPinOpen(true);
+  }, []);
 
+  /**
+   * The customer reads the six digits off their own screen and says them out
+   * loud. The rider types them here. The code is never fetched, displayed,
+   * pre-filled or hinted at anywhere on this page.
+   */
+  const handleVerifyHandover = useCallback(async (event) => {
+    event.preventDefault();
+    const order = myActiveOrders.find((o) => isSameId(o.id, pinOrderId));
+    if (!order || !profile) return;
+
+    const code = enteredPin.trim();
+    if (!/^\d{6}$/.test(code)) {
+      setPinError(`The handover code is ${HANDOVER_CODE_LENGTH} digits. Type the ${HANDOVER_CODE_LENGTH} digits the customer gave you.`);
+      return;
+    }
+
+    setPinError('');
+    setPinPending(true);
     try {
-      // If PIN was entered or auto-matched
-      if (selectedOrder.verification_pin && enteredPin.trim() && enteredPin.trim() !== String(selectedOrder.verification_pin).trim()) {
-        setPinError(`Incorrect PIN! Expected 4-digit handover code from kitchen.`);
-        setIsVerifyingPin(false);
-        return;
-      }
-
-      await apiService.verifyHandoverPickup(selectedOrder.id, enteredPin || selectedOrder.verification_pin || '4829');
-      if (onUpdateStatus) {
-        onUpdateStatus(selectedOrder.id, 'delivery');
-      }
-
-      notificationService.playChime('status_update');
-      triggerToast(`🛵 Handover Verified! Order #${selectedOrder.id} is now IN TRANSIT.`);
-      setShowPinModal(false);
+      await verifyHandover(order.id, code, profile.id);
+      setPinOpen(false);
       setEnteredPin('');
+      setPinOrderId(null);
+      notificationService.playChime('status_update');
+      announce('success', `Pickup confirmed. Order #${order.id} is out for delivery.`);
+      await loadProfile({ quiet: true });
     } catch (err) {
-      // Fallback
-      if (onUpdateStatus) {
-        onUpdateStatus(selectedOrder.id, 'delivery');
-      }
-      triggerToast(`🛵 Package Picked Up! Order #${selectedOrder.id} is IN TRANSIT.`);
-      setShowPinModal(false);
+      // 409 means someone already moved this order on; the message the server
+      // sends is the accurate one, so show it instead of a generic failure.
+      setPinError(err?.message || 'Could not confirm that handover code.');
+      announce('error', err?.message || 'Could not confirm that handover code.');
     } finally {
-      setIsVerifyingPin(false);
+      setPinPending(false);
     }
-  };
+  }, [myActiveOrders, pinOrderId, enteredPin, profile, announce, loadProfile]);
 
-  const handleConfirmDelivery = async () => {
-    if (!selectedOrder) return;
+  const handleCompleteDelivery = useCallback(async () => {
+    const order = myActiveOrders.find((o) => isSameId(o.id, dropOffOrderId));
+    if (!order || !profile) return;
+
+    setDropOffPending(true);
     try {
-      if (onUpdateStatus) {
-        await onUpdateStatus(selectedOrder.id, 'delivered');
-      }
-      // Return rider status back to AVAILABLE
-      await apiService.toggleRiderAvailability(riderUser.id || 'rider-1', true);
-      notificationService.playChime('order_ready');
-      triggerToast(`🎉 Order #${selectedOrder.id} successfully delivered! +2,000 RWF added to Today's Earnings.`);
+      await completeDelivery(order.id, profile.id);
+      setDropOffOpen(false);
+      setDropOffOrderId(null);
+      notificationService.playChime('status_update');
+      announce('success', `Order #${order.id} delivered. Your shift total has been credited.`);
+      await loadProfile({ quiet: true });
     } catch (err) {
-      triggerToast(`✅ Order #${selectedOrder.id} marked as delivered!`);
+      setDropOffOpen(false);
+      announce('error', err?.message || 'Could not complete that delivery.');
     } finally {
-      setShowProofModal(false);
-      setSignature(false);
-      setPhotoConfirmed(false);
+      setDropOffPending(false);
     }
-  };
+  }, [myActiveOrders, dropOffOrderId, profile, announce, loadProfile]);
 
-  const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'delivered':
-        return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 font-bold';
-      case 'ready':
-        return 'bg-emerald-500/25 text-emerald-300 border-emerald-400/60 font-bold animate-pulse shadow-sm shadow-emerald-500/20';
-      case 'delivery':
-      case 'delivering':
-        return 'bg-blue-500/15 text-blue-400 border-blue-500/40 font-bold';
-      case 'preparing':
-      case 'cooking':
-        return 'bg-amber-500/15 text-amber-400 border-amber-500/40 font-bold';
-      case 'cancelled':
-        return 'bg-red-500/15 text-red-400 border-red-500/40 font-bold';
-      default:
-        return 'bg-orange-500/15 text-orange-400 border-orange-500/40 font-bold';
-    }
-  };
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+
+  const navItems = [
+    { id: 'dispatch', label: 'Active Dispatch', icon: Bike, badge: myActiveOrders.length, pulse: myActiveOrders.length > 0 },
+    { id: 'trips', label: 'Completed Trips', icon: CheckCircle2, badge: myCompletedOrders.length },
+    { id: 'settings', label: 'Vehicle & Profile', icon: Settings }
+  ];
+
+  const selectedStatus = selectedOrder?.status;
+  const canConfirmPickup = Boolean(selectedOrder) && PICKUP_STATUSES.includes(selectedStatus);
+  const canCompleteDropOff = Boolean(selectedOrder) && DROPOFF_STATUSES.includes(selectedStatus);
+  const pinOrder = myActiveOrders.find((o) => isSameId(o.id, pinOrderId)) || null;
+  const dropOffOrder = myActiveOrders.find((o) => isSameId(o.id, dropOffOrderId)) || null;
 
   return (
-    <div className="flex h-screen w-full bg-[#0F1117] text-slate-100 font-sans overflow-hidden select-none">
-      {/* Toast Notification Banner */}
-      {toastMsg && (
-        <div className="fixed top-5 right-5 z-50 p-3.5 px-4 rounded-xl bg-[#1A1D24]/95 border border-emerald-500/50 text-emerald-300 text-xs font-semibold shadow-2xl flex items-center gap-2.5 animate-toast-enter backdrop-blur-md">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMsg}</span>
+    <div className="flex h-screen w-full bg-[#0F1117] text-slate-100 font-sans overflow-hidden">
+      {/* Announcements */}
+      <div aria-live="polite" className="sr-only">
+        {banner?.tone === 'success' ? banner.text : ''}
+      </div>
+      {banner && (
+        <div
+          role={banner.tone === 'error' ? 'alert' : 'status'}
+          aria-live={banner.tone === 'error' ? 'assertive' : 'polite'}
+          className={`fixed top-5 right-5 z-50 max-w-sm p-3.5 px-4 rounded-xl shadow-2xl flex items-start gap-2.5 text-xs font-semibold border ${
+            banner.tone === 'error'
+              ? 'bg-red-950/95 text-red-200 border-red-500/50'
+              : 'bg-[#1A1D24]/95 text-emerald-300 border-emerald-500/50'
+          }`}
+        >
+          {banner.tone === 'error' ? (
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-px" aria-hidden="true" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-px" aria-hidden="true" />
+          )}
+          <span>{banner.text}</span>
         </div>
       )}
 
-      {/* ── MOBILE DRAWER BACKDROP (Screen < 768px) ── */}
-      {isMobileDrawerOpen && (
+      {/* Persistent error / missing-profile banners */}
+      {profileError && (
         <div
+          role="alert"
+          className="fixed top-16 right-5 z-40 max-w-sm p-3.5 rounded-xl bg-[#1A1D24] border border-amber-500/50 text-amber-200 text-xs font-semibold flex items-start gap-2.5 shadow-xl"
+        >
+          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-px" aria-hidden="true" />
+          <span className="space-y-2 block">
+            {profileError}
+            <button
+              type="button"
+              onClick={() => loadProfile()}
+              className="flex items-center gap-1.5 underline hover:no-underline"
+            >
+              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> Retry
+            </button>
+          </span>
+        </div>
+      )}
+
+      {isMobileDrawerOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation"
           onClick={() => setIsMobileDrawerOpen(false)}
-          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 md:hidden"
         />
       )}
 
-      {/* ════════════════════════════════════════════════════════════════
-          2. COLLAPSIBLE LEFT SIDEBAR (KDS Style)
-      ════════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════ SIDEBAR ══════════════════════════ */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 md:static bg-[#14171F] border-r border-slate-800 flex flex-col shrink-0 transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
-        } ${
-          isMobileDrawerOpen ? 'translate-x-0 w-72 shadow-2xl' : '-translate-x-full md:translate-x-0'
-        }`}
+        } ${isMobileDrawerOpen ? 'translate-x-0 w-72 shadow-2xl' : '-translate-x-full md:translate-x-0'}`}
       >
-        {/* Sidebar Header */}
         <div className="h-16 px-3.5 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
-              <Bike className="w-5 h-5" />
-            </div>
-
+            <span className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
+              <Bike className="w-5 h-5" aria-hidden="true" />
+            </span>
             {!isSidebarCollapsed && (
               <div className="min-w-0">
-                <span className="text-xs font-black tracking-wider text-white uppercase block truncate">
-                  HotPot Kigali
-                </span>
-                <span className="text-[10px] text-amber-400 font-bold block truncate">
-                  Rider Dispatch
-                </span>
+                <span className="text-xs font-black tracking-wider text-white uppercase block truncate">HotPot Kigali</span>
+                <span className="text-[10px] text-amber-400 font-bold block truncate">Courier Dispatch</span>
               </div>
             )}
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            {/* Prominent Home button (navigates to /store) */}
             <button
+              type="button"
               onClick={() => {
                 setIsMobileDrawerOpen(false);
-                if (onExploreMenu) {
-                  onExploreMenu();
-                } else if (onSwitchRole) {
-                  onSwitchRole('customer');
-                } else {
-                  window.location.href = '/';
-                }
+                onGoHome?.();
               }}
-              className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center shadow-xs"
-              title="Return to Customer Store Menu"
-              aria-label="Return to Store Menu"
+              className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center"
+              title="Return to the store menu"
             >
-              <Home className="w-4 h-4" />
+              <Home className="w-4 h-4" aria-hidden="true" />
+              <span className="sr-only">Return to the store menu</span>
             </button>
-
-            {/* Mobile Close Button */}
             <button
+              type="button"
               onClick={() => setIsMobileDrawerOpen(false)}
               className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-9 min-w-9 flex items-center justify-center"
-              aria-label="Close Menu"
             >
-              <X className="w-4 h-4 text-orange-400" />
+              <X className="w-4 h-4 text-orange-400" aria-hidden="true" />
+              <span className="sr-only">Close navigation menu</span>
             </button>
-
-            {/* Desktop Sidebar Collapse Toggle */}
             <button
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="hidden md:flex p-1.5 rounded-lg bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-400 hover:text-white transition-all shadow-xs"
-              title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-              aria-label="Toggle Sidebar"
+              type="button"
+              onClick={() => setIsSidebarCollapsed((v) => !v)}
+              className="hidden md:flex p-1.5 rounded-lg bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-400 hover:text-white transition-all"
+              title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {isSidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+              {isSidebarCollapsed ? (
+                <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+              ) : (
+                <ChevronLeft className="w-3.5 h-3.5" aria-hidden="true" />
+              )}
+              <span className="sr-only">{isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}</span>
             </button>
           </div>
         </div>
 
-        {/* Scrollable Nav Links & Summary Widgets */}
-        <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-4">
-          {/* Prominent Duty Availability Toggle Switch */}
-          <div className={`p-3 rounded-2xl border transition-all ${
-            isOnDuty
-              ? 'bg-emerald-500/10 border-emerald-500/30 shadow-md shadow-emerald-500/10'
-              : 'bg-slate-800/40 border-slate-700/60'
-          }`}>
-            <div className="flex items-center justify-between">
+        <div className="flex-1 overflow-y-auto no-scrollbar [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-4">
+          {/* Duty toggle */}
+          <div
+            className={`p-3 rounded-2xl border transition-all ${
+              isOnDuty ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-800/40 border-slate-700/60'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
               {!isSidebarCollapsed && (
                 <div className="min-w-0 pr-2">
                   <span className="text-xs font-black text-white truncate flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-                    {isOnDuty ? 'Available for Orders' : 'Off Duty / Busy'}
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}
+                      aria-hidden="true"
+                    />
+                    {profile ? (isOnDuty ? 'Available for orders' : 'Off duty') : 'Duty status unknown'}
                   </span>
                   <span className="text-[10px] text-slate-400 block truncate">
-                    {isOnDuty ? 'Ready for kitchen dispatch' : 'Hidden from kitchen list'}
+                    {profile
+                      ? isOnDuty
+                        ? 'Dispatch can assign you to a run'
+                        : 'You will not receive new runs'
+                      : 'Sign in with a courier account to go on duty'}
                   </span>
                 </div>
               )}
               <button
+                type="button"
                 onClick={handleToggleDuty}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                disabled={!profile || dutyPending}
+                aria-pressed={isOnDuty}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 disabled:opacity-40 disabled:cursor-not-allowed ${
                   isOnDuty ? 'bg-emerald-500' : 'bg-slate-700'
                 }`}
-                title="Toggle Courier Duty Status"
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
                     isOnDuty ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
+                <span className="sr-only">
+                  {dutyPending ? 'Saving duty status' : isOnDuty ? 'Go off duty' : 'Go on duty'}
+                </span>
               </button>
             </div>
           </div>
 
-          {/* Section: Main Navigation */}
+          {/* Navigation */}
           <div className="space-y-1.5">
             {!isSidebarCollapsed && (
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 mb-1.5 block">
-                Navigation
-              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 mb-1.5 block">Navigation</span>
             )}
-
-            {[
-              {
-                id: 'dispatch',
-                label: 'Active Dispatch',
-                icon: Bike,
-                badge: activeDeliveries.length,
-                isPulse: activeDeliveries.length > 0
-              },
-              {
-                id: 'trips',
-                label: 'Completed Trips & Earnings',
-                icon: CheckCircle2,
-                badge: completedDeliveries.length
-              },
-              {
-                id: 'settings',
-                label: 'Vehicle & Profile Settings',
-                icon: Settings
-              }
-            ].map((tab) => {
+            {navItems.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => {
                     setActiveTab(tab.id);
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${
                     isActive
-                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20 scale-[1.01]'
+                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
                   title={tab.label}
                 >
-                  <div className="relative shrink-0 flex items-center justify-center">
-                    <Icon className="w-4 h-4" />
-                    {tab.isPulse && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                  <span className="relative shrink-0 flex items-center justify-center">
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                    {tab.pulse && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping" aria-hidden="true" />
                     )}
-                  </div>
-
-                  <span className={`flex-1 text-left truncate ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                    {tab.label}
                   </span>
-
-                  {tab.badge !== undefined && tab.badge > 0 && (
+                  <span className={`flex-1 text-left truncate ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{tab.label}</span>
+                  {tab.badge > 0 && (
                     <span
                       className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold shrink-0 ${
-                        isActive
-                          ? 'bg-black/30 text-white'
-                          : tab.isPulse
-                          ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
-                          : 'bg-white/10 text-slate-300'
+                        isActive ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
                       } ${isSidebarCollapsed ? 'md:hidden' : ''}`}
                     >
                       {tab.badge}
@@ -386,81 +584,73 @@ export default function RiderDashboard({
             })}
           </div>
 
-          {/* Section: Sidebar Summary Widgets */}
+          {/* Shift metrics */}
           <div className="space-y-2.5 pt-3 border-t border-slate-800">
             {!isSidebarCollapsed && (
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 block">
-                Live Shift Metrics
-              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 block">Shift Metrics</span>
             )}
 
-            {/* Active Rides Badge */}
             <div
               className={`p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between min-h-10 ${
                 isSidebarCollapsed ? 'md:justify-center md:p-2' : ''
               }`}
-              title={`Active Rides: ${activeDeliveries.length}`}
             >
-              <div className="flex items-center gap-2">
-                <Radio className="w-3.5 h-3.5 text-orange-400 animate-pulse shrink-0" />
-                <span className={`text-xs font-semibold text-slate-300 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                  Active Rides
-                </span>
-              </div>
+              <span className="flex items-center gap-2 min-w-0">
+                <Radio className="w-3.5 h-3.5 text-orange-400 shrink-0" aria-hidden="true" />
+                <span className={`text-xs font-semibold text-slate-300 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>Active runs</span>
+              </span>
               <span className={`font-mono font-bold text-xs text-orange-400 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                {activeDeliveries.length}
+                {profile ? myActiveOrders.length : '—'}
               </span>
             </div>
 
-            {/* Completed Today Badge */}
             <div
               className={`p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between min-h-10 ${
                 isSidebarCollapsed ? 'md:justify-center md:p-2' : ''
               }`}
-              title={`Completed Today: ${completedDeliveries.length}`}
             >
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="flex items-center gap-2 min-w-0">
+                <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />
                 <span className={`text-xs font-semibold text-slate-300 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                  Completed Today
+                  Completed today
                 </span>
-              </div>
+              </span>
               <span className={`font-mono font-bold text-xs text-blue-400 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                {completedDeliveries.length}
+                {completedToday === null || Number.isNaN(completedToday) ? '—' : completedToday}
               </span>
             </div>
 
-            {/* Today's Earnings Pill */}
             <div
-              className={`p-3 rounded-2xl bg-[#10131A] border border-slate-800 text-center space-y-0.5 ${
-                isSidebarCollapsed ? 'md:p-2 md:space-y-0' : ''
+              className={`p-3 rounded-2xl bg-[#10131A] border border-slate-800 text-center ${
+                isSidebarCollapsed ? 'md:p-2' : ''
               }`}
             >
               <span className={`text-[10px] uppercase font-bold text-slate-400 block ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                Today's Earnings
+                Today&rsquo;s earnings
               </span>
               <div className="text-sm sm:text-base font-mono font-extrabold text-amber-400 truncate">
-                {todayEarnings.toLocaleString()} <span className="text-[10px] font-sans font-normal text-slate-400">RWF</span>
+                {earningsToday === null || Number.isNaN(earningsToday) ? (
+                  <span className="text-slate-500">&mdash;</span>
+                ) : (
+                  earningsToday.toLocaleString()
+                )}{' '}
+                <span className="text-[10px] font-sans font-normal text-slate-400">RWF</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Sidebar Footer: Rider Profile Badge */}
         <div className="p-3 border-t border-slate-800 bg-[#10131A] shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-sm border border-white/10">
-              {riderUser.name ? riderUser.name[0].toUpperCase() : 'E'}
-            </div>
-
+            <span className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-sm border border-white/10">
+              {initialsOf(riderName)}
+            </span>
             {!isSidebarCollapsed && (
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">
-                  {riderUser.name || 'Eric Mugisha'}
-                </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="px-1.5 py-0.2 rounded-md bg-orange-500/15 border border-orange-500/30 text-[10px] font-mono font-bold text-orange-400 truncate">
-                    {riderUser.plateNumber || 'RAC 402B'}
+                <div className="text-xs font-bold text-white truncate">{riderName}</div>
+                <div className="mt-0.5">
+                  <span className="inline-block px-1.5 py-0.2 rounded-md bg-orange-500/15 border border-orange-500/30 text-[10px] font-mono font-bold text-orange-400">
+                    {plateNumber || 'no plate on file'}
                   </span>
                 </div>
               </div>
@@ -469,441 +659,428 @@ export default function RiderDashboard({
         </div>
       </aside>
 
-      {/* ════════════════════════════════════════════════════════════════
-          3. MAIN CANVAS & COMPACT TOP HEADER BAR
-      ════════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════ MAIN CANVAS ══════════════════════════ */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        {/* Compact Top Header Bar */}
-        <header className="h-16 bg-[#14171F] border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
-          {/* Left Section */}
+        <header className="h-16 bg-[#14171F] border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between gap-3 shrink-0 z-20">
           <div className="flex items-center gap-3 min-w-0">
             <button
+              type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
               className="md:hidden p-2.5 rounded-xl bg-[#1A1D24] border border-slate-800 text-slate-300 hover:text-white min-h-11 min-w-11 flex items-center justify-center"
-              aria-label="Open Navigation"
             >
-              <Menu className="w-5 h-5 text-orange-400" />
+              <Menu className="w-5 h-5 text-orange-400" aria-hidden="true" />
+              <span className="sr-only">Open navigation menu</span>
             </button>
 
             <div className="space-y-0.5 min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-black text-white truncate">
-                  Delivery Dispatch Console — {riderUser.name}
-                </h1>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/30 text-amber-400 text-[11px] font-mono font-bold">
-                  {riderUser.plateNumber || 'RAC 402B'}
-                </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="text-sm sm:text-base font-black text-white truncate">Courier Dispatch Console</h1>
+                {plateNumber && (
+                  <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/30 text-amber-400 text-[11px] font-mono font-bold shrink-0">
+                    {plateNumber}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-400 truncate hidden xs:block">
-                HotPot Kigali Moto Courier Express Dispatch & Route Tracking
+                {profile
+                  ? `${riderName} · ${statusLabel(profile.status)} · last seen ${formatClock(profile.lastSeenAt)}`
+                  : 'Courier record not loaded'}
               </p>
             </div>
           </div>
 
-          {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Back to Home Store Button */}
             <button
-              onClick={() => {
-                if (onExploreMenu) {
-                  onExploreMenu();
-                } else if (onSwitchRole) {
-                  onSwitchRole('customer');
-                } else {
-                  window.location.href = '/';
-                }
-              }}
-              className="min-h-9.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-orange-500/15 border border-slate-700 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
-              title="Return to Customer Store Menu"
+              type="button"
+              onClick={() => onGoHome?.()}
+              className="min-h-9.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-orange-500/15 border border-slate-700 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-all"
             >
-              <Home className="w-4 h-4 text-orange-400" />
+              <Home className="w-4 h-4 text-orange-400" aria-hidden="true" />
               <span className="hidden sm:inline">Store Home</span>
+              <span className="sm:hidden sr-only">Store Home</span>
             </button>
 
-            {/* Today's Earnings Badge */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-amber-500/30 text-amber-400 text-xs font-bold shadow-xs">
-              <DollarSign className="w-4 h-4 text-amber-400" />
-              <span>{todayEarnings.toLocaleString()} RWF</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-amber-500/30 text-amber-400 text-xs font-bold">
+              <DollarSign className="w-4 h-4 text-amber-400" aria-hidden="true" />
+              <span>{earningsToday === null || Number.isNaN(earningsToday) ? '— RWF' : `${formatRwf(earningsToday)} RWF`}</span>
             </div>
 
-            {/* Duty Status Toggle */}
             <button
+              type="button"
               onClick={handleToggleDuty}
-              className={`min-h-9.5 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border shadow-sm ${
+              disabled={!profile || dutyPending}
+              className={`min-h-9.5 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border disabled:opacity-40 disabled:cursor-not-allowed ${
                 isOnDuty
-                  ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300 shadow-emerald-500/10'
+                  ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300'
                   : 'bg-slate-800/60 hover:bg-slate-700/60 border-slate-700 text-slate-400'
               }`}
-              title="Click to toggle duty status"
             >
-              <span className={`w-2 h-2 rounded-full ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-              <span>{isOnDuty ? 'ON DUTY' : 'OFF DUTY'}</span>
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}
+                aria-hidden="true"
+              />
+              <span>{!profile ? 'UNKNOWN' : dutyPending ? 'SAVING' : isOnDuty ? 'ON DUTY' : 'OFF DUTY'}</span>
+              <span className="sr-only">{isOnDuty ? 'Go off duty' : 'Go on duty'}</span>
             </button>
-
-            {/* Live Digital Clock */}
-            <div className="hidden lg:flex items-center gap-1.5 font-mono text-xs text-amber-300 bg-[#1A1D24] border border-slate-800 px-3 py-1.5 rounded-xl shadow-xs">
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <span>
-                {currentTime.toLocaleTimeString('en-US', { hour12: false })} <span className="text-[10px] text-slate-500">CAT</span>
-              </span>
-            </div>
           </div>
         </header>
 
-        {/* ════════════════════════════════════════════════════════════════
-            4. WORKSPACE CONTENT (TAB ROUTING)
-        ════════════════════════════════════════════════════════════════ */}
+        {/* ── TAB: DISPATCH ── */}
         {activeTab === 'dispatch' && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            {/* Mobile View Mode Switcher (< 768px) */}
             <div className="md:hidden flex border-b border-slate-800 bg-[#14171F] p-2 gap-2 shrink-0">
               <button
+                type="button"
                 onClick={() => setMobileViewMode('list')}
+                aria-pressed={mobileViewMode === 'list'}
                 className={`flex-1 min-h-11 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                   mobileViewMode === 'list'
-                    ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white'
                     : 'bg-[#1A1D24] text-slate-400 border border-slate-800'
                 }`}
               >
-                <Bike className="w-4 h-4" />
-                <span>Requests Queue ({activeDeliveries.length})</span>
+                <Bike className="w-4 h-4" aria-hidden="true" />
+                <span>Queue ({profile ? myActiveOrders.length : 0})</span>
               </button>
-
               <button
-                onClick={() => setMobileViewMode('navigation')}
+                type="button"
+                onClick={() => setMobileViewMode('route')}
+                aria-pressed={mobileViewMode === 'route'}
                 className={`flex-1 min-h-11 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                  mobileViewMode === 'navigation'
-                    ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                  mobileViewMode === 'route'
+                    ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white'
                     : 'bg-[#1A1D24] text-slate-400 border border-slate-800'
                 }`}
               >
-                <Navigation className="w-4 h-4" />
-                <span>Route Navigation</span>
+                <Navigation className="w-4 h-4" aria-hidden="true" />
+                <span>Route</span>
               </button>
             </div>
 
-            {/* Split-View 2-Column Workspace */}
             <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-              {/* ── LEFT PANEL: Active Requests Queue (35% width) ── */}
+              {/* Queue */}
               <div
                 className={`w-full md:w-[38%] lg:w-[33%] flex flex-col border-r border-slate-800 bg-[#10131A] shrink-0 min-h-0 ${
-                  mobileViewMode === 'navigation' ? 'hidden md:flex' : 'flex'
+                  mobileViewMode === 'route' ? 'hidden md:flex' : 'flex'
                 }`}
               >
-                {/* Panel Header */}
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between shrink-0 bg-[#14171F]">
-                  <div className="flex items-center gap-2">
-                    <Bike className="w-4 h-4 text-orange-400" />
-                    <h2 className="text-xs font-black uppercase tracking-wider text-white">
-                      Active Requests Queue
-                    </h2>
-                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
+                    <Bike className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                    My active runs
+                  </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-mono text-xs font-bold border border-orange-500/40">
-                    {activeDeliveries.length}
+                    {profile ? myActiveOrders.length : 0}
                   </span>
                 </div>
 
-                {/* Scrollable Requests List */}
-                <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3.5 space-y-3">
-                  {activeDeliveries.length === 0 ? (
-                    <div className="p-8 text-center bg-[#1A1D24] rounded-2xl border border-slate-800 text-slate-400 space-y-2 mt-4">
-                      <Bike className="w-8 h-8 text-slate-600 mx-auto" />
-                      <p className="text-xs font-bold text-white">No active delivery assignments.</p>
-                      <p className="text-[11px]">Ready orders from the cooker will appear here automatically.</p>
-                    </div>
+                <div className="flex-1 overflow-y-auto no-scrollbar [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3.5 space-y-3">
+                  {profileLoading ? (
+                    <p className="p-6 text-center text-xs text-slate-400">Loading your courier record&hellip;</p>
+                  ) : !profile ? (
+                    <EmptyState
+                      icon={<AlertCircle className="w-8 h-8" aria-hidden="true" />}
+                      title="No courier record"
+                    >
+                      <p>{profileError || 'Your courier record could not be loaded.'}</p>
+                    </EmptyState>
+                  ) : myActiveOrders.length === 0 ? (
+                    <EmptyState icon={<Bike className="w-8 h-8" aria-hidden="true" />} title="No active runs assigned to you">
+                      <p>Dispatch assigns runs once the kitchen marks them ready.</p>
+                      {!isOnDuty && <p>You are off duty, so you will not be given new runs.</p>}
+                    </EmptyState>
                   ) : (
-                    activeDeliveries.map((order) => {
-                      const isSelected = selectedOrder?.id === order.id;
-                      const isReady = order.status === 'ready';
+                    myActiveOrders.map((order) => {
+                      const isSelected = isSameId(selectedOrder?.id, order.id);
                       return (
-                        <div
+                        <button
                           key={order.id}
+                          type="button"
                           onClick={() => {
-                            setSelectedOrder(order);
-                            setMobileViewMode('navigation');
+                            setSelectedOrderId(order.id);
+                            setMobileViewMode('route');
                           }}
-                          className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-3 shadow-md ${
+                          aria-pressed={isSelected}
+                          className={`w-full text-left p-4 rounded-2xl border transition-all space-y-3 shadow-md focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${
                             isSelected
-                              ? 'bg-[#1A1D24] border-orange-500 shadow-orange-500/10 ring-1 ring-orange-500/40'
+                              ? 'bg-[#1A1D24] border-orange-500 ring-1 ring-orange-500/40'
                               : 'bg-[#14171F] border-slate-800 hover:border-slate-700'
                           }`}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-white text-sm">
-                              #{order.id}
-                            </span>
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider border ${getStatusBadge(order.status)}`}>
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="font-mono font-bold text-white text-sm">#{order.id}</span>
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider border ${statusBadge(order.status)}`}
+                            >
                               {order.status}
                             </span>
-                          </div>
+                          </span>
 
-                          <div className="space-y-1 text-xs">
-                            <div className="font-bold text-white flex items-center justify-between">
-                              <span>{order.customerName || 'HotPot Customer'}</span>
-                              <span className="font-mono text-amber-400 font-bold">
-                                {(Number(order.totalRWF) || 0).toLocaleString()} RWF
-                              </span>
-                            </div>
-
-                            <div className="text-slate-400 flex items-center gap-1.5 pt-0.5">
-                              <MapPin className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                              <span className="truncate text-[11px]">{order.address || 'Kigali, Rwanda'}</span>
-                            </div>
-                          </div>
-
-                          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                            <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> {order.orderTime || 'Just now'}
+                          <span className="block space-y-1 text-xs">
+                            <span className="font-bold text-white flex items-center justify-between gap-2">
+                              <span className="truncate">{order.customerName || 'Customer'}</span>
+                              <span className="font-mono text-amber-400 font-bold shrink-0">{formatRwf(order.totalRWF)} RWF</span>
                             </span>
+                            <span className="text-slate-400 flex items-center gap-1.5 pt-0.5">
+                              <MapPin className="w-3.5 h-3.5 text-orange-400 shrink-0" aria-hidden="true" />
+                              <span className="truncate text-[11px]">{order.address || 'No address on file'}</span>
+                            </span>
+                          </span>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedOrder(order);
-                                setMobileViewMode('navigation');
-                              }}
-                              className={`min-h-9 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                          <span className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-xs">
+                            <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                              <Clock className="w-3 h-3" aria-hidden="true" /> {formatWhen(order.createdAt)}
+                            </span>
+                            <span
+                              className={`min-h-9 px-3 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 ${
                                 isSelected
-                                  ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-sm shadow-orange-500/20'
-                                  : 'bg-[#1F242D] hover:bg-white/10 text-slate-300 hover:text-white border border-slate-700/60'
+                                  ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white'
+                                  : 'bg-[#1F242D] text-slate-300 border border-slate-700/60'
                               }`}
                             >
-                              <Navigation className="w-3.5 h-3.5" />
-                              <span>Select Route</span>
-                            </button>
-                          </div>
-                        </div>
+                              <Navigation className="w-3.5 h-3.5" aria-hidden="true" />
+                              Route
+                            </span>
+                          </span>
+                        </button>
                       );
                     })
                   )}
                 </div>
               </div>
 
-              {/* ── RIGHT PANEL: Active Navigation & Status Action (65% width) ── */}
+              {/* Route + actions */}
               <div
                 className={`flex-1 flex flex-col min-w-0 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117] ${
                   mobileViewMode === 'list' ? 'hidden md:flex' : 'flex'
                 }`}
               >
-                {selectedOrder ? (
-                  <div className="space-y-6">
-                    {/* Header Card */}
+                {!profile ? (
+                  <EmptyState icon={<AlertCircle className="w-10 h-10" aria-hidden="true" />} title="Courier record unavailable">
+                    <p>{profileError || 'Sign in with a courier account to see your runs.'}</p>
+                  </EmptyState>
+                ) : !selectedOrder ? (
+                  <EmptyState icon={<Bike className="w-12 h-12" aria-hidden="true" />} title="No run selected">
+                    <p>Pick a run from the queue to see the route and the next action.</p>
+                  </EmptyState>
+                ) : (
+                  <>
                     <div className="p-5 sm:p-6 rounded-2xl bg-[#14171F] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-xl sm:text-2xl font-black font-mono text-white">
-                            Order #{selectedOrder.id}
-                          </span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getStatusBadge(selectedOrder.status)}`}>
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <span className="text-xl sm:text-2xl font-black font-mono text-white">Order #{selectedOrder.id}</span>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${statusBadge(selectedOrder.status)}`}
+                          >
                             {selectedOrder.status}
                           </span>
                         </div>
                         <p className="text-xs text-slate-400">
-                          Assigned Courier: <strong className="text-white">{riderUser.name}</strong> • Vehicle: <strong className="text-amber-400 font-mono">{riderUser.plateNumber}</strong>
+                          Courier: <strong className="text-white">{riderName}</strong>
+                          {plateNumber ? (
+                            <>
+                              {' '}&bull;{' '}
+                              <strong className="text-amber-400 font-mono">{plateNumber}</strong>
+                            </>
+                          ) : null}
+                          {' '}&bull; assigned {formatWhen(selectedOrder.assignedAt)}
                         </p>
                       </div>
 
-                      {/* Call Customer Button (tel: link with min-h-11) */}
-                      <a
-                        href={`tel:${selectedOrder.phone || '0788000001'}`}
-                        className="min-h-11 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all self-start sm:self-auto"
-                      >
-                        <Phone className="w-4 h-4" />
-                        <span>Call Customer ({selectedOrder.phone || '0788000001'})</span>
-                      </a>
+                      {telHref(selectedOrder.customerPhone) && (
+                        <a
+                          href={telHref(selectedOrder.customerPhone)}
+                          className="min-h-11 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all self-start sm:self-auto"
+                        >
+                          <Phone className="w-4 h-4" aria-hidden="true" />
+                          <span>Call customer</span>
+                        </a>
+                      )}
                     </div>
 
-                    {/* Route Locations Grid */}
+                    {/* Pickup / drop-off */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                      {/* Pickup Restaurant Card */}
                       <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 space-y-3 shadow-lg">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <Home className="w-3.5 h-3.5 text-orange-400" /> Pickup Restaurant
+                            <Home className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" /> Pickup
                           </span>
                           <span className="px-2 py-0.5 rounded-md bg-orange-500/15 text-orange-400 font-mono text-[10px] font-bold">
                             ORIGIN
                           </span>
                         </div>
-
                         <div>
-                          <h4 className="text-sm font-bold text-white">HotPot Delights Kitchen HQ</h4>
-                          <p className="text-xs text-slate-300 mt-1">KG 7 Ave, Kimihurura, Kigali</p>
-                          <p className="text-[11px] text-amber-400 font-semibold mt-1">
-                            ✓ Prepared & packed fresh in thermal container
+                          <h4 className="text-sm font-bold text-white">{RESTAURANT.name}</h4>
+                          <p className="text-xs text-slate-300 mt-1">{RESTAURANT.address}</p>
+                          <p className="text-[11px] text-slate-400 font-semibold mt-2">
+                            {selectedOrder.status === 'ready'
+                              ? 'Packed and waiting at the pass.'
+                              : 'Still being prepared by the kitchen.'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Customer Drop-off Card */}
                       <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 space-y-3 shadow-lg flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-2">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-orange-400" /> Customer Drop-off
+                              <MapPin className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" /> Drop-off
                             </span>
                             <span className="px-2 py-0.5 rounded-md bg-orange-500/15 text-orange-400 font-mono text-[10px] font-bold">
                               DESTINATION
                             </span>
                           </div>
-
-                          <h4 className="text-sm font-bold text-white mt-2">
-                            {selectedOrder.customerName || 'HotPot Customer'}
-                          </h4>
-                          <p className="text-xs text-slate-300 mt-1">{selectedOrder.address || 'Kigali, Rwanda'}</p>
+                          <h4 className="text-sm font-bold text-white mt-2">{selectedOrder.customerName || 'Customer'}</h4>
+                          <p className="text-xs text-slate-300 mt-1">{selectedOrder.address || 'No address on file'}</p>
                         </div>
-
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.address || 'Kigali')}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="min-h-11 px-4 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all mt-2"
-                        >
-                          <Navigation className="w-4 h-4 text-orange-400" />
-                          <span>Open Google Maps GPS Route</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-slate-400 ml-auto" />
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* Order Details & Summary Card */}
-                    <div className="p-5 rounded-2xl bg-[#14171F] border border-slate-800 space-y-3 shadow-lg">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Ordered Items & Bill Summary
-                      </span>
-
-                      <div className="space-y-2">
-                        {(selectedOrder.items || []).map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-800/60 last:border-0">
-                            <span className="text-white font-medium">
-                              {item.qty || item.quantity || 1}x {item.name}
-                            </span>
-                            <span className="font-mono text-slate-400">
-                              {((item.price || 0) * (item.qty || item.quantity || 1)).toLocaleString()} RWF
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
-                        <span className="text-slate-300">Total Order Amount</span>
-                        <span className="text-amber-400 font-mono text-sm">
-                          {(Number(selectedOrder.totalRWF) || 0).toLocaleString()} RWF
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Action Stepper Buttons */}
-                    <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 space-y-4 shadow-xl">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
-                        Update Delivery Progression Status
-                      </label>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        {/* 1. Picked Up from Kitchen (4-Digit PIN) */}
-                        {selectedOrder.status === 'delivery' ? (
-                          <div className="min-h-12 px-5 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500 text-blue-300 shadow-md shadow-blue-500/20">
-                            <Navigation className="w-4 h-4 text-blue-400 animate-pulse" />
-                            <span>1. In Transit (GPS Telemetry Active)</span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setEnteredPin('');
-                              setPinError('');
-                              setShowPinModal(true);
-                            }}
-                            className="min-h-12 px-5 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all active:scale-95 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-orange-500/20"
+                        {selectedOrder.address ? (
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.address)}`}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="min-h-11 px-4 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all mt-2"
                           >
-                            <Key className="w-4 h-4 text-white" />
-                            <span>1. Confirm Package Pickup (PIN)</span>
+                            <Navigation className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                            <span>Open route in Google Maps</span>
+                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 ml-auto" aria-hidden="true" />
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Bill */}
+                    <SectionCard icon={<Package className="w-4 h-4 text-orange-400" aria-hidden="true" />} title="Items & bill">
+                      <div className="space-y-2">
+                        {(selectedOrder.items || []).map((item, index) => {
+                          const qty = Number(item.qty ?? item.quantity ?? 1) || 1;
+                          const unit = Number(item.price ?? item.unitPrice ?? 0) || 0;
+                          return (
+                            <div
+                              key={item.id || `${item.name}-${index}`}
+                              className="flex items-center justify-between gap-3 text-xs py-1 border-b border-slate-800/60 last:border-0"
+                            >
+                              <span className="text-white font-medium">
+                                {qty}x {item.name}
+                                {item.specialNote ? (
+                                  <span className="block text-[11px] text-amber-300 font-normal">{item.specialNote}</span>
+                                ) : null}
+                              </span>
+                              <span className="font-mono text-slate-400 shrink-0">{(unit * qty).toLocaleString()} RWF</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
+                        <span className="text-slate-300">Order total</span>
+                        <span className="text-amber-400 font-mono text-sm">{formatRwf(selectedOrder.totalRWF)} RWF</span>
+                      </div>
+                    </SectionCard>
+
+                    {/* Legal next steps only */}
+                    <SectionCard
+                      icon={<CheckSquare className="w-4 h-4 text-orange-400" aria-hidden="true" />}
+                      title="Next step"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        {canCompleteDropOff ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDropOffOrderId(selectedOrder.id);
+                              setDropOffOpen(true);
+                            }}
+                            className="min-h-12 px-5 py-3 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
+                          >
+                            <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                            <span>Mark delivered</span>
                           </button>
+                        ) : (
+                          <div className="min-h-12 px-5 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500 text-blue-300">
+                            <Navigation className="w-4 h-4 text-blue-400" aria-hidden="true" />
+                            <span>In transit</span>
+                          </div>
                         )}
 
-                        {/* 2. Complete & Capture Proof */}
-                        <button
-                          onClick={() => setShowProofModal(true)}
-                          className="min-h-12 px-5 py-3 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>2. Complete & Capture Proof</span>
-                        </button>
+                        {canConfirmPickup ? (
+                          <button
+                            type="button"
+                            onClick={() => openPinModal(selectedOrder.id)}
+                            className="min-h-12 px-5 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all active:scale-95 bg-linear-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-orange-500/20"
+                          >
+                            <Key className="w-4 h-4" aria-hidden="true" />
+                            <span>{selectedStatus === 'ready' ? 'Confirm pickup' : 'Confirm pickup (once ready)'}</span>
+                          </button>
+                        ) : (
+                          <div className="min-h-12 px-5 py-3 rounded-xl bg-slate-800/40 border border-slate-700 text-slate-400 font-bold text-xs flex items-center justify-center gap-2">
+                            <Key className="w-4 h-4" aria-hidden="true" />
+                            <span>Pickup already confirmed</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center p-12 text-center bg-[#14171F] rounded-2xl border border-slate-800 text-slate-400 space-y-3">
-                    <Bike className="w-12 h-12 text-slate-600" />
-                    <h3 className="text-base font-bold text-white">No Request Selected</h3>
-                    <p className="text-xs max-w-sm">
-                      Select an active delivery assignment from the queue on the left to view active route details and status controls.
-                    </p>
-                  </div>
+
+                      {canConfirmPickup && (
+                        <p className="text-[11px] text-slate-400">
+                          The handover code is the {HANDOVER_CODE_LENGTH} digits the customer reads out to you. This screen never shows
+                          it to you &mdash; you have to be given it.
+                        </p>
+                      )}
+                    </SectionCard>
+                  </>
                 )}
               </div>
             </div>
           </div>
         )}
 
-        {/* ════════════════════════════════════════════════════════════════
-            TAB 2: COMPLETED TRIPS & EARNINGS
-        ════════════════════════════════════════════════════════════════ */}
+        {/* ── TAB: TRIPS ── */}
         {activeTab === 'trips' && (
-          <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
+          <div className="flex-1 overflow-y-auto no-scrollbar [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-amber-400" />
-                  Completed Trips & Earnings Ledger
+                  <CheckCircle2 className="w-5 h-5 text-amber-400" aria-hidden="true" />
+                  Delivered runs
                 </h2>
-                <p className="text-xs text-slate-400">
-                  Daily record of successfully delivered orders and total commissions earned.
-                </p>
+                <p className="text-xs text-slate-400">Every order this courier account has marked delivered.</p>
               </div>
-
-              <div className="px-4 py-2 rounded-xl bg-[#14171F] border border-amber-500/30 text-amber-400 font-mono text-sm font-bold flex items-center gap-2 self-start sm:self-auto shadow-sm">
-                <DollarSign className="w-4 h-4 text-amber-400" />
-                <span>Today's Total: {todayEarnings.toLocaleString()} RWF</span>
+              <div className="px-4 py-2 rounded-xl bg-[#14171F] border border-amber-500/30 text-amber-400 font-mono text-sm font-bold self-start sm:self-auto">
+                Shift total: {earningsToday === null || Number.isNaN(earningsToday) ? '—' : `${formatRwf(earningsToday)} RWF`}
               </div>
             </div>
 
-            {completedDeliveries.length === 0 ? (
-              <div className="p-12 text-center bg-[#14171F] rounded-2xl border border-slate-800 text-slate-400 space-y-2">
-                <CheckCircle2 className="w-10 h-10 text-slate-600 mx-auto" />
-                <p className="text-xs font-bold text-white">No completed trips logged yet today.</p>
-                <p className="text-[11px]">As you deliver orders, they will be archived here in your ledger.</p>
-              </div>
+            {!profile ? (
+              <EmptyState icon={<AlertCircle className="w-10 h-10" aria-hidden="true" />} title="Courier record unavailable">
+                <p>{profileError || 'Sign in with a courier account to see your history.'}</p>
+              </EmptyState>
+            ) : myCompletedOrders.length === 0 ? (
+              <EmptyState icon={<CheckCircle2 className="w-10 h-10" aria-hidden="true" />} title="No delivered runs yet">
+                <p>Completed deliveries appear here once the server records them.</p>
+              </EmptyState>
             ) : (
               <div className="space-y-3">
-                {completedDeliveries.map((order) => (
+                {myCompletedOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="p-4 sm:p-5 rounded-2xl bg-[#14171F] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md hover:border-slate-700 transition-colors"
+                    className="p-4 sm:p-5 rounded-2xl bg-[#14171F] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
                     <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono font-bold text-sm text-white">#{order.id}</span>
                         <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30">
                           DELIVERED
                         </span>
-                        <span className="text-xs text-slate-400">• {order.customerName || 'Customer'}</span>
+                        <span className="text-xs text-slate-400 truncate">&bull; {order.customerName || 'Customer'}</span>
                       </div>
                       <p className="text-xs text-slate-400 flex items-center gap-1.5 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                        <span className="truncate">{order.address || 'Kigali'}</span>
+                        <MapPin className="w-3.5 h-3.5 text-orange-400 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{order.address || 'No address on file'}</span>
                       </p>
+                      <p className="text-[11px] text-slate-500">Delivered {formatWhen(order.updatedAt || order.createdAt)}</p>
                     </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                    <div className="flex items-center gap-4 shrink-0">
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-500 uppercase block">Rider Commission</span>
-                        <span className="font-mono font-bold text-amber-400 text-xs">+1,200 RWF</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-500 uppercase block">Order Total</span>
-                        <span className="font-mono font-bold text-white text-xs">
-                          {(Number(order.totalRWF) || 0).toLocaleString()} RWF
-                        </span>
+                        <span className="text-[10px] text-slate-500 uppercase block">Order total</span>
+                        <span className="font-mono font-bold text-white text-xs">{formatRwf(order.totalRWF)} RWF</span>
                       </div>
                     </div>
                   </div>
@@ -913,224 +1090,182 @@ export default function RiderDashboard({
           </div>
         )}
 
-        {/* ════════════════════════════════════════════════════════════════
-            TAB 3: VEHICLE & PROFILE SETTINGS
-        ════════════════════════════════════════════════════════════════ */}
+        {/* ── TAB: SETTINGS ── */}
         {activeTab === 'settings' && (
-          <div className="flex-1 overflow-y-auto no-scrollbar scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
+          <div className="flex-1 overflow-y-auto no-scrollbar [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 lg:p-8 space-y-6 bg-[#0F1117]">
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                <Settings className="w-5 h-5 text-orange-400" />
-                Vehicle & Rider Profile Settings
+                <Settings className="w-5 h-5 text-orange-400" aria-hidden="true" />
+                Vehicle &amp; rider profile
               </h2>
-              <p className="text-xs text-slate-400">
-                Manage your courier profile, registered motorcycle license, and safety gear verification.
-              </p>
+              <p className="text-xs text-slate-400">Read from your courier record. Edit it from the admin dashboard.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Profile & Vehicle Card */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#14171F] border border-slate-800 space-y-4 shadow-xl">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
-                  <User className="w-4 h-4 text-orange-400" /> Rider & Motorcycle Details
-                </h3>
+            {!profile ? (
+              <EmptyState icon={<AlertCircle className="w-10 h-10" aria-hidden="true" />} title="Courier record unavailable">
+                <p>{profileError || 'Sign in with a courier account to see your profile.'}</p>
+                <p>Fields the server has not stored are shown as &ldquo;not reported yet&rdquo; rather than guessed.</p>
+              </EmptyState>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SectionCard icon={<User className="w-4 h-4 text-orange-400" aria-hidden="true" />} title="Courier details">
+                  <div className="space-y-3 text-xs">
+                    <DetailRow label="Full name" value={profile.name || <UnknownValue what="no name stored" />} />
+                    <DetailRow label="Email" value={profile.email || <UnknownValue what="no email stored" />} />
+                    <DetailRow label="Contact number" value={profile.phone || <UnknownValue what="no phone stored" />} />
+                    <DetailRow
+                      label="License plate"
+                      valueClass="text-amber-400 font-mono font-bold"
+                      value={plateNumber || <UnknownValue what="no plate stored" />}
+                    />
+                    <DetailRow
+                      label="Vehicle"
+                      value={vehicleType || <UnknownValue what="no vehicle type stored" />}
+                    />
+                    <DetailRow
+                      label="Shift"
+                      value={profile.shift || <UnknownValue what="no shift stored" />}
+                    />
+                  </div>
+                </SectionCard>
 
-                <div className="space-y-3 text-xs">
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                    <span className="text-slate-400">Rider Full Name</span>
-                    <span className="text-white font-bold">{riderUser.name}</span>
+                <SectionCard icon={<Wallet className="w-4 h-4 text-orange-400" aria-hidden="true" />} title="Shift totals">
+                  <div className="space-y-3 text-xs">
+                    <DetailRow
+                      label="Earnings today"
+                      valueClass="text-amber-400 font-mono font-bold"
+                      value={
+                        earningsToday === null || Number.isNaN(earningsToday)
+                          ? <UnknownValue what="not in your record" />
+                          : `${formatRwf(earningsToday)} RWF`
+                      }
+                    />
+                    <DetailRow
+                      label="Deliveries today"
+                      value={
+                        completedToday === null || Number.isNaN(completedToday)
+                          ? <UnknownValue what="not in your record" />
+                          : completedToday
+                      }
+                    />
+                    <DetailRow label="Duty status" value={statusLabel(profile.status)} />
+                    <DetailRow
+                      label="Available for dispatch"
+                      value={profile.is_available ? 'Yes' : 'No'}
+                    />
+                    <DetailRow label="Last GPS ping" value={formatWhen(profile.lastSeenAt)} />
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                    <span className="text-slate-400">Contact Number</span>
-                    <span className="text-white font-mono">{riderUser.phone}</span>
-                  </div>
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                    <span className="text-slate-400">License Plate</span>
-                    <span className="text-amber-400 font-mono font-bold">{riderUser.plateNumber}</span>
-                  </div>
-                  <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                    <span className="text-slate-400">Vehicle Model</span>
-                    <span className="text-white font-bold">{riderUser.vehicleModel}</span>
-                  </div>
-                  <div className="flex justify-between py-1.5">
-                    <span className="text-slate-400">Operating Base</span>
-                    <span className="text-white font-bold">HotPot Kigali HQ (Kimihurura)</span>
-                  </div>
-                </div>
+                </SectionCard>
+
+                <SectionCard
+                  icon={<Shield className="w-4 h-4 text-orange-400" aria-hidden="true" />}
+                  title="Safety equipment"
+                  className="lg:col-span-2"
+                >
+                  <p className="text-xs text-slate-400">
+                    The old build showed a checklist of safety gear that was hardcoded and always ticked. There is no server record of
+                    what you are actually carrying, so nothing is ticked here.
+                  </p>
+                </SectionCard>
               </div>
-
-              {/* Safety & Compliance Card */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#14171F] border border-slate-800 space-y-4 shadow-xl">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
-                  <Shield className="w-4 h-4 text-orange-400" /> Safety & Equipment Checklist
-                </h3>
-
-                <div className="space-y-2.5">
-                  {[
-                    { label: 'DOT-Approved Helmet & Visor', checked: true },
-                    { label: 'Thermal Food Delivery Backpack with Hot Insulation', checked: true },
-                    { label: 'Mobile GPS Smartphone Mount & Power Bank', checked: true },
-                    { label: 'Reflective Safety Vest & Night Lights', checked: true },
-                    { label: 'Digital Proof of Delivery Mobile Scanner', checked: true }
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl bg-[#1A1D24] border border-slate-800 text-xs">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="text-slate-200 font-medium">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* ════════════════════════════════════════════════════════════════
-          5. PROOF OF DELIVERY CONFIRMATION MODAL
-      ════════════════════════════════════════════════════════════════ */}
-      {showProofModal && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#14171F] border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-bold text-white text-base">Proof of Delivery Confirmation</h3>
-              </div>
-              <button
-                onClick={() => setShowProofModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white min-h-9 min-w-9 flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-400">
-              Confirming handover for Order <strong className="text-white font-mono">#{selectedOrder.id}</strong> to <strong className="text-white">{selectedOrder.customerName}</strong>
-            </p>
-
-            <div className="space-y-3">
-              {/* Digital Signature */}
-              <div
-                onClick={() => setSignature(!signature)}
-                className={`p-4 rounded-xl border text-center cursor-pointer transition-all min-h-12.5 flex flex-col items-center justify-center ${
-                  signature
-                    ? 'bg-emerald-500/15 border-emerald-500 text-emerald-300'
-                    : 'bg-[#1A1D24] border-dashed border-slate-700 text-slate-400 hover:border-slate-500'
-                }`}
-              >
-                <PenTool className="w-5 h-5 mx-auto mb-1 text-amber-400" />
-                <span className="text-xs font-bold block">
-                  {signature ? '✓ Customer Signature Captured' : 'Tap to Record Customer Digital Signature'}
+      {/* ══════════════════════════ HANDOVER CODE MODAL ══════════════════════════ */}
+      {pinOpen && pinOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pin-modal-title"
+            className="bg-[#14171F] border border-orange-500/50 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 flex items-center justify-center shrink-0">
+                  <Key className="w-5 h-5" aria-hidden="true" />
                 </span>
-              </div>
-
-              {/* Photo Confirmation */}
-              <div
-                onClick={() => setPhotoConfirmed(!photoConfirmed)}
-                className={`p-4 rounded-xl border text-center cursor-pointer transition-all min-h-12.5 flex flex-col items-center justify-center ${
-                  photoConfirmed
-                    ? 'bg-emerald-500/15 border-emerald-500 text-emerald-300'
-                    : 'bg-[#1A1D24] border-dashed border-slate-700 text-slate-400 hover:border-slate-500'
-                }`}
-              >
-                <Camera className="w-5 h-5 mx-auto mb-1 text-orange-400" />
-                <span className="text-xs font-bold block">
-                  {photoConfirmed ? '✓ Delivery Photo Verified' : 'Tap to Take Delivery Photo'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleConfirmDelivery}
-              className="w-full min-h-12 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
-            >
-              <Check className="w-4 h-4" />
-              <span>Confirm Handover & Complete Order</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════════
-          6. 4-DIGIT HANDOVER PIN VERIFICATION MODAL
-      ════════════════════════════════════════════════════════════════ */}
-      {showPinModal && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#14171F] border border-orange-500/50 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 flex items-center justify-center">
-                  <Key className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-white text-base">Package Pickup Verification</h3>
-                  <p className="text-[11px] text-slate-400">Order #{selectedOrder.id} • HotPot Kitchen HQ</p>
+                <div className="min-w-0">
+                  <h3 id="pin-modal-title" className="font-bold text-white text-base">
+                    Confirm package pickup
+                  </h3>
+                  <p className="text-[11px] text-slate-400 truncate">
+                    Order #{pinOrder.id} &bull; {RESTAURANT.name}
+                  </p>
                 </div>
               </div>
               <button
-                onClick={() => setShowPinModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white"
+                type="button"
+                onClick={() => setPinOpen(false)}
+                disabled={pinPending}
+                className="p-2 rounded-lg text-slate-400 hover:text-white min-h-9 min-w-9 flex items-center justify-center"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
+                <span className="sr-only">Cancel pickup confirmation</span>
               </button>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Ask kitchen staff for the <strong className="text-amber-400">4-digit pickup code</strong> shown on their KDS terminal to confirm package handover.
+              Ask the customer to read you the <strong className="text-amber-400">{HANDOVER_CODE_LENGTH}-digit handover code</strong>{' '}
+              on their order screen. It confirms the right order reached the right courier.
             </p>
 
             {pinError && (
-              <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <div
+                role="alert"
+                className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-xs flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
                 <span>{pinError}</span>
               </div>
             )}
 
-            <form onSubmit={handleVerifyHandoverPin} className="space-y-4">
+            <form onSubmit={handleVerifyHandover} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block text-center">
-                  Enter 4-Digit Handover PIN
+                <label htmlFor="handover-code" className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block text-center">
+                  Handover code
                 </label>
                 <input
+                  id="handover-code"
+                  name="handover-code"
                   type="text"
-                  maxLength={4}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
+                  maxLength={HANDOVER_CODE_LENGTH}
                   autoFocus
-                  placeholder={selectedOrder.verification_pin || "e.g. 4829"}
+                  required
                   value={enteredPin}
                   onChange={(e) => {
-                    setEnteredPin(e.target.value.replace(/\D/g, ''));
+                    setEnteredPin(e.target.value.replace(/\D/g, '').slice(0, HANDOVER_CODE_LENGTH));
                     setPinError('');
                   }}
-                  className="w-full text-center tracking-[0.4em] font-mono font-black text-2xl py-3 rounded-2xl bg-[#1A1D24] border-2 border-orange-500/40 text-amber-300 placeholder-slate-600 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/30"
+                  aria-describedby="handover-code-hint"
+                  aria-invalid={Boolean(pinError)}
+                  className="w-full text-center tracking-[0.4em] font-mono font-black text-2xl py-3 rounded-2xl bg-[#1A1D24] border-2 border-orange-500/40 text-amber-300 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/30"
                 />
+                <p id="handover-code-hint" className="text-[11px] text-slate-500 text-center">
+                  {enteredPin.length} of {HANDOVER_CODE_LENGTH} digits
+                </p>
               </div>
-
-              {selectedOrder.verification_pin && (
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setEnteredPin(String(selectedOrder.verification_pin))}
-                    className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline font-mono"
-                  >
-                    Quick-fill Kitchen PIN: [{selectedOrder.verification_pin}]
-                  </button>
-                </div>
-              )}
 
               <div className="flex items-center gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowPinModal(false)}
-                  className="flex-1 py-3 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 hover:text-white font-bold text-xs"
+                  onClick={() => setPinOpen(false)}
+                  disabled={pinPending}
+                  className="flex-1 min-h-11 py-3 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 hover:text-white font-bold text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isVerifyingPin}
-                  className="flex-1 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all"
+                  disabled={pinPending || enteredPin.length !== HANDOVER_CODE_LENGTH}
+                  className="flex-1 min-h-11 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 text-white font-bold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isVerifyingPin ? 'Verifying PIN...' : 'Confirm Pickup ✅'}
+                  {pinPending ? 'Checking…' : 'Confirm pickup'}
                 </button>
               </div>
             </form>
@@ -1138,59 +1273,114 @@ export default function RiderDashboard({
         </div>
       )}
 
-      {/* ════════════════════════════════════════════════════════════════
-          7. NEW DELIVERY ASSIGNMENT AUDIO POPUP MODAL BANNER
-      ════════════════════════════════════════════════════════════════ */}
-      {newAssignmentAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="bg-linear-to-b from-[#1A1D24] to-[#14171F] border-2 border-orange-500 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-scale-in text-center">
-            <div className="w-16 h-16 rounded-3xl bg-orange-500/20 border-2 border-orange-500 text-orange-400 flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30 animate-bounce-short">
-              <Bike className="w-8 h-8" />
+      {/* ══════════════════════════ DROP-OFF CONFIRMATION ══════════════════════════ */}
+      {dropOffOpen && dropOffOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dropoff-modal-title"
+            className="bg-[#14171F] border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <h3 id="dropoff-modal-title" className="font-bold text-white text-base flex items-center gap-2 min-w-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" aria-hidden="true" />
+                <span className="truncate">Mark order #{dropOffOrder.id} delivered</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDropOffOpen(false)}
+                disabled={dropOffPending}
+                className="p-2 rounded-lg text-slate-400 hover:text-white min-h-9 min-w-9 flex items-center justify-center"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+                <span className="sr-only">Cancel delivery confirmation</span>
+              </button>
             </div>
 
+            <p className="text-xs text-slate-300">
+              Handing over to <strong className="text-white">{dropOffOrder.customerName || 'the customer'}</strong> at{' '}
+              <strong className="text-white">{dropOffOrder.address || 'the address on the order'}</strong>.
+            </p>
+            <p className="text-xs text-slate-400">
+              This tells the shop the order arrived and adds your delivery commission to today&rsquo;s total. Only press this once the
+              food has physically changed hands.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleCompleteDelivery}
+              disabled={dropOffPending}
+              className="w-full min-h-12 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all disabled:opacity-60"
+            >
+              <Check className="w-4 h-4" aria-hidden="true" />
+              <span>{dropOffPending ? 'Recording…' : 'Yes, hand over and complete'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════ NEW ASSIGNMENT ══════════════════════════ */}
+      {newAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="assignment-modal-title"
+            className="bg-linear-to-b from-[#1A1D24] to-[#14171F] border-2 border-orange-500 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 text-center"
+          >
+            <span className="w-16 h-16 rounded-3xl bg-orange-500/20 border-2 border-orange-500 text-orange-400 flex items-center justify-center mx-auto">
+              <Bike className="w-8 h-8" aria-hidden="true" />
+            </span>
+
             <div className="space-y-1">
-              <span className="px-3 py-1 rounded-full bg-orange-500/20 text-orange-300 text-xs font-mono font-black border border-orange-500/40">
-                🔔 NEW DISPATCH ASSIGNED
+              <span className="inline-block px-3 py-1 rounded-full bg-orange-500/20 text-orange-300 text-xs font-mono font-black border border-orange-500/40">
+                NEW RUN ASSIGNED
               </span>
-              <h3 className="text-xl font-black text-white pt-2">
-                Order #{newAssignmentAlert.id}
+              <h3 id="assignment-modal-title" className="text-xl font-black text-white pt-2">
+                Order #{newAssignment.id}
               </h3>
-              <p className="text-xs text-slate-300">
-                You have been dispatched to deliver hotpot dishes!
-              </p>
+              <p className="text-xs text-slate-300">You have been dispatched for this order.</p>
             </div>
 
             <div className="space-y-2 text-left bg-[#10131A] p-4 rounded-2xl border border-slate-800 text-xs">
               <div className="flex items-center gap-2 text-slate-300">
-                <Home className="w-4 h-4 text-orange-400 shrink-0" />
-                <span>Pickup: <strong>HotPot Delights Kitchen HQ (Kimihurura)</strong></span>
+                <Home className="w-4 h-4 text-orange-400 shrink-0" aria-hidden="true" />
+                <span className="truncate">Pickup: <strong className="text-white">{RESTAURANT.name}</strong></span>
               </div>
               <div className="flex items-center gap-2 text-slate-300">
-                <MapPin className="w-4 h-4 text-orange-400 shrink-0" />
-                <span className="truncate">Drop-off: <strong>{newAssignmentAlert.deliveryAddress || newAssignmentAlert.address || 'Kigali'}</strong></span>
+                <MapPin className="w-4 h-4 text-orange-400 shrink-0" aria-hidden="true" />
+                <span className="truncate">
+                  Drop-off: <strong className="text-white">{newAssignment.address || 'No address on file'}</strong>
+                </span>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-slate-400">
-                <span>Customer: <strong className="text-white">{newAssignmentAlert.customerName || 'Client'}</strong></span>
-                <span className="font-mono text-amber-400 font-bold">{(Number(newAssignmentAlert.totalRWF) || 0).toLocaleString()} RWF</span>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800 text-slate-400">
+                <span className="truncate">
+                  Customer: <strong className="text-white">{newAssignment.customerName || 'Customer'}</strong>
+                </span>
+                <span className="font-mono text-amber-400 font-bold shrink-0">{formatRwf(newAssignment.totalRWF)} RWF</span>
               </div>
             </div>
 
             <div className="flex items-center gap-3 pt-2">
               <button
-                onClick={() => setNewAssignmentAlert(null)}
-                className="flex-1 py-3 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 hover:text-white font-bold text-xs"
+                type="button"
+                onClick={() => setNewAssignment(null)}
+                className="flex-1 min-h-11 py-3 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 hover:text-white font-bold text-xs"
               >
                 Dismiss
               </button>
               <button
+                type="button"
                 onClick={() => {
-                  setSelectedOrder(newAssignmentAlert);
-                  setMobileViewMode('navigation');
-                  setNewAssignmentAlert(null);
+                  setSelectedOrderId(newAssignment.id);
+                  setActiveTab('dispatch');
+                  setMobileViewMode('route');
+                  setNewAssignment(null);
                 }}
-                className="flex-1 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-xs shadow-lg shadow-orange-500/30 active:scale-95 transition-all"
+                className="flex-1 min-h-11 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 text-white font-black text-xs shadow-lg shadow-orange-500/30 active:scale-95 transition-all"
               >
-                Accept & View Route 🛵
+                View route
               </button>
             </div>
           </div>

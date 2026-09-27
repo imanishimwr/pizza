@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Header from './components/Header';
 import Home from './pages/customer/Home';
 import ProductDetailsPage from './pages/customer/ProductDetailsPage';
@@ -16,72 +16,96 @@ import HelpModal from './components/customer/HelpModal';
 import ProfileModal from './components/customer/ProfileModal';
 import PostDeliveryFeedbackModal from './components/customer/PostDeliveryFeedbackModal';
 import MobileBottomNav from './components/MobileBottomNav';
-import { apiService } from './services/apiService';
+import {
+  session,
+  getMeals,
+  getOrders,
+  createOrder,
+  updateOrderStatus as apiUpdateOrderStatus,
+  cancelOrder as apiCancelOrder,
+  updateOrderNotes as apiUpdateOrderNotes,
+  logout as apiLogout,
+  refreshSession,
+  updateProfile,
+  onAuthLost,
+  cart as cartStore,
+  wishlist as wishlistStore,
+  trackedOrder as trackedOrderStore
+} from './services/apiService';
 import { eventBus } from './services/eventBus';
 import { notificationService } from './services/notificationService';
 import { downloadOrderReceiptPdf } from './utils/receiptGenerator';
-import { Bell, Flame } from 'lucide-react';
+import { Bell, Flame, Loader2, AlertTriangle as TriangleAlert, WifiOff } from 'lucide-react';
 import { io } from 'socket.io-client';
 
-function getRouteFromPath(pathname) {
-  const path = (pathname || '/').toLowerCase();
-  if (path.startsWith('/kitchen')) return { role: 'kitchen', tab: 'kitchen' };
-  if (path.startsWith('/delivery') || path.startsWith('/rider')) return { role: 'delivery', tab: 'delivery' };
-  if (path.startsWith('/admin')) return { role: 'admin', tab: 'admin' };
-  if (path.startsWith('/tracking')) return { role: 'customer', tab: 'tracking' };
-  if (path.startsWith('/orders')) return { role: 'customer', tab: 'orders' };
-  if (path.startsWith('/dashboard')) return { role: 'customer', tab: 'dashboard' };
-  if (path.startsWith('/product')) return { role: 'customer', tab: 'product-detail' };
-  return { role: 'customer', tab: 'menu' };
+// ---------------------------------------------------------------------------
+// Routing
+//
+// The URL only ever chooses WHICH VIEW renders. It never decides what you are
+// allowed to see: that comes from the role in the signed server session. The
+// previous build derived the role from `window.location.pathname`, which meant
+// typing /admin as any signed-in user rendered the admin dashboard.
+// ---------------------------------------------------------------------------
+const STAFF_ROLES = ['admin', 'kitchen', 'delivery'];
+
+const STAFF_HOME = { admin: '/admin', kitchen: '/kitchen', delivery: '/delivery' };
+const ROLE_HOME = { customer: '/dashboard', ...STAFF_HOME };
+
+function routeFromPath(pathname = '/') {
+  const path = pathname.toLowerCase();
+  if (path.startsWith('/kitchen')) return { view: 'kitchen' };
+  if (path.startsWith('/delivery') || path.startsWith('/rider')) return { view: 'delivery' };
+  if (path.startsWith('/admin')) return { view: 'admin' };
+  if (path.startsWith('/tracking')) return { view: 'tracking' };
+  if (path.startsWith('/orders')) return { view: 'orders' };
+  if (path.startsWith('/dashboard')) return { view: 'dashboard' };
+  if (path.startsWith('/product')) return { view: 'product-detail' };
+  return { view: 'menu' };
 }
 
-export default function App() {
-  const initialRoute = typeof window !== 'undefined'
-    ? getRouteFromPath(window.location.pathname)
-    : { role: 'customer', tab: 'menu' };
+function pathForView(view) {
+  if (view === 'kitchen') return '/kitchen';
+  if (view === 'delivery') return '/delivery';
+  if (view === 'admin') return '/admin';
+  if (view === 'tracking') return '/tracking';
+  if (view === 'orders') return '/orders';
+  if (view === 'dashboard') return '/dashboard';
+  if (view === 'product-detail') return '/product';
+  return '/';
+}
 
-  const [currentRole, setCurrentRole] = useState(initialRoute.role);
-  const [activeTab, setActiveTab] = useState(initialRoute.tab);
+/** Poll faster while the tab is visible, and never poll an unauthenticated tab. */
+const POLL_MS = 8000;
+
+export default function App() {
+  const [view, setView] = useState(() => routeFromPath(window.location.pathname).view);
+
+  // --- Session ------------------------------------------------------------
+  const [user, setUser] = useState(() => session.getUser());
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authError, setAuthError] = useState(null);
+
+  // --- Server data --------------------------------------------------------
   const [meals, setMeals] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [user, setUser] = useState(() => apiService.getUser());
-  const [cart, setCart] = useState(() => apiService.getCart());
-  const [wishlist, setWishlist] = useState(() => apiService.getWishlist());
+  const [mealsError, setMealsError] = useState(null);
+  const [ordersError, setOrdersError] = useState(null);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  // --- Local UI state -----------------------------------------------------
+  const [cart, setCart] = useState(() => cartStore.get());
+  const [wishlist, setWishlist] = useState(() => wishlistStore.get());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [lang, setLang] = useState('EN');
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() =>
+    document.documentElement.classList.contains('light-theme') ? 'light' : 'dark'
+  );
   const [toast, setToast] = useState(null);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    if (nextTheme === 'light') {
-      document.documentElement.classList.add('light-theme');
-    } else {
-      document.documentElement.classList.remove('light-theme');
-    }
-  };
-  const [selectedMeal, setSelectedMeal] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      if (id) {
-        try {
-          const cached = localStorage.getItem('hotpot_meals_v1');
-          const list = cached ? JSON.parse(cached) : [];
-          if (Array.isArray(list)) {
-            const found = list.find((meal) => String(meal.id) === String(id));
-            if (found) return found;
-          }
-        } catch (e) {}
-      }
-    }
-    return null;
-  });
+  const [selectedMeal, setSelectedMeal] = useState(null);
   const [trackedOrder, setTrackedOrder] = useState(() => {
-    const savedId = apiService.getTrackedOrderId();
-    return savedId ? { id: savedId } : null; // We will enrich this once orders load
+    const id = trackedOrderStore.get();
+    return id ? { id } : null;
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -90,862 +114,923 @@ export default function App() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [feedbackOrder, setFeedbackOrder] = useState(null);
   const [checkoutData, setCheckoutData] = useState(null);
+  const [orderBusy, setOrderBusy] = useState(false);
 
-  // Client-specific orders filter (client sees ONLY their own orders, admin sees ALL orders)
-  const clientOrders = useMemo(() => {
-    if (!Array.isArray(orders)) return [];
-    if (!user) {
-      const savedTrackedId = apiService.getTrackedOrderId();
-      return savedTrackedId ? orders.filter(o => o.id === savedTrackedId) : [];
-    }
-    return orders.filter(o => {
-      const matchUserId = o.userId && user.id && String(o.userId) === String(user.id);
-      const matchEmail = (o.userEmail && user.email && o.userEmail.toLowerCase() === user.email.toLowerCase()) || 
-                         (o.email && user.email && o.email.toLowerCase() === user.email.toLowerCase());
-      const matchPhone = o.phone && user.phone && o.phone.trim() === user.phone.trim();
-      const matchName = o.customerName && user.name && o.customerName.toLowerCase().trim() === user.name.toLowerCase().trim();
-      const matchTracked = apiService.getTrackedOrderId() === o.id;
-      return matchUserId || matchEmail || matchPhone || matchName || matchTracked;
+  const role = user?.role ? String(user.role).toLowerCase() : null;
+  const isStaff = role !== null && STAFF_ROLES.includes(role);
+  const token = session.getToken();
+
+  const toastTimer = useRef(null);
+  const showToast = useCallback((message, title = 'Notification', tone = 'info') => {
+    setToast({ title, message, tone });
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 4500);
+  }, []);
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      document.documentElement.classList.toggle('light-theme', next === 'light');
+      return next;
     });
-  }, [orders, user]);
-
-  const showToast = useCallback((message, title = 'Notification') => {
-    setToast({ title, message });
-    setTimeout(() => setToast(null), 4000);
   }, []);
 
-  // Load Initial Data from Backend
+  // -------------------------------------------------------------------------
+  // Session validation. The stored token is only trusted after the server
+  // confirms it, so an expired or forged session cannot render a staff view.
+  // -------------------------------------------------------------------------
   useEffect(() => {
-    const loadData = async () => {
-      const fetchedMeals = await apiService.getMeals();
-      setMeals(fetchedMeals);
-
-      const fetchedOrders = await apiService.getOrders();
-      setOrders(fetchedOrders);
-
-      const trackedId = apiService.getTrackedOrderId();
-      if (trackedId) {
-        const found = fetchedOrders.find(o => o.id === trackedId);
-        if (found) setTrackedOrder(found);
+    let cancelled = false;
+    (async () => {
+      if (!session.isAuthenticated()) {
+        setUser(null);
+        setAuthChecked(true);
+        return;
       }
-    };
-    loadData();
-  }, []);
-
-  // Sync state to local storage is no longer primary for meals/orders, but keeping it for offline fallback if needed.
-  useEffect(() => {
-    if (meals.length > 0) apiService.saveMeals?.(meals);
-  }, [meals]);
-
-  useEffect(() => {
-    if (orders.length > 0) apiService.saveOrders?.(orders);
-  }, [orders]);
-
-  useEffect(() => {
-    apiService.saveUser(user);
-  }, [user]);
-
-  useEffect(() => {
-    apiService.saveCart(cart);
-  }, [cart]);
-
-  useEffect(() => {
-    apiService.saveWishlist(wishlist);
-  }, [wishlist]);
-
-  useEffect(() => {
-    // 1. Live Socket.IO connection for instant real-time synchronization
-    // Use explicit socket URL if provided, otherwise connect to same origin (Vite proxy forwards /socket.io to backend)
-    const backendUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
-    let socket;
-    try {
-      socket = io(backendUrl, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-      });
-
-      socket.on('new_order_placed', (newOrder) => {
-        if (!newOrder) return;
-        setOrders((prev) => {
-          const exists = prev.some(o => o.id === newOrder.id);
-          if (exists) return prev;
-          return [newOrder, ...prev];
-        });
-        eventBus.emit('NEW_ORDER', newOrder, true);
-      });
-
-      socket.on('order_status_updated', (updatedOrder) => {
-        if (!updatedOrder) return;
-        setOrders((prev) => {
-          return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
-        });
-        eventBus.emit('ORDER_STATUS_UPDATE', { orderId: updatedOrder.id, status: updatedOrder.status, order: updatedOrder }, true);
-        // Show feedback modal for customer when their order is delivered
-        if (updatedOrder.status === 'delivered') {
-          setFeedbackOrder(updatedOrder);
-        }
-      });
-
-      socket.on('order_cancelled', (cancelledOrder) => {
-        if (!cancelledOrder) return;
-        setOrders((prev) => {
-          return prev.map(o => o.id === cancelledOrder.id ? { ...o, status: 'cancelled' } : o);
-        });
-      });
-    } catch (e) {
-      console.warn('Socket.io connection initialization error:', e);
-    }
-
-    // 2. Background Heartbeat Polling every 3.5 seconds to guarantee 100% real-time data sync without user refresh
-    const pollInterval = setInterval(async () => {
       try {
-        const freshOrders = await apiService.getOrders();
-        if (Array.isArray(freshOrders)) {
-          setOrders(freshOrders);
+        const fresh = await refreshSession();
+        if (!cancelled) {
+          setUser(fresh);
+          setAuthError(null);
         }
       } catch (err) {
-        // quiet suppression on background poll
+        if (!cancelled) {
+          session.clear();
+          setUser(null);
+          setAuthError(err.message || 'Please sign in again.');
+        }
+      } finally {
+        if (!cancelled) setAuthChecked(true);
       }
-    }, 3500);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
-    const unsubOrder = eventBus.on('NEW_ORDER', async (newOrder, isCrossTab) => {
-      if (isCrossTab) {
-        const freshOrders = await apiService.getOrders();
-        setOrders(Array.isArray(freshOrders) ? freshOrders : []);
-        showToast(`New Order #${newOrder.id} received!`, 'Incoming Order');
-        notificationService.playChime('new_order');
-        notificationService.sendDesktopNotification(`New Order #${newOrder.id}`, {
-          body: `Order total: ${newOrder.totalRWF} RWF`,
-        });
+  // A 401 from anywhere in the app drops us back to a signed-out state.
+  useEffect(
+    () =>
+      onAuthLost(() => {
+        setUser(null);
+        setOrders([]);
+        setAuthError('Your session expired. Please sign in again.');
+      }),
+    []
+  );
+
+  // -------------------------------------------------------------------------
+  // Menu: public, loaded once.
+  // -------------------------------------------------------------------------
+  const loadMeals = useCallback(async () => {
+    try {
+      setMealsError(null);
+      setMeals(await getMeals());
+    } catch (err) {
+      setMeals([]);
+      setMealsError(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMeals();
+  }, [loadMeals]);
+
+  // -------------------------------------------------------------------------
+  // Orders: the server scopes them by role, so there is no client-side
+  // ownership guesswork. A failure surfaces an error instead of a stale list.
+  // -------------------------------------------------------------------------
+  const loadOrders = useCallback(
+    async ({ silent = true } = {}) => {
+      if (!session.isAuthenticated()) {
+        setOrders([]);
+        return;
+      }
+      if (!silent) setLoadingOrders(true);
+      try {
+        const fresh = await getOrders();
+        setOrders(fresh);
+        setOrdersError(null);
+      } catch (err) {
+        setOrdersError(err.message);
+      } finally {
+        if (!silent) setLoadingOrders(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!token) {
+      setOrders([]);
+      setOrdersError(null);
+      return undefined;
+    }
+    loadOrders({ silent: false });
+    return undefined;
+  }, [token, loadOrders]);
+
+  // Resolve the tracked order once the book arrives.
+  useEffect(() => {
+    const id = trackedOrder?.id;
+    if (!id || !orders.length) return;
+    const found = orders.find((o) => o.id === id);
+    if (found) setTrackedOrder(found);
+  }, [orders, trackedOrder?.id]);
+
+  // -------------------------------------------------------------------------
+  // Polling + realtime. Two separate effects: the socket lifecycle depends only
+  // on the token, so a status change no longer tears down and rebuilds the
+  // connection. The previous version had `user`, `currentRole` and
+  // `trackedOrder` in the dependency array of the socket effect.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const controller = new AbortController();
+    let timer = null;
+
+    const schedule = () => {
+      clearTimeout(timer);
+      if (document.hidden) return;
+      timer = setTimeout(async () => {
+        await loadOrders();
+        schedule();
+      }, POLL_MS);
+    };
+
+    const onVisible = () => {
+      if (!document.hidden) {
+        loadOrders();
+        schedule();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    schedule();
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [token, loadOrders]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const base = (
+      import.meta.env.VITE_SOCKET_URL ||
+      (import.meta.env.VITE_API_BASE_URL
+        ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '')
+        : 'http://localhost:5002')
+    ).replace(/\/$/, '');
+
+    const socket = io(base, {
+      transports: ['websocket', 'polling'],
+      auth: { token: session.getToken() },
+      reconnectionAttempts: 8,
+      reconnectionDelay: 1000
+    });
+
+    const upsert = (incoming) =>
+      setOrders((prev) => {
+        const idx = prev.findIndex((o) => o.id === incoming.id);
+        if (idx === -1) return [incoming, ...prev];
+        const next = [...prev];
+        next[idx] = incoming;
+        return next;
+      });
+
+    socket.on('new_order_placed', (order) => {
+      if (!order) return;
+      upsert(order);
+      eventBus.emit('NEW_ORDER', order, true);
+    });
+
+    socket.on('order_status_updated', (order) => {
+      if (!order) return;
+      upsert(order);
+      eventBus.emit('ORDER_STATUS_UPDATE', { orderId: order.id, status: order.status, order }, true);
+      if (order.status === 'delivered' && String(order.userId) === String(session.getUser()?.id)) {
+        setFeedbackOrder(order);
       }
     });
 
-    const unsubStatus = eventBus.on('ORDER_STATUS_UPDATE', async ({ orderId, status }, isCrossTab) => {
-      const freshOrders = await apiService.getOrders();
-      setOrders(Array.isArray(freshOrders) ? freshOrders : []);
+    socket.on('order_cancelled', (order) => {
+      if (!order) return;
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'cancelled' } : o)));
+    });
 
-      const matchingOrder = Array.isArray(freshOrders) ? freshOrders.find(o => o.id === orderId) : null;
-      const isMyOrder = (trackedOrder && trackedOrder.id === orderId) || (user && matchingOrder && matchingOrder.userId === user.id);
-      const isAdmin = (user?.role || '').toUpperCase() === 'ADMIN' || currentRole === 'admin';
-
-      if (status === 'ready') {
-        notificationService.playChime('order_ready');
-        if (isAdmin) {
-          showToast(`Cooker confirmed Order #${orderId} is freshly prepared & packed! Ready for rider dispatch.`, '🍲 Kitchen Order Ready');
-          notificationService.sendDesktopNotification(`Order #${orderId} Ready!`, {
-            body: `Cooker has confirmed Order #${orderId} is ready for delivery dispatch.`
-          });
-        } else if (isMyOrder) {
-          showToast(`Your Order #${orderId} is freshly cooked and ready! Moto rider is preparing for pickup.`, '🎉 Your Meal is Ready!');
-          notificationService.sendDesktopNotification('Your Food is Ready! 🍲', {
-            body: `Order #${orderId} is cooked & packed! Watch the live tracking map.`
-          });
-        } else {
-          showToast(`Order #${orderId} is ready from the kitchen!`, 'Kitchen Update');
-        }
-      } else if (status === 'delivery') {
-        notificationService.playChime('status_update');
-        if (isAdmin) {
-          const rev = matchingOrder?.totalRWF ? `${Number(matchingOrder.totalRWF)?.toLocaleString() ?? ''} RWF` : '';
-          showToast(`Order #${orderId} ${rev ? `(${rev}) ` : ''}sold & handed to rider! Logged in Sales Report.`, '💰 Order Sold & Dispatched');
-          notificationService.sendDesktopNotification(`Sale Recorded: #${orderId}`, {
-            body: `Order #${orderId} handed to courier. Sale saved in Admin Financial Report.`
-          });
-        } else if (isMyOrder) {
-          showToast(`Your Order #${orderId} has been handed to the rider and is on its way!`, '🛵 Out for Delivery');
-        } else {
-          showToast(`Order #${orderId} handed to delivery rider.`, 'Delivery Update');
-        }
-      } else {
-        notificationService.playChime('status_update');
-        showToast(`Order #${orderId} status updated to: ${status.toUpperCase()}`, 'Order Updated');
-      }
+    socket.on('rider_fleet_updated', () => {
+      // Rider rosters are re-read by RiderDashboard/AdminDashboard on demand.
     });
 
     return () => {
-      if (socket) socket.disconnect();
-      clearInterval(pollInterval);
-      unsubOrder();
-      unsubStatus();
+      socket.removeAllListeners();
+      socket.disconnect();
     };
-  }, [showToast, user, currentRole, trackedOrder]);
+  }, [token]);
 
+  // Notification side effects read `user` and `trackedOrder` but must not be
+  // part of the socket lifecycle, so they live in their own effect.
   useEffect(() => {
-    const handlePopState = () => {
-      const route = getRouteFromPath(window.location.pathname);
-      setCurrentRole(route.role);
-      setActiveTab(route.tab);
-      if (route.tab === 'product-detail') {
-        const params = new URLSearchParams(window.location.search);
-        const id = params.get('id');
-        if (id) {
-          const found = meals.find((meal) => String(meal.id) === String(id));
-          if (found) setSelectedMeal(found);
+    const onNewOrder = (order, crossTab) => {
+      if (!crossTab || !order) return;
+      if (role === 'customer') return; // customers do not need the incoming-order chime
+      showToast(`New order #${order.id} received.`, 'Incoming Order');
+      notificationService.playChime('new_order');
+      notificationService.sendDesktopNotification(`New order #${order.id}`, {
+        body: `Order total: ${Number(order.totalRWF || 0).toLocaleString()} RWF`
+      });
+    };
+
+    const onStatusChange = ({ orderId, status, order }, crossTab) => {
+      if (!crossTab || !status) return;
+      const mine = String(order?.userId ?? '') === String(user?.id ?? '');
+      const mineTracked = trackedOrder?.id === orderId;
+
+      if (status === 'ready') {
+        notificationService.playChime('order_ready');
+        if (mine || mineTracked) {
+          showToast(`Your order #${orderId} is cooked and packed.`, 'Your meal is ready');
+        } else if (role !== 'customer') {
+          showToast(`Order #${orderId} is ready for dispatch.`, 'Kitchen update');
         }
+      } else if (status === 'delivery') {
+        notificationService.playChime('status_update');
+        if (mine || mineTracked) showToast(`Order #${orderId} is on the way.`, 'Out for delivery');
+        else if (role !== 'customer') showToast(`Order #${orderId} handed to a courier.`, 'Dispatch update');
+      } else if (role !== 'customer' || mine || mineTracked) {
+        notificationService.playChime('status_update');
+        showToast(`Order #${orderId} is now ${status}.`, 'Order updated');
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [meals]);
+    const offNew = eventBus.on('NEW_ORDER', onNewOrder);
+    const offStatus = eventBus.on('ORDER_STATUS_UPDATE', onStatusChange);
+    return () => {
+      offNew();
+      offStatus();
+    };
+  }, [user, role, trackedOrder?.id, showToast]);
 
-  const handleNavigate = (path, tabName, roleName) => {
-    const targetRole = roleName || (
-      path.includes('kitchen')
-        ? 'kitchen'
-        : path.includes('delivery') || path.includes('rider')
-          ? 'delivery'
-          : path.includes('admin')
-            ? 'admin'
-            : 'customer'
-    );
-
-    const targetTab = tabName || (
-      path.includes('tracking')
-        ? 'tracking'
-        : path.includes('orders')
-          ? 'orders'
-          : path.includes('dashboard')
-            ? 'dashboard'
-            : path.includes('product')
-              ? 'product-detail'
-              : 'menu'
-    );
-
-    // Guard: Customer can only access orders or tracking if they have at least 1 order
-    if (targetRole === 'customer' && (targetTab === 'orders' || targetTab === 'tracking') && clientOrders.length === 0) {
-      showToast('Order page is only accessible after purchasing an item. Explore our delicious menu to place your first order!', 'No Orders Yet');
-      setCurrentRole('customer');
-      setActiveTab('menu');
-      if (typeof window !== 'undefined' && window.history) {
-        window.history.pushState({}, '', '/');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      return;
-    }
-
-    setCurrentRole(targetRole);
-    setActiveTab(targetTab);
-
-    if (typeof window !== 'undefined' && window.history) {
+  // -------------------------------------------------------------------------
+  // Navigation
+  // -------------------------------------------------------------------------
+  const navigate = useCallback(
+    (path, nextView) => {
+      const target = nextView || routeFromView(path);
+      setView(target);
       if (window.location.pathname + window.location.search !== path) {
         window.history.pushState({}, '', path);
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+    },
+    []
+  );
 
-  const handleSelectMeal = (meal) => {
-    setSelectedMeal(meal);
-    handleNavigate(`/product?id=${meal.id}`, 'product-detail', 'customer');
-  };
+  useEffect(() => {
+    const onPop = () => setView(routeFromPath(window.location.pathname).view);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
-  const handleToggleWishlist = (meal) => {
-    setWishlist((prev) => {
-      const exists = prev.some((item) => (typeof item === 'string' ? item === meal.id : item.id === meal.id));
-      const next = exists
-        ? prev.filter((item) => (typeof item === 'string' ? item !== meal.id : item.id !== meal.id))
-        : [...prev, meal];
+  // Resolve ?id= once the menu is loaded.
+  useEffect(() => {
+    if (view !== 'product-detail' || !meals.length) return;
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (!id) return;
+    const found = meals.find((m) => String(m.id) === String(id));
+    if (found) setSelectedMeal(found);
+  }, [view, meals]);
 
-      apiService.saveWishlist(next);
-      showToast(
-        exists ? `Removed ${meal.name} from wishlist` : `Added ${meal.name} to wishlist!`,
-        exists ? 'Wishlist Updated' : 'Saved to Wishlist'
-      );
-      return next;
-    });
-  };
-
-  const handleAddToCart = (cartItem) => {
-    setCart((prev) => {
-      const existingIndex = prev.findIndex(
-        (item) =>
-          item.meal.id === cartItem.meal.id &&
-          item.selectedSpice === cartItem.selectedSpice &&
-          item.selectedBroth === cartItem.selectedBroth
-      );
-
-      let next;
-      if (existingIndex !== -1) {
-        next = [...prev];
-        next[existingIndex] = {
-          ...next[existingIndex],
-          quantity: next[existingIndex].quantity + cartItem.quantity,
-        };
-      } else {
-        next = [...prev, cartItem];
+  /** Guarded: a staff view requires a staff session. */
+  const requestView = useCallback(
+    (nextView) => {
+      if (STAFF_ROLES.includes(nextView) && role !== nextView) {
+        setIsAuthOpen(true);
+        showToast(
+          role
+            ? 'Your account does not have access to that area.'
+            : 'Please sign in to open that dashboard.',
+          'Sign in required'
+        );
+        return;
       }
+      navigate(pathForView(nextView), nextView);
+    },
+    [role, navigate, showToast]
+  );
 
-      apiService.saveCart(next);
-      return next;
-    });
+  // -------------------------------------------------------------------------
+  // Cart / wishlist
+  // -------------------------------------------------------------------------
+  const persistCart = useCallback((next) => {
+    cartStore.set(next);
+    return next;
+  }, []);
 
-    setIsCartOpen(true);
-    showToast(`Added ${cartItem.meal.name} to order!`, 'Item Added');
-  };
-
-  const handleUpdateQty = (index, newQty) => {
-    if (newQty <= 0) {
-      handleRemoveCartItem(index);
-      return;
-    }
-
-    setCart((prev) => {
-      const next = [...prev];
-      next[index].quantity = newQty;
-      apiService.saveCart(next);
-      return next;
-    });
-  };
-
-  const handleRemoveCartItem = (index) => {
-    setCart((prev) => {
-      const next = prev.filter((_, i) => i !== index);
-      apiService.saveCart(next);
-      return next;
-    });
-  };
-
-  const handleOrderPlaced = async (newOrder) => {
-    try {
-      const createdOrder = await apiService.createOrder({
-        ...newOrder,
-        userId: user ? user.id : null,
-        userEmail: user ? user.email : (newOrder.email || null),
-        customerName: user?.name || newOrder.customerName || 'Customer',
-        phone: user?.phone || newOrder.phone || ''
+  const addToCart = useCallback(
+    (cartItem) => {
+      setCart((prev) => {
+        const i = prev.findIndex(
+          (item) =>
+            item.meal.id === cartItem.meal.id &&
+            item.selectedSpice === cartItem.selectedSpice &&
+            item.selectedBroth === cartItem.selectedBroth
+        );
+        const next =
+          i === -1
+            ? [...prev, cartItem]
+            : prev.map((item, idx) =>
+                idx === i ? { ...item, quantity: item.quantity + cartItem.quantity } : item
+              );
+        return persistCart(next);
       });
+      setIsCartOpen(true);
+      showToast(`Added ${cartItem.meal.name} to your order.`, 'Item added');
+    },
+    [persistCart, showToast]
+  );
 
-      setOrders((prev) => {
-        const next = [createdOrder, ...prev];
+  const updateCartQty = useCallback(
+    (index, qty) => {
+      setCart((prev) => {
+        if (qty <= 0) return persistCart(prev.filter((_, i) => i !== index));
+        return persistCart(prev.map((item, i) => (i === index ? { ...item, quantity: qty } : item)));
+      });
+    },
+    [persistCart]
+  );
+
+  const removeCartItem = useCallback(
+    (index) => setCart((prev) => persistCart(prev.filter((_, i) => i !== index))),
+    [persistCart]
+  );
+
+  const toggleWishlist = useCallback(
+    (meal) => {
+      setWishlist((prev) => {
+        const exists = prev.some((item) => (typeof item === 'string' ? item : item.id) === meal.id);
+        const next = exists
+          ? prev.filter((item) => (typeof item === 'string' ? item : item.id) !== meal.id)
+          : [...prev, meal];
+        wishlistStore.set(next);
         return next;
       });
+    },
+    []
+  );
 
-      setCart([]);
-      setTrackedOrder(createdOrder);
-      apiService.setTrackedOrderId(createdOrder.id);
-
-      // Automatically download PDF receipt for the customer upon payment
+  // -------------------------------------------------------------------------
+  // Order mutations — all of them go to the server, and a failure is reported.
+  // -------------------------------------------------------------------------
+  const placeOrder = useCallback(
+    async (draft) => {
+      if (!session.isAuthenticated()) {
+        setIsAuthOpen(true);
+        showToast('Please sign in to place an order.', 'Sign in required');
+        throw new Error('Not signed in.');
+      }
+      setOrderBusy(true);
       try {
-        downloadOrderReceiptPdf(createdOrder);
-      } catch (pdfErr) {
-        console.warn('PDF Receipt auto-download exception:', pdfErr);
-      }
-
-      eventBus.emit('NEW_ORDER', createdOrder);
-      notificationService.playChime('new_order');
-      showToast(`Order #${createdOrder.id} placed & receipt downloaded! Kitchen is on it.`, 'Order Placed & Paid');
-      handleNavigate('/tracking', 'tracking', 'customer');
-    } catch (e) {
-      showToast('Failed to place order. Please try again.', 'Error');
-    }
-  };
-
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
-    try {
-      const token = localStorage.getItem('token'); // Use auth token for admin
-      const updatedOrder = await apiService.updateOrderStatus(orderId, newStatus, null, token);
-      
-      setOrders((prev) => {
-        const next = prev.map((order) => (order.id === orderId ? updatedOrder : order));
-        return next;
-      });
-
-      if (trackedOrder && trackedOrder.id === orderId) {
-        setTrackedOrder(updatedOrder);
-      }
-
-      eventBus.emit('ORDER_STATUS_UPDATE', { orderId, status: newStatus, order: updatedOrder });
-      
-      if (newStatus === 'ready') {
-        notificationService.playChime('order_ready');
-        showToast(`Order #${orderId} is confirmed READY by cooker! Ready for rider dispatch.`, '🍲 Kitchen Order Ready');
-      } else if (newStatus === 'delivered') {
-        notificationService.playChime('order_ready');
-        showToast(`Order #${orderId} confirmed DELIVERED! Enjoy your hot meal.`, '🎉 Delivery Confirmed');
-        // Auto-open rating modal ONLY for the customer who placed/owns this order
-        const matchingOrder = orders.find(o => o.id === orderId) || { id: orderId };
-        const isCustomer = currentRole === 'customer';
-        const isMyOrder = (trackedOrder && trackedOrder.id === orderId) || (user && matchingOrder && matchingOrder.userId === user.id);
-        if (isCustomer && isMyOrder) {
-          setFeedbackOrder(matchingOrder);
+        const order = await createOrder(draft);
+        setOrders((prev) => [order, ...prev.filter((o) => o.id !== order.id)]);
+        setCart(persistCart([]));
+        setTrackedOrder(order);
+        trackedOrderStore.set(order.id);
+        try {
+          downloadOrderReceiptPdf(order);
+        } catch (err) {
+          console.warn('Receipt download failed:', err);
         }
-      } else {
-        notificationService.playChime('status_update');
-        showToast(`Order #${orderId} status updated to: ${newStatus.toUpperCase()}`, 'Status Update');
+        showToast(`Order #${order.id} placed. Download your receipt.`, 'Order placed');
+        navigate('/tracking', 'tracking');
+        return order;
+      } catch (err) {
+        showToast(err.message || 'Could not place your order. Please try again.', 'Order failed', 'error');
+        throw err;
+      } finally {
+        setOrderBusy(false);
       }
-    } catch (e) {
-      showToast('Failed to update order status.', 'Error');
-    }
-  };
+    },
+    [navigate, persistCart, showToast]
+  );
 
-  const handleCancelOrder = (orderId) => {
-    setOrders((prev) => {
-      const next = prev.map((order) => (order.id === orderId ? { ...order, status: 'cancelled' } : order));
-      apiService.saveOrders(next);
-      return next;
-    });
+  const changeOrderStatus = useCallback(
+    async (orderId, nextStatus) => {
+      try {
+        const updated = await apiUpdateOrderStatus(orderId, nextStatus);
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+        if (trackedOrder?.id === orderId) setTrackedOrder(updated);
+        showToast(`Order #${orderId} is now ${nextStatus}.`, 'Status updated');
+        return updated;
+      } catch (err) {
+        showToast(err.message || 'Could not update that order.', 'Update failed', 'error');
+        throw err;
+      }
+    },
+    [trackedOrder?.id, showToast]
+  );
 
-    if (trackedOrder && trackedOrder.id === orderId) {
-      setTrackedOrder((prev) => ({ ...prev, status: 'cancelled' }));
-    }
+  const cancelOrder = useCallback(
+    async (orderId) => {
+      try {
+        const { order } = await apiCancelOrder(orderId);
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? order : o)));
+        if (trackedOrder?.id === orderId) setTrackedOrder(order);
+        showToast(`Order #${orderId} cancelled.`, 'Order cancelled');
+        return order;
+      } catch (err) {
+        showToast(err.message || 'Could not cancel that order.', 'Cancellation failed', 'error');
+        throw err;
+      }
+    },
+    [trackedOrder?.id, showToast]
+  );
 
-    showToast(`Order #${orderId} has been cancelled successfully.`, 'Order Cancelled');
-  };
+  const setOrderNotes = useCallback(
+    async (orderId, notes) => {
+      try {
+        const updated = await apiUpdateOrderNotes(orderId, notes);
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+        return updated;
+      } catch (err) {
+        showToast(err.message || 'Could not save that note.', 'Update failed', 'error');
+        throw err;
+      }
+    },
+    [showToast]
+  );
 
-  const handleModifyOrder = (orderId, updatedFields) => {
-    setOrders((prev) => {
-      const next = prev.map((order) => (order.id === orderId ? { ...order, ...updatedFields } : order));
-      apiService.saveOrders(next);
-      return next;
-    });
+  const signOut = useCallback(() => {
+    apiLogout();
+    setUser(null);
+    setOrders([]);
+    setTrackedOrder(null);
+    trackedOrderStore.set(null);
+    showToast('You have been signed out.', 'Signed out');
+    navigate('/', 'menu');
+  }, [navigate, showToast]);
 
-    if (trackedOrder && trackedOrder.id === orderId) {
-      setTrackedOrder((prev) => ({ ...prev, ...updatedFields }));
-    }
-
-    showToast(`Order #${orderId} details updated!`, 'Order Modified');
-  };
-
-  // Dedicated Kitchen Display System (KDS) full-screen layout
-  if (currentRole === 'kitchen') {
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+  if (!authChecked) {
     return (
-      <div className="h-screen w-screen overflow-hidden bg-bg-dark text-text-main flex flex-col select-none">
-        <KitchenBoard
-          orders={orders}
-          onUpdateStatus={handleUpdateOrderStatus}
-          user={user}
-          meals={meals}
-          onSwitchRole={(role) => handleNavigate(role === 'admin' ? '/admin' : role === 'delivery' ? '/delivery' : '/', 'menu', role)}
-        />
+      <div className="min-h-screen bg-bg-dark text-text-main flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading" />
       </div>
     );
   }
 
-  // Dedicated Admin Operations Dashboard full-screen layout (matching KDS architecture)
-  if (currentRole === 'admin' || (activeTab === 'dashboard' && (user?.role || '').toUpperCase() === 'ADMIN')) {
+  // A staff view requested without the matching role: explain, don't leak.
+  if (STAFF_ROLES.includes(view) && role !== view) {
     return (
-      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
-        <AdminDashboard
-          meals={meals}
-          setMeals={setMeals}
-          orders={orders}
-          onUpdateStatus={handleUpdateOrderStatus}
-          user={user}
-          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
-        />
-      </div>
-    );
-  }
-
-  // Dedicated Customer Operations & GPS Dashboard full-screen layout (matching KDS & Admin architecture)
-  if (currentRole === 'customer' && activeTab === 'dashboard') {
-    return (
-      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
-        <CustomerDashboard
-          user={user}
-          orders={clientOrders}
-          cart={cart}
-          onOpenAuth={() => setIsAuthOpen(true)}
-          onAddToCart={handleAddToCart}
-          onOpenCart={() => setIsCartOpen(true)}
-          onUpdateUser={(updatedUser) => {
-            setUser(updatedUser);
-            apiService.saveUser(updatedUser);
-          }}
-          onSelectOrder={(order) => {
-            setTrackedOrder(order);
-            apiService.setTrackedOrderId(order.id);
-            handleNavigate('/tracking', 'tracking', 'customer');
-          }}
-          onOpenProfile={() => setIsProfileOpen(true)}
-          onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
-          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
-          onNavigate={handleNavigate}
-        />
-
-        <CartDrawer
-          isOpen={isCartOpen}
-          onClose={() => setIsCartOpen(false)}
-          cart={cart}
-          onUpdateQty={handleUpdateQty}
-          onRemoveItem={handleRemoveCartItem}
-          onProceedCheckout={(data) => setCheckoutData(data)}
-        />
-
-        <CheckoutModal
-          isOpen={!!checkoutData}
-          onClose={() => setCheckoutData(null)}
-          checkoutData={checkoutData}
-          onOrderPlaced={handleOrderPlaced}
-        />
-
+      <AccessGate
+        view={view}
+        signedIn={Boolean(user)}
+        onSignIn={() => setIsAuthOpen(true)}
+        onGoHome={() => navigate('/', 'menu')}
+      >
         <AuthModal
           isOpen={isAuthOpen}
           onClose={() => setIsAuthOpen(false)}
-          onLoginSuccess={(loggedInUser) => {
+          onSuccess={(loggedInUser) => {
             setUser(loggedInUser);
-            apiService.saveUser(loggedInUser);
+            setIsAuthOpen(false);
+            requestView(view);
           }}
         />
-
-        <LocationModal
-          isOpen={isLocationModalOpen}
-          onClose={() => setIsLocationModalOpen(false)}
-          onSetLocation={(loc) => {
-            const updated = { ...(user || {}), location: loc };
-            setUser(updated);
-            apiService.saveUser(updated);
-            showToast(`Location set to: ${loc}`, 'Location Updated');
-          }}
-        />
-
-        <ProfileModal
-          isOpen={isProfileOpen}
-          onClose={() => setIsProfileOpen(false)}
-          user={user}
-          onSaveUser={(profileUser) => {
-            setUser(profileUser);
-            apiService.saveUser(profileUser);
-            showToast('Profile saved successfully!', 'Profile Saved');
-          }}
-        />
-      </div>
+      </AccessGate>
     );
   }
 
-  // Dedicated Rider Operations & Dispatch full-screen layout (matching KDS, Admin & Customer architecture)
-  if (currentRole === 'delivery' || (activeTab === 'delivery' && ((user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER'))) {
-    return (
-      <div className="h-screen w-screen overflow-hidden bg-[#0F1117] text-white flex flex-col font-sans select-auto">
-        <RiderDashboard
-          orders={orders}
-          onUpdateStatus={handleUpdateOrderStatus}
-          user={user}
-          onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
-          onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
-        />
-      </div>
-    );
-  }
+  const showAppChrome = view === 'menu' || view === 'product-detail' || view === 'orders' || view === 'tracking' || view === 'dashboard';
+
+  const orderActions = { onUpdateStatus: changeOrderStatus, onCancelOrder: cancelOrder, onSetNotes: setOrderNotes };
 
   return (
     <div className="min-h-screen bg-bg-dark text-text-main flex flex-col justify-between selection:bg-primary selection:text-white relative">
       {toast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 p-4 rounded-xl bg-surface-card border border-primary/40 shadow-2xl flex items-center gap-4 animate-toast-enter min-w-[320px]">
-          <div className="w-10 h-10 rounded-full bg-primary-light text-primary flex items-center justify-center shrink-0">
-            <Bell className="w-5 h-5 animate-bounce-short" />
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 p-4 rounded-xl bg-surface-card border border-primary/40 shadow-2xl flex items-center gap-4 animate-toast-enter min-w-[280px] max-w-[92vw]"
+        >
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+              toast.tone === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-primary-light text-primary'
+            }`}
+          >
+            {toast.tone === 'error' ? <TriangleAlert className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
           </div>
           <div className="flex-1">
             <div className="font-bold text-sm text-text-main">{toast.title}</div>
             <div className="text-xs text-text-muted mt-0.5">{toast.message}</div>
           </div>
-          <div className="absolute bottom-0 left-0 h-1 bg-primary rounded-b-xl" style={{ width: '100%' }}></div>
         </div>
       )}
 
-      <Header
-        currentRole={currentRole}
-        onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
-        cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)}
-        wishlistCount={wishlist.length}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenHelp={() => setIsHelpOpen(true)}
-        onOpenProfile={() => setIsProfileOpen(true)}
-        user={user}
-        onLogout={() => {
-          setUser(null);
-          apiService.saveUser(null);
-          showToast('You have been logged out.', 'Signed Out');
-        }}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        activeTab={activeTab}
-        setActiveTab={(tab) => handleNavigate(tab === 'dashboard' ? '/dashboard' : tab === 'orders' ? '/orders' : tab === 'tracking' ? '/tracking' : '/', tab, 'customer')}
-        onNavigate={handleNavigate}
-        lang={lang}
-        setLang={setLang}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        meals={meals}
-        onSelectMeal={handleSelectMeal}
-        hasOrders={clientOrders.length > 0}
-      />
+      {authError && (
+        <div
+          role="alert"
+          className="bg-amber-500/10 border-b border-amber-500/30 text-amber-200 text-xs px-4 py-2 flex items-center gap-2 justify-center"
+        >
+          <TriangleAlert className="w-4 h-4 shrink-0" />
+          <span className="flex-1 text-center">{authError}</span>
+          <button
+            type="button"
+            onClick={() => setAuthError(null)}
+            className="underline font-semibold hover:text-amber-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {ordersError && isStaff && (
+        <div
+          role="alert"
+          className="bg-red-500/10 border-b border-red-500/30 text-red-300 text-xs px-4 py-2 flex items-center gap-2 justify-center"
+        >
+          <WifiOff className="w-4 h-4" /> Live updates unavailable: {ordersError}
+        </div>
+      )}
+
+      {showAppChrome && (
+        <Header
+          view={view}
+          onNavigate={requestView}
+          cartCount={cart.reduce((acc, item) => acc + (item.quantity || 0), 0)}
+          wishlistCount={wishlist.length}
+          onOpenCart={() => setIsCartOpen(true)}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenHelp={() => setIsHelpOpen(true)}
+          onOpenProfile={() => (user ? setIsProfileOpen(true) : setIsAuthOpen(true))}
+          user={user}
+          onLogout={signOut}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          lang={lang}
+          setLang={setLang}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          meals={meals}
+          onSelectMeal={(meal) => {
+            setSelectedMeal(meal);
+            navigate(`/product?id=${meal.id}`, 'product-detail');
+          }}
+          hasOrders={orders.length > 0}
+        />
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 flex-1 w-full relative">
-        <div key={activeTab + currentRole} className="animate-page-enter">
-          {currentRole === 'customer' && (
-            <>
-              {activeTab === 'menu' && (
-                <Home
-                  meals={meals}
-                  onSelectMeal={handleSelectMeal}
-                  searchQuery={searchQuery}
-                  selectedCategory={selectedCategory}
-                  setSelectedCategory={setSelectedCategory}
-                  cart={cart}
-                  wishlist={wishlist}
-                  onToggleWishlist={handleToggleWishlist}
-                  onAddToCart={handleAddToCart}
-                  onOpenCart={() => setIsCartOpen(true)}
-                />
-              )}
+        {mealsError && view === 'menu' && (
+          <ErrorPanel message={mealsError} onRetry={loadMeals} />
+        )}
 
-              {activeTab === 'product-detail' && (
-                <ProductDetailsPage
-                  meal={selectedMeal || meals[0]}
-                  allMeals={meals}
-                  cart={cart}
-                  onAddToCart={handleAddToCart}
-                  onUpdateCartQty={handleUpdateQty}
-                  onRemoveCartItem={handleRemoveCartItem}
-                  onOpenCart={() => setIsCartOpen(true)}
-                  onSelectMeal={handleSelectMeal}
-                  onBackToMenu={() => handleNavigate('/', 'menu', 'customer')}
-                  wishlist={wishlist}
-                  onToggleWishlist={handleToggleWishlist}
-                />
-              )}
+        {view === 'menu' && (
+          <Home
+            meals={meals}
+            loading={!meals.length && !mealsError}
+            onSelectMeal={(meal) => {
+              setSelectedMeal(meal);
+              navigate(`/product?id=${meal.id}`, 'product-detail');
+            }}
+            searchQuery={searchQuery}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            cart={cart}
+            wishlist={wishlist}
+            onToggleWishlist={toggleWishlist}
+            onAddToCart={addToCart}
+            onOpenCart={() => setIsCartOpen(true)}
+            onOpenAuth={() => setIsAuthOpen(true)}
+            signedIn={Boolean(user)}
+          />
+        )}
 
-              {activeTab === 'dashboard' && (
-                (user?.role || '').toUpperCase() === 'ADMIN' ? (
-                  <AdminDashboard
-                    meals={meals}
-                    setMeals={setMeals}
-                    orders={orders}
-                    onUpdateStatus={handleUpdateOrderStatus}
-                    user={user}
-                    onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
-                  />
-                ) : (user?.role || '').toUpperCase() === 'KITCHEN' ? (
-                  <KitchenBoard
-                    orders={orders}
-                    onUpdateStatus={handleUpdateOrderStatus}
-                    user={user}
-                    meals={meals}
-                  />
-                ) : (user?.role || '').toUpperCase() === 'DELIVERY' || (user?.role || '').toUpperCase() === 'RIDER' ? (
-                  <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />
-                ) : (
-                  <CustomerDashboard
-                    user={user}
-                    orders={clientOrders}
-                    onOpenAuth={() => setIsAuthOpen(true)}
-                    onAddToCart={handleAddToCart}
-                    onOpenCart={() => setIsCartOpen(true)}
-                    onUpdateUser={(updatedUser) => {
-                      setUser(updatedUser);
-                      apiService.saveUser(updatedUser);
-                    }}
-                    onSelectOrder={(order) => {
-                      setTrackedOrder(order);
-                      apiService.setTrackedOrderId(order.id);
-                      handleNavigate('/tracking', 'tracking', 'customer');
-                    }}
-                    onOpenProfile={() => setIsProfileOpen(true)}
-                    onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
-                  />
-                )
-              )}
+        {view === 'product-detail' && (
+          <ProductDetailsPage
+            meal={selectedMeal}
+            allMeals={meals}
+            cart={cart}
+            onAddToCart={addToCart}
+            onUpdateCartQty={updateCartQty}
+            onRemoveCartItem={removeCartItem}
+            onOpenCart={() => setIsCartOpen(true)}
+            onSelectMeal={(meal) => {
+              setSelectedMeal(meal);
+              navigate(`/product?id=${meal.id}`, 'product-detail');
+            }}
+            onBackToMenu={() => navigate('/', 'menu')}
+            wishlist={wishlist}
+            onToggleWishlist={toggleWishlist}
+            signedIn={Boolean(user)}
+            onOpenAuth={() => setIsAuthOpen(true)}
+          />
+        )}
 
-              {activeTab === 'orders' && (
-                clientOrders.length > 0 ? (
-                  <OrdersHistory
-                    orders={clientOrders}
-                    onAddToCart={handleAddToCart}
-                    onSelectOrder={(order) => {
-                      setTrackedOrder(order);
-                      apiService.setTrackedOrderId(order.id);
-                      handleNavigate('/tracking', 'tracking', 'customer');
-                    }}
-                    onExploreMenu={() => handleNavigate('/', 'menu', 'customer')}
-                  />
-                ) : (
-                  <Home
-                    meals={meals}
-                    onAddToCart={handleAddToCart}
-                    onSelectMeal={handleSelectMeal}
-                    user={user}
-                    onToggleWishlist={handleToggleWishlist}
-                    wishlist={wishlist}
-                  />
-                )
-              )}
-
-              {activeTab === 'tracking' && (
-                clientOrders.length > 0 ? (
-                  <LiveTracking
-                    order={trackedOrder || clientOrders[0]}
-                    onCancelOrder={handleCancelOrder}
-                    onModifyOrder={handleModifyOrder}
-                    onUpdateStatus={handleUpdateOrderStatus}
-                  />
-                ) : (
-                  <Home
-                    meals={meals}
-                    onAddToCart={handleAddToCart}
-                    onSelectMeal={handleSelectMeal}
-                    user={user}
-                    onToggleWishlist={handleToggleWishlist}
-                    wishlist={wishlist}
-                  />
-                )
-              )}
-            </>
-          )}
-
-          {currentRole === 'kitchen' && (
-            <KitchenBoard
-              orders={orders}
-              onUpdateStatus={handleUpdateOrderStatus}
+        {view === 'dashboard' &&
+          (role === 'admin' ? (
+            <FullBleed>
+              <AdminDashboard
+                meals={meals}
+                onMealsChange={loadMeals}
+                orders={orders}
+                loading={loadingOrders}
+                error={ordersError}
+                onRetry={() => loadOrders({ silent: false })}
+                {...orderActions}
+                user={user}
+                onGoHome={() => navigate('/', 'menu')}
+              />
+            </FullBleed>
+          ) : role === 'kitchen' ? (
+            <FullBleed>
+              <KitchenBoard orders={orders} loading={loadingOrders} meals={meals} user={user} {...orderActions} onGoHome={() => navigate('/', 'menu')} />
+            </FullBleed>
+          ) : role === 'delivery' ? (
+            <FullBleed>
+              <RiderDashboard orders={orders} loading={loadingOrders} user={user} {...orderActions} onGoHome={() => navigate('/', 'menu')} />
+            </FullBleed>
+          ) : (
+            <CustomerDashboard
               user={user}
-              meals={meals}
+              orders={orders}
+              cart={cart}
+              loading={loadingOrders}
+              onOpenAuth={() => setIsAuthOpen(true)}
+              onAddToCart={addToCart}
+              onOpenCart={() => setIsCartOpen(true)}
+              onUpdateUser={(updated) => {
+                session.updateUser(updated);
+                setUser(updated);
+              }}
+              onSelectOrder={(order) => {
+                setTrackedOrder(order);
+                trackedOrderStore.set(order.id);
+                navigate('/tracking', 'tracking');
+              }}
+              onOpenProfile={() => (user ? setIsProfileOpen(true) : setIsAuthOpen(true))}
+              onExploreMenu={() => navigate('/', 'menu')}
+              onNavigate={requestView}
             />
-          )}
-          {currentRole === 'delivery' && <RiderDashboard orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
-          {currentRole === 'admin' && (
+          ))}
+
+        {view === 'orders' &&
+          (orders.length ? (
+            <OrdersHistory
+              orders={orders}
+              onSelectOrder={(order) => {
+                setTrackedOrder(order);
+                trackedOrderStore.set(order.id);
+                navigate('/tracking', 'tracking');
+              }}
+              onExploreMenu={() => navigate('/', 'menu')}
+            />
+          ) : (
+            <EmptyState
+              title="No orders yet"
+              body="Once you place an order it will appear here with live tracking."
+              actionLabel="Browse the menu"
+              onAction={() => navigate('/', 'menu')}
+            />
+          ))}
+
+        {view === 'tracking' &&
+          (orders.length ? (
+            <LiveTracking order={trackedOrder?.id ? orders.find((o) => o.id === trackedOrder.id) || trackedOrder : orders[0]} {...orderActions} />
+          ) : (
+            <EmptyState
+              title="Nothing to track"
+              body="Place an order and follow your courier live on the map."
+              actionLabel="Browse the menu"
+              onAction={() => navigate('/', 'menu')}
+            />
+          ))}
+
+        {view === 'kitchen' && (
+          <FullBleed>
+            <KitchenBoard orders={orders} loading={loadingOrders} meals={meals} user={user} {...orderActions} onGoHome={() => navigate('/', 'menu')} />
+          </FullBleed>
+        )}
+
+        {view === 'delivery' && (
+          <FullBleed>
+            <RiderDashboard orders={orders} loading={loadingOrders} user={user} {...orderActions} onGoHome={() => navigate('/', 'menu')} />
+          </FullBleed>
+        )}
+
+        {view === 'admin' && (
+          <FullBleed>
             <AdminDashboard
               meals={meals}
-              setMeals={setMeals}
+              onMealsChange={loadMeals}
               orders={orders}
-              onUpdateStatus={handleUpdateOrderStatus}
+              loading={loadingOrders}
+              error={ordersError}
+              onRetry={() => loadOrders({ silent: false })}
+              {...orderActions}
               user={user}
-              onSwitchRole={(role) => handleNavigate(role === 'kitchen' ? '/kitchen' : role === 'delivery' ? '/delivery' : role === 'admin' ? '/admin' : '/', 'menu', role)}
+              onGoHome={() => navigate('/', 'menu')}
             />
-          )}
-        </div>
+          </FullBleed>
+        )}
       </main>
 
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        onUpdateQty={handleUpdateQty}
-        onRemoveItem={handleRemoveCartItem}
-        onProceedCheckout={(data) => setCheckoutData(data)}
-      />
+      {showAppChrome && (
+        <>
+          <CartDrawer
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            cart={cart}
+            onUpdateQty={updateCartQty}
+            onRemoveItem={removeCartItem}
+            onProceedCheckout={(data) => setCheckoutData(data)}
+          />
 
-      <CheckoutModal
-        isOpen={!!checkoutData}
-        onClose={() => setCheckoutData(null)}
-        checkoutData={checkoutData}
-        onOrderPlaced={handleOrderPlaced}
-      />
+          <CheckoutModal
+            isOpen={Boolean(checkoutData)}
+            onClose={() => setCheckoutData(null)}
+            checkoutData={checkoutData}
+            onOrderPlaced={placeOrder}
+            busy={orderBusy}
+            user={user}
+          />
 
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onLoginSuccess={(loggedInUser) => {
-          setUser(loggedInUser);
-          apiService.saveUser(loggedInUser);
-          
-          const userRole = (loggedInUser.role || 'customer').toLowerCase();
-          
-          handleNavigate(
-            userRole === 'kitchen'
-              ? '/kitchen'
-              : userRole === 'delivery'
-                ? '/delivery'
-                : userRole === 'admin'
-                  ? '/admin'
-                  : '/dashboard',
-            userRole === 'customer' ? 'dashboard' : userRole,
-            userRole
-          );
-          
-          // Only ask customers to set location for delivery
-          if (userRole === 'customer') {
-            setIsLocationModalOpen(true);
-          }
-        }}
-      />
+          <AuthModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            onSuccess={(loggedInUser) => {
+              session.updateUser(loggedInUser);
+              setUser(loggedInUser);
+              setIsAuthOpen(false);
+              setIsLocationModalOpen(true);
+              navigate(ROLE_HOME[loggedInUser.role] || '/dashboard', 'dashboard');
+              showToast(`Welcome back, ${loggedInUser.name}.`, 'Signed in');
+            }}
+          />
 
-      <LocationModal
-        isOpen={isLocationModalOpen}
-        onClose={() => setIsLocationModalOpen(false)}
-        onSetLocation={(loc) => {
-          const updated = { ...(user || {}), location: loc };
-          setUser(updated);
-          apiService.saveUser(updated);
-          showToast(`Location set to: ${loc}`, 'Location Updated');
-        }}
-      />
+          <LocationModal
+            isOpen={isLocationModalOpen}
+            onClose={() => setIsLocationModalOpen(false)}
+            user={user}
+            onSave={async ({ address, lat, lng }) => {
+              try {
+                const updated = await updateProfile({ location: address, lat, lng });
+                session.updateUser(updated);
+                setUser(updated);
+                showToast(`Delivery area set to ${address}.`, 'Location updated');
+                return updated;
+              } catch (err) {
+                showToast(err.message || 'Could not save your location.', 'Error', 'error');
+                // Rethrow so the modal can stay open and let the customer retry
+                // instead of closing on a write that never happened.
+                throw err;
+              }
+            }}
+          />
 
-      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
-      {currentRole === 'customer' && (
-        <PostDeliveryFeedbackModal
-          isOpen={!!feedbackOrder}
-          onClose={() => setFeedbackOrder(null)}
-          order={feedbackOrder}
-        />
+          <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
+          <PostDeliveryFeedbackModal
+            isOpen={Boolean(feedbackOrder)}
+            onClose={() => setFeedbackOrder(null)}
+            order={feedbackOrder}
+            onSubmitted={(msg) => showToast(msg, 'Thanks for your feedback')}
+            onError={(msg) => showToast(msg, 'Could not submit', 'error')}
+          />
+
+          <ProfileModal
+            isOpen={isProfileOpen}
+            onClose={() => setIsProfileOpen(false)}
+            user={user}
+            onSaved={(updated) => {
+              session.updateUser(updated);
+              setUser(updated);
+              showToast('Profile updated.', 'Saved');
+            }}
+            onLogout={signOut}
+          />
+
+          {role === 'customer' && (
+            <MobileBottomNav
+              activeTab={view}
+              onNavigate={requestView}
+              cartCount={cart.reduce((sum, item) => sum + (item.quantity || 0), 0)}
+              onOpenCart={() => setIsCartOpen(true)}
+              onOpenProfile={() => (user ? setIsProfileOpen(true) : setIsAuthOpen(true))}
+              hasOrders={orders.length > 0}
+            />
+          )}
+        </>
       )}
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        user={user}
-        onSaveUser={(profileUser) => {
-          setUser(profileUser);
-          apiService.saveUser(profileUser);
-          showToast('Profile saved successfully!', 'Profile Saved');
-        }}
-      />
 
-      {currentRole === 'customer' && (
-        <MobileBottomNav
-          activeTab={activeTab}
-          setActiveTab={(tab) => handleNavigate(tab === 'menu' ? '/' : `/${tab}`, tab, 'customer')}
-          cartCount={cart.reduce((sum, item) => sum + (item.qty || 1), 0)}
-          onOpenCart={() => setIsCartOpen(true)}
-          onOpenProfile={() => (user ? setIsProfileOpen(true) : setIsAuthOpen(true))}
-          hasOrders={clientOrders.length > 0}
-        />
-      )}
-
-      <footer className="border-t border-white/10 bg-surface-dark py-12 px-4 mt-auto">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
-          <div className="space-y-3">
-            <h4 className="font-extrabold text-white text-lg flex items-center justify-center md:justify-start gap-2">
-              <Flame className="w-5 h-5 text-primary" /> HotPot Delights
-            </h4>
-            <p className="text-xs text-text-muted leading-relaxed">
-              Authentic Gourmet Hotpot & Artisanal Pizza Delivery in Kigali.<br />
-              Crafted fresh with locally sourced ingredients.
+      {showAppChrome && (
+        <footer className="border-t border-white/10 bg-surface-dark py-12 px-4 mt-auto">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+            <div className="space-y-3">
+              <h4 className="font-extrabold text-white text-lg flex items-center justify-center md:justify-start gap-2">
+                <Flame className="w-5 h-5 text-primary" /> HotPot Delights
+              </h4>
+              <p className="text-xs text-text-muted leading-relaxed">
+                Authentic Gourmet Hotpot &amp; Artisanal Pizza Delivery in Kigali.
+                <br />
+                Crafted fresh with locally sourced ingredients.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <h4 className="font-bold text-white text-sm">Contact Us</h4>
+              <div className="text-xs text-text-muted space-y-1">
+                <p>KG 9 Ave, Nyarutarama, Kigali</p>
+                <p>+250 788 000 001</p>
+                <p>hello@hotpotdelights.rw</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center justify-center gap-2 text-center text-[11px] text-text-subdued">
+            <p className="font-semibold text-text-muted">
+              HotPot Delights © {new Date().getFullYear()} — Premium Kigali Dining Experience
             </p>
           </div>
+        </footer>
+      )}
+    </div>
+  );
+}
 
-          <div className="space-y-3">
-            <h4 className="font-bold text-white text-sm">Download Our App</h4>
-            <div className="flex items-center justify-center md:justify-start gap-3">
-              <button className="bg-white text-black px-4 py-2 rounded-lg text-[10px] font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.04 2.33-.79 3.83-.71 1.63.09 2.87.69 3.55 1.77-3.01 1.7-2.5 5.56.39 6.78-.71 1.78-1.55 3.32-2.85 4.33zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.32 2.35-1.92 4.34-3.74 4.25z"/></svg>
-                App Store
-              </button>
-              <button className="bg-white text-black px-4 py-2 rounded-lg text-[10px] font-bold flex items-center gap-2 hover:bg-gray-200 transition-colors">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.5 14.1l-6-3.3v-4.1l6 3.4c.5.3.8.8.8 1.4s-.3 1.1-.8 1.4c-.1.1-.1.1-.2.2-1.3.7-4.4 2.4-5.8 3.2v-4.2l6-3.4zm-11 5.9V4.1c0-.6.3-1.1.8-1.4.3-.2.6-.2.9-.1l4.8 2.7v13.4l-4.8 2.7c-.3.2-.6.2-.9.1-.5-.2-.8-.8-.8-1.4z"/></svg>
-                Google Play
-              </button>
-            </div>
-          </div>
+// ---------------------------------------------------------------------------
+function routeFromView(path) {
+  return routeFromPath(path).view;
+}
 
-          <div className="space-y-3">
-            <h4 className="font-bold text-white text-sm">Contact Us</h4>
-            <div className="text-xs text-text-muted space-y-1">
-              <p>KG 9 Ave, Nyarutarama, Kigali</p>
-              <p>+250 788 000 001</p>
-              <p>hello@hotpotdelights.rw</p>
-            </div>
-          </div>
+function FullBleed({ children }) {
+  return <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-28">{children}</div>;
+}
+
+function ErrorPanel({ message, onRetry }) {
+  return (
+    <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
+      <TriangleAlert className="w-8 h-8 text-red-400 mx-auto mb-3" />
+      <p className="text-sm text-red-200 mb-4">{message}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="px-4 py-2 rounded-lg bg-red-500/20 text-red-200 text-sm font-semibold hover:bg-red-500/30"
+        >
+          Try again
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ title, body, actionLabel, onAction }) {
+  return (
+    <div className="text-center py-16">
+      <h2 className="text-xl font-bold text-text-main">{title}</h2>
+      <p className="text-sm text-text-muted mt-2 mb-6">{body}</p>
+      <button
+        type="button"
+        onClick={onAction}
+        className="px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90"
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+function AccessGate({ view, signedIn, onSignIn, onGoHome, children }) {
+  return (
+    <div className="min-h-screen bg-bg-dark text-text-main flex items-center justify-center p-6">
+      <div className="max-w-md text-center">
+        <TriangleAlert className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-2">This area is restricted</h1>
+        <p className="text-sm text-text-muted mb-6">
+          {signedIn
+            ? `Your account does not have access to the ${view} dashboard.`
+            : 'Sign in with a staff account to open this dashboard.'}
+        </p>
+        <div className="flex gap-3 justify-center">
+          {signedIn ? (
+            <button type="button" onClick={onGoHome} className="px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold">
+              Back to the menu
+            </button>
+          ) : (
+            <button type="button" onClick={onSignIn} className="px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold">
+              Sign in
+            </button>
+          )}
         </div>
-
-        <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center justify-center gap-2 text-center text-[11px] text-text-subdued">
-          <p className="font-semibold text-text-muted">
-            HotPot Delights © {new Date().getFullYear()} — Premium Kigali Dining Experience
-          </p>
-        </div>
-      </footer>
+        {children}
+      </div>
     </div>
   );
 }
