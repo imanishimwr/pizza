@@ -2754,7 +2754,7 @@ export default function AdminDashboard({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <div className="lg:col-span-2 h-72 sm:h-80 rounded-2xl overflow-hidden border border-slate-800 relative shadow-inner">
                 <div ref={setMapNode} className="w-full h-full" />
-                <div className="absolute top-3 left-3 z-[400] bg-[#12141A]/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-xs shadow-xl space-y-1 pointer-events-none">
+                <div className="absolute top-3 left-3 z-400 bg-[#12141A]/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-xs shadow-xl space-y-1 pointer-events-none">
                   <div className="font-bold text-white flex items-center gap-1.5">
                     <Bike className="w-4 h-4 text-orange-400 shrink-0" aria-hidden="true" />
                     <span>{assignedRider?.name || trackingOrder.riderName || 'No courier assigned'}</span>
@@ -3028,7 +3028,7 @@ function RevenueChart({ data, mode, hoveredKey, onHover }) {
 
   return (
     <div className="w-full overflow-x-auto pb-2">
-      <div className="min-w-[500px]">
+      <div className="min-w-125">
         <svg
           viewBox={`0 0 ${CHART_W} ${CHART_H}`}
           className="w-full h-56 select-none"

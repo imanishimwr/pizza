@@ -98,9 +98,31 @@ export const session = {
   },
   role() {
     const user = session.getUser();
-    return user?.role ? String(user.role).toLowerCase() : null;
+    return user?.role ? normalizeRole(user.role) : null;
   }
 };
+
+export const ROLES = {
+  USER: 'customer',
+  ADMIN: 'admin',
+  KITCHEN: 'kitchen',
+  RIDER: 'delivery'
+};
+
+export function normalizeRole(role) {
+  const r = String(role || '').toLowerCase().trim();
+  if (r === 'admin') return 'admin';
+  if (r === 'kitchen') return 'kitchen';
+  if (r === 'delivery' || r === 'rider') return 'delivery';
+  return 'customer';
+}
+
+export function hasRole(user, allowedRoles = []) {
+  if (!user) return false;
+  const userRole = normalizeRole(user.role);
+  const normalizedAllowed = allowedRoles.map((r) => normalizeRole(r));
+  return normalizedAllowed.includes(userRole);
+}
 
 // ---------------------------------------------------------------------------
 // Core request helper
@@ -169,15 +191,42 @@ const qs = (params) => {
 };
 
 // ---------------------------------------------------------------------------
-// Menu
+// Menu (with in-memory caching & explicit invalidation)
 // ---------------------------------------------------------------------------
-export const getMeals = ({ signal } = {}) => request('/meals', { auth: false, signal });
+let mealsCache = null;
+let mealsCacheTimestamp = 0;
+const MEALS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-export const createMeal = (meal) => request('/meals', { method: 'POST', body: meal });
+export function clearMealsCache() {
+  mealsCache = null;
+  mealsCacheTimestamp = 0;
+}
 
-export const updateMeal = (id, meal) => request(`/meals/${encodeURIComponent(id)}`, { method: 'PATCH', body: meal });
+export const getMeals = async ({ signal, forceRefresh = false } = {}) => {
+  const now = Date.now();
+  if (!forceRefresh && mealsCache && (now - mealsCacheTimestamp < MEALS_CACHE_TTL)) {
+    return mealsCache;
+  }
+  const fresh = await request('/meals', { auth: false, signal });
+  mealsCache = Array.isArray(fresh) ? fresh : [];
+  mealsCacheTimestamp = now;
+  return mealsCache;
+};
 
-export const deleteMeal = (id) => request(`/meals/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const createMeal = async (meal) => {
+  clearMealsCache();
+  return request('/meals', { method: 'POST', body: meal });
+};
+
+export const updateMeal = async (id, meal) => {
+  clearMealsCache();
+  return request(`/meals/${encodeURIComponent(String(id))}`, { method: 'PATCH', body: meal });
+};
+
+export const deleteMeal = async (id) => {
+  clearMealsCache();
+  return request(`/meals/${encodeURIComponent(String(id))}`, { method: 'DELETE' });
+};
 
 // ---------------------------------------------------------------------------
 // Orders

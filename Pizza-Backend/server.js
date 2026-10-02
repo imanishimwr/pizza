@@ -139,8 +139,16 @@ app.post('/api/auth/register', authLimiter, wrap(async (req, res) => {
   const password = String(req.body.password || '');
   const phone = req.body.phone ? String(req.body.phone).trim() : null;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Name, email and password are required.' });
+  console.log(`[auth] Register attempt for email: "${email}" (name: "${name}")`);
+
+  if (!name) {
+    return res.status(400).json({ error: 'Full name is required.' });
+  }
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required.' });
+  }
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
@@ -148,28 +156,51 @@ app.post('/api/auth/register', authLimiter, wrap(async (req, res) => {
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
   }
-  if (await neonClient.findUserByEmail(email)) {
-    return res.status(409).json({ error: 'An account with this email address already exists.' });
-  }
 
-  // `role` is intentionally NOT read from the body. Self-registration can only
-  // ever create a customer; staff accounts are provisioned by seed or promoted
-  // by an authenticated admin via PATCH /api/admin/users/:id/role.
-  const user = await neonClient.registerUser({ name, email, phone, password });
-  return res.status(201).json({ token: signToken(user), user: publicUser(user) });
+  try {
+    const existing = await neonClient.findUserByEmail(email);
+    if (existing) {
+      console.warn(`[auth] Registration conflict: email "${email}" is already registered.`);
+      return res.status(409).json({ error: 'An account with this email address already exists. Please sign in instead.' });
+    }
+
+    // `role` is intentionally NOT read from the body. Self-registration can only
+    // ever create a customer; staff accounts are provisioned by seed or promoted
+    // by an authenticated admin via PATCH /api/admin/users/:id/role.
+    const user = await neonClient.registerUser({ name, email, phone, password });
+    console.log(`[auth] Registration success for user id: ${user.id} (${user.email}, role: ${user.role})`);
+    return res.status(201).json({ token: signToken(user), user: publicUser(user) });
+  } catch (err) {
+    console.error(`[auth] Database error during registration for ${email}:`, err);
+    return res.status(500).json({ error: err.message || 'Database error occurred during registration. Please try again.' });
+  }
 }));
 
 app.post('/api/auth/login', authLimiter, wrap(async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required.' });
+
+  console.log(`[auth] Login attempt for email: "${email}"`);
+
+  if (!email) {
+    return res.status(400).json({ error: 'Please enter your email address.' });
   }
-  const user = await neonClient.verifyLogin(email, password);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid email address or password.' });
+  if (!password) {
+    return res.status(400).json({ error: 'Please enter your password.' });
   }
-  return res.json({ token: signToken(user), user: publicUser(user) });
+
+  try {
+    const user = await neonClient.verifyLogin(email, password);
+    if (!user) {
+      console.warn(`[auth] Login failed: invalid credentials for email "${email}"`);
+      return res.status(401).json({ error: 'Invalid email address or password. Please verify your credentials.' });
+    }
+    console.log(`[auth] Login success for user: ${user.email} (id: ${user.id}, role: ${user.role})`);
+    return res.json({ token: signToken(user), user: publicUser(user) });
+  } catch (err) {
+    console.error(`[auth] Authentication error for ${email}:`, err);
+    return res.status(500).json({ error: err.message || 'Authentication service error. Please try again.' });
+  }
 }));
 
 app.post('/api/auth/google', authLimiter, wrap(async (req, res) => {
@@ -396,22 +427,20 @@ app.post('/api/orders/:id/assign-rider', requireStaff, wrap(async (req, res) => 
 }));
 
 // Smart Dispatch: Assign Manual / Custom Courier to Order
-app.post('/api/orders/:id/assign-manual-rider', wrap(async (req, res) => {
+app.post('/api/orders/:id/assign-manual-rider', requireStaff, wrap(async (req, res) => {
   const { id } = req.params;
-  const { name, phone, plateNumber, vehicleType, verificationPin, shift } = req.body;
+  const { name, phone, plateNumber, vehicleType, verificationPin, shift } = req.body || {};
   if (!name || !phone) {
     return res.status(400).json({ error: 'Rider Name and Phone Number are required.' });
   }
 
-  const result = db.assignManualRiderToOrder
-    ? db.assignManualRiderToOrder(id, { name, phone, plateNumber, vehicleType, verificationPin, shift })
-    : null;
+  const result = await neonClient.assignManualRiderToOrder(id, { name, phone, plateNumber, vehicleType, verificationPin, shift });
   if (!result) return res.status(400).json({ error: 'Could not assign manual courier to order.' });
 
   // Broadcast to kitchen, admin, and customer
   io.emit('order_assigned_to_rider', result);
   io.emit('order_status_updated', result.order);
-  io.emit('rider_fleet_updated', db.getRiders ? db.getRiders() : await neonClient.getRiders());
+  io.emit('rider_fleet_updated', await neonClient.getRiders());
   io.to(`order_${id}`).emit('live_order_status', result.order);
 
   return res.json(result);

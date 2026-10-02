@@ -19,8 +19,10 @@ import {
   Moon
 } from 'lucide-react';
 
-/** Views the app can be asked to show. Never build a URL here. */
-const VIEWS = ['menu', 'product-detail', 'orders', 'tracking', 'dashboard'];
+import { normalizeRole } from '../services/apiService';
+
+/** Views the app can be asked to show. */
+const VIEWS = ['menu', 'product-detail', 'orders', 'tracking', 'dashboard', 'admin', 'kitchen', 'delivery'];
 
 /** Lowercase roles the server issues. Never uppercased, never inferred. */
 const ROLE_LABELS = {
@@ -74,9 +76,8 @@ export default function Header({
   const saved = Math.max(0, Number(wishlistCount) || 0);
   const activeView = VIEWS.includes(view) ? view : 'menu';
 
-  const role = user?.role ? String(user.role).toLowerCase() : null;
+  const role = user?.role ? normalizeRole(user.role) : null;
   const RoleIcon = ROLE_ICONS[role] || User;
-  const roleLabel = ROLE_LABELS[role] || 'Dashboard';
 
   const navigate = useCallback(
     (nextView) => {
@@ -243,19 +244,75 @@ export default function Header({
             {lang === 'RW' ? 'Ibiyo' : 'Menu'}
           </button>
 
-          {user && (
+          {role === 'admin' && (
+            <>
+              <button
+                type="button"
+                onClick={() => navigate('admin')}
+                aria-current={activeView === 'admin' ? 'page' : undefined}
+                className={navButtonClass(activeView === 'admin')}
+              >
+                <Shield className="w-3.5 h-3.5 text-red-400" aria-hidden="true" focusable="false" />
+                <span>Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('kitchen')}
+                aria-current={activeView === 'kitchen' ? 'page' : undefined}
+                className={navButtonClass(activeView === 'kitchen')}
+              >
+                <ChefHat className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" focusable="false" />
+                <span>Kitchen</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('delivery')}
+                aria-current={activeView === 'delivery' ? 'page' : undefined}
+                className={navButtonClass(activeView === 'delivery')}
+              >
+                <Bike className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" focusable="false" />
+                <span>Dispatch</span>
+              </button>
+            </>
+          )}
+
+          {role === 'kitchen' && (
+            <button
+              type="button"
+              onClick={() => navigate('kitchen')}
+              aria-current={activeView === 'kitchen' ? 'page' : undefined}
+              className={navButtonClass(activeView === 'kitchen')}
+            >
+              <ChefHat className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" focusable="false" />
+              <span>Kitchen Board</span>
+            </button>
+          )}
+
+          {role === 'delivery' && (
+            <button
+              type="button"
+              onClick={() => navigate('delivery')}
+              aria-current={activeView === 'delivery' ? 'page' : undefined}
+              className={navButtonClass(activeView === 'delivery')}
+            >
+              <Bike className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" focusable="false" />
+              <span>Deliveries</span>
+            </button>
+          )}
+
+          {role === 'customer' && (
             <button
               type="button"
               onClick={() => navigate('dashboard')}
               aria-current={activeView === 'dashboard' ? 'page' : undefined}
               className={navButtonClass(activeView === 'dashboard')}
             >
-              <RoleIcon className="w-3.5 h-3.5" aria-hidden="true" focusable="false" />
-              <span>{lang === 'RW' ? 'Konte' : roleLabel}</span>
+              <User className="w-3.5 h-3.5" aria-hidden="true" focusable="false" />
+              <span>{lang === 'RW' ? 'Konte' : 'My Dashboard'}</span>
             </button>
           )}
 
-          {hasOrders && (
+          {(user || hasOrders) && (
             <button
               type="button"
               onClick={() => navigate('orders')}
@@ -465,7 +522,7 @@ export default function Header({
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => navigate('menu')}
@@ -478,7 +535,73 @@ export default function Header({
               Menu
             </button>
 
-            {user && (
+            {role === 'admin' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate('admin')}
+                  aria-current={activeView === 'admin' ? 'page' : undefined}
+                  className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                    activeView === 'admin' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  }`}
+                >
+                  <Shield className="w-4 h-4 text-red-400" aria-hidden="true" focusable="false" />
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('kitchen')}
+                  aria-current={activeView === 'kitchen' ? 'page' : undefined}
+                  className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                    activeView === 'kitchen' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  }`}
+                >
+                  <ChefHat className="w-4 h-4 text-amber-400" aria-hidden="true" focusable="false" />
+                  Kitchen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('delivery')}
+                  aria-current={activeView === 'delivery' ? 'page' : undefined}
+                  className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                    activeView === 'delivery' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  }`}
+                >
+                  <Bike className="w-4 h-4 text-blue-400" aria-hidden="true" focusable="false" />
+                  Dispatch
+                </button>
+              </>
+            )}
+
+            {role === 'kitchen' && (
+              <button
+                type="button"
+                onClick={() => navigate('kitchen')}
+                aria-current={activeView === 'kitchen' ? 'page' : undefined}
+                className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                  activeView === 'kitchen' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                }`}
+              >
+                <ChefHat className="w-4 h-4 text-amber-400" aria-hidden="true" focusable="false" />
+                Kitchen
+              </button>
+            )}
+
+            {role === 'delivery' && (
+              <button
+                type="button"
+                onClick={() => navigate('delivery')}
+                aria-current={activeView === 'delivery' ? 'page' : undefined}
+                className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                  activeView === 'delivery' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                }`}
+              >
+                <Bike className="w-4 h-4 text-blue-400" aria-hidden="true" focusable="false" />
+                Deliveries
+              </button>
+            )}
+
+            {role === 'customer' && (
               <button
                 type="button"
                 onClick={() => navigate('dashboard')}
@@ -487,8 +610,22 @@ export default function Header({
                   activeView === 'dashboard' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
                 }`}
               >
-                <RoleIcon className="w-4 h-4" aria-hidden="true" focusable="false" />
+                <User className="w-4 h-4" aria-hidden="true" focusable="false" />
                 Dashboard
+              </button>
+            )}
+
+            {(user || hasOrders) && (
+              <button
+                type="button"
+                onClick={() => navigate('orders')}
+                aria-current={activeView === 'orders' ? 'page' : undefined}
+                className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                  activeView === 'orders' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                }`}
+              >
+                <History className="w-4 h-4" aria-hidden="true" focusable="false" />
+                Orders
               </button>
             )}
 

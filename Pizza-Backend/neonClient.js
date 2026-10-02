@@ -395,7 +395,7 @@ module.exports = {
   },
 
   createMeal: async (meal) => {
-    const id = meal.id || makeId('meal');
+    const id = meal.id || require('crypto').randomUUID();
     const rows = await sql`
       INSERT INTO meals (id, name, category, price, rating, reviews_count, description,
                          image, fallback_image, spicy, out_of_stock, spice_levels, broths, updated_at)
@@ -808,6 +808,63 @@ module.exports = {
       return { order: await module.exports.getOrderById(orderId), rider: null };
     }
     return module.exports.assignRider(orderId, newRiderId);
+  },
+
+  assignManualRiderToOrder: async (orderId, riderData = {}) => {
+    await ensureOrderExists(orderId);
+    const pin = String(riderData.verificationPin || riderData.pin || Math.floor(100000 + Math.random() * 900000));
+    const riderId = riderData.id || makeId('rider');
+
+    let existingRider = null;
+    if (riderData.phone) {
+      const rows = await sql`SELECT * FROM riders WHERE phone = ${riderData.phone} LIMIT 1;`;
+      existingRider = rows[0] || null;
+    }
+
+    let activeRiderId = riderId;
+    let activeRiderName = riderData.name || 'Assigned Courier';
+
+    if (existingRider) {
+      activeRiderId = existingRider.id;
+      activeRiderName = riderData.name || existingRider.name;
+      await sql`
+        UPDATE riders
+        SET name = ${activeRiderName},
+            plate_number = COALESCE(${riderData.plateNumber || null}, plate_number),
+            vehicle_type = COALESCE(${riderData.vehicleType || null}, vehicle_type),
+            shift = COALESCE(${riderData.shift || null}, shift),
+            current_order_id = ${orderId},
+            status = 'busy',
+            is_available = FALSE,
+            updated_at = NOW()
+        WHERE id = ${activeRiderId};
+      `;
+    } else {
+      await sql`
+        INSERT INTO riders (id, name, email, phone, plate_number, vehicle_type, shift, is_available, status, current_order_id, last_lat, last_lng, updated_at)
+        VALUES (${activeRiderId}, ${activeRiderName}, ${riderData.email || null}, ${riderData.phone || null},
+                ${riderData.plateNumber || 'RAC 000X'}, ${riderData.vehicleType || 'Motorcycle'}, ${riderData.shift || 'On-Demand Dispatch'},
+                FALSE, 'busy', ${orderId}, -1.9441, 30.0619, NOW());
+      `;
+    }
+
+    await sql`
+      UPDATE orders
+      SET rider_id = ${activeRiderId},
+          rider_name = ${activeRiderName},
+          verification_pin = ${pin},
+          assigned_at = NOW(),
+          updated_at = NOW()
+      WHERE id = ${orderId};
+    `;
+
+    const updatedOrder = await module.exports.getOrderById(orderId, { includePin: true });
+    const updatedRider = await module.exports.getRiderById(activeRiderId);
+
+    return {
+      order: updatedOrder,
+      rider: updatedRider
+    };
   },
 
   // --- Riders -------------------------------------------------------------
