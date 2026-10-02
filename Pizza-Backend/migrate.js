@@ -18,7 +18,7 @@
  *     order so assignments survive a restart and are visible to every reader.
  */
 require('dotenv').config();
-const { neon } = require('@neondatabase/serverless');
+const { Pool } = require('pg');
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -31,6 +31,7 @@ const SCHEMA = [
      avatar_url    TEXT,
      role          VARCHAR(50) NOT NULL DEFAULT 'customer'
                      CHECK (role IN ('customer','kitchen','delivery','admin')),
+     token_version INTEGER NOT NULL DEFAULT 1,
      location      TEXT,
      lat           DOUBLE PRECISION,
      lng           DOUBLE PRECISION,
@@ -173,12 +174,19 @@ const COLUMN_ADDITIONS = [
   ['users', 'location', 'TEXT'],
   ['users', 'lat', 'DOUBLE PRECISION'],
   ['users', 'lng', 'DOUBLE PRECISION'],
+  ['users', 'google_id', 'VARCHAR(255)'],
+  ['users', 'password_hash', 'TEXT'],
+  ['users', 'avatar_url', 'TEXT'],
+  ['users', 'role', "VARCHAR(50) NOT NULL DEFAULT 'customer'"],
+  ['users', 'token_version', 'INTEGER NOT NULL DEFAULT 1'],
+  ['feedbacks', 'updated_at', 'TIMESTAMPTZ NOT NULL DEFAULT NOW()'],
   ['riders', 'current_order_id', 'VARCHAR(255)'],
   ['riders', 'earnings_today', 'NUMERIC(12,0) NOT NULL DEFAULT 0'],
   ['riders', 'completed_today', 'INTEGER NOT NULL DEFAULT 0'],
   ['riders', 'last_lat', 'DOUBLE PRECISION'],
   ['riders', 'last_lng', 'DOUBLE PRECISION'],
   ['riders', 'last_seen_at', 'TIMESTAMPTZ'],
+  ['riders', 'updated_at', 'TIMESTAMPTZ NOT NULL DEFAULT NOW()'],
 ];
 
 async function tableExists(sql, name) {
@@ -205,7 +213,36 @@ async function migrate() {
     throw err;
   }
 
-  const sql = neon(connectionString);
+  const useSsl =
+    connectionString.includes('sslmode=require') ||
+    connectionString.includes('.neon.tech') ||
+    process.env.PGSSL === 'true';
+
+  const pool = new Pool({
+    connectionString,
+    ssl: useSsl ? { rejectUnauthorized: false } : false
+  });
+
+  async function sql(strings, ...values) {
+    if (typeof strings === 'string') {
+      const res = await pool.query(strings, values);
+      return res.rows;
+    }
+    let queryText = '';
+    for (let i = 0; i < strings.length; i++) {
+      queryText += strings[i];
+      if (i < values.length) {
+        queryText += `$${i + 1}`;
+      }
+    }
+    const result = await pool.query(queryText, values);
+    return result.rows;
+  }
+  sql.query = async (text, params = []) => {
+    const result = await pool.query(text, params);
+    return result.rows;
+  };
+
   console.log('Applying HotPot schema...');
 
   // Tables are created in dependency order; `users` must exist before `orders`
@@ -239,6 +276,7 @@ async function migrate() {
   }
 
   console.log('Schema is up to date.');
+  await pool.end();
 }
 
 if (require.main === module) {

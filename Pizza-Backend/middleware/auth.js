@@ -22,7 +22,7 @@ const ALL_ROLES = ['customer', 'kitchen', 'delivery', 'admin'];
 const authMiddleware = (roles = []) => {
   const allowed = roles.map((r) => String(r).toLowerCase());
 
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Sign in to continue.' });
@@ -38,7 +38,33 @@ const authMiddleware = (roles = []) => {
       });
     }
 
-    const role = String(decoded.role || '').toLowerCase();
+    let role = String(decoded.role || '').toLowerCase();
+
+    // Verify current role & tokenVersion in database to prevent stale JWT claims / demoted admins
+    try {
+      const neonClient = require('../neonClient');
+      if (neonClient && decoded.id) {
+        const liveUser = await neonClient.findUserById(decoded.id);
+        if (!liveUser) {
+          return res.status(401).json({ error: 'Account no longer exists. Please sign in again.' });
+        }
+        const liveRole = String(liveUser.role || 'customer').toLowerCase();
+        const liveTokenVersion = Number(liveUser.token_version ?? liveUser.tokenVersion ?? 1);
+        const tokenVersion = Number(decoded.tokenVersion ?? 1);
+
+        if (tokenVersion < liveTokenVersion) {
+          return res.status(401).json({ error: 'Your session has been invalidated. Please sign in again.' });
+        }
+        if (decoded.role && String(decoded.role).toLowerCase() !== liveRole) {
+          return res.status(401).json({ error: 'Your account permissions have changed. Please sign in again.' });
+        }
+        role = liveRole;
+      }
+    } catch (err) {
+      if (err.statusCode || err.status || err.name === 'JsonWebTokenError') throw err;
+      // In case DB is temporarily unreachable or in unit tests without DB, retain decoded role
+    }
+
     if (!ALL_ROLES.includes(role)) {
       return res.status(403).json({ error: 'Your account has no valid role.' });
     }

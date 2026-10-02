@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Flame, Lock, Mail, User, Phone, Eye, EyeOff, AlertCircle, ArrowRight, UserPlus } from 'lucide-react';
 import { register } from '../../services/apiService';
 
@@ -7,6 +7,18 @@ const MIN_PASSWORD = 8;
 
 export default function RegisterPage({ onRegisterSuccess }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTarget = searchParams.get('redirect') || location.state?.from?.pathname || location.state?.from;
+  const safeRedirect =
+    redirectTarget &&
+    typeof redirectTarget === 'string' &&
+    redirectTarget.startsWith('/') &&
+    !redirectTarget.startsWith('/login') &&
+    !redirectTarget.startsWith('/register')
+      ? redirectTarget
+      : null;
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -49,7 +61,11 @@ export default function RegisterPage({ onRegisterSuccess }) {
       if (typeof onRegisterSuccess === 'function') {
         onRegisterSuccess(user);
       }
-      navigate('/dashboard', { replace: true });
+      if (safeRedirect) {
+        navigate(safeRedirect, { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       setErrorMsg(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -193,7 +209,10 @@ export default function RegisterPage({ onRegisterSuccess }) {
 
         <div className="mt-6 text-center text-xs text-text-muted">
           Already have an account?{' '}
-          <Link to="/login" className="text-primary font-bold hover:underline">
+          <Link
+            to={safeRedirect ? `/login?redirect=${encodeURIComponent(safeRedirect)}` : '/login'}
+            className="text-primary font-bold hover:underline"
+          >
             Sign In here
           </Link>
         </div>

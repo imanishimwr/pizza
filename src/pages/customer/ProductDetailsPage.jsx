@@ -81,13 +81,8 @@ export default function ProductDetailsPage({
   const priceOf = (candidate) => Number(candidate?.price);
 
   const handleAddOrIncrement = (qtyToAdd = 1) => {
-    if (!meal) return;
+    if (!meal || meal.outOfStock) return;
     const qty = Math.max(1, Number(qtyToAdd) || 1);
-
-    if (!signedIn) {
-      if (onOpenAuth) onOpenAuth();
-      return;
-    }
 
     if (inCartItem) {
       if (onUpdateCartQty) onUpdateCartQty(cartIndex, inCartQty + qty);
@@ -98,9 +93,10 @@ export default function ProductDetailsPage({
         selectedSpice,
         selectedBroth,
         specialNote,
-        totalPrice: (Number(meal.price) || 0) * qty
+        totalPrice: unitPrice * qty
       });
     }
+    if (onOpenCart) onOpenCart();
   };
 
   const handleRemove = () => {
@@ -357,18 +353,7 @@ export default function ProductDetailsPage({
 
           {/* DYNAMIC CART CONTROLLER: State-aware UX */}
           <div className="space-y-4 pt-2">
-            {!signedIn ? (
-              <div className="p-5 rounded-2xl bg-surface-card border border-white/10 space-y-3">
-                <p className="text-xs text-text-muted">
-                  Sign in to add this dish to your cart and check out.
-                </p>
-                {onOpenAuth && (
-                  <button type="button" onClick={onOpenAuth} className="btn-primary text-xs py-2.5 px-6">
-                    Sign in to order
-                  </button>
-                )}
-              </div>
-            ) : inCartQty > 0 ? (
+            {inCartQty > 0 ? (
               <div className="p-5 rounded-2xl bg-linear-to-r from-emerald-950/50 via-surface-card to-surface-card border border-emerald-500/40 space-y-4 shadow-xl animate-fade-in">
                 {/* Status Notice Banner */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -386,13 +371,28 @@ export default function ProductDetailsPage({
                     <button
                       type="button"
                       onClick={onOpenCart}
-                      className="text-xs text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-1"
+                      className="text-xs text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-1 cursor-pointer"
                     >
                       <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
                       View in Cart Drawer
                     </button>
                   )}
                 </div>
+
+                {!signedIn && onOpenAuth && (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-amber-200">
+                      Sign in or register to complete your order and track delivery.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onOpenAuth}
+                      className="px-3.5 py-1.5 rounded-lg bg-amber-500 text-black font-extrabold text-xs shrink-0 hover:bg-amber-400 transition-colors cursor-pointer"
+                    >
+                      Sign In to Order
+                    </button>
+                  </div>
+                )}
 
                 <p className="text-xs text-text-muted">
                   You already have this dish in your cart. You can increase the quantity, keep only one, or remove

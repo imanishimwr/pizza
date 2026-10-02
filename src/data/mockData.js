@@ -21,12 +21,13 @@ export const CATEGORY_LABELS = CATEGORIES.reduce((acc, category) => {
 
 /** Readable label for a canonical lowercase order status. */
 export const ORDER_STATUS_LABELS = {
-  pending: 'Received',
-  preparing: 'In the kitchen',
-  ready: 'Ready for pickup',
-  delivery: 'Out for delivery',
+  ongoing: 'Ongoing',
+  ready: 'Ready',
   delivered: 'Delivered',
-  cancelled: 'Cancelled'
+  cancelled: 'Cancelled',
+  pending: 'Ongoing',
+  preparing: 'Ongoing',
+  delivery: 'Ongoing'
 };
 
 export const PROMO_BANNERS = [

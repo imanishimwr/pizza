@@ -13,7 +13,16 @@ export default function LoginPage({ onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const from = location.state?.from?.pathname;
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTarget = searchParams.get('redirect') || location.state?.from?.pathname || location.state?.from;
+  const safeRedirect =
+    redirectTarget &&
+    typeof redirectTarget === 'string' &&
+    redirectTarget.startsWith('/') &&
+    !redirectTarget.startsWith('/login') &&
+    !redirectTarget.startsWith('/register')
+      ? redirectTarget
+      : null;
 
   const handleLogin = async (e, customEmail, customPass) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -36,8 +45,8 @@ export default function LoginPage({ onLoginSuccess }) {
 
       // Route according to role or return path
       const role = normalizeRole(user.role);
-      if (from && from !== '/login' && from !== '/register') {
-        navigate(from, { replace: true });
+      if (safeRedirect) {
+        navigate(safeRedirect, { replace: true });
       } else if (role === 'admin') {
         navigate('/admin', { replace: true });
       } else if (role === 'kitchen') {
@@ -150,7 +159,10 @@ export default function LoginPage({ onLoginSuccess }) {
 
         <div className="mt-6 text-center text-xs text-text-muted">
           Don&apos;t have an account yet?{' '}
-          <Link to="/register" className="text-primary font-bold hover:underline">
+          <Link
+            to={safeRedirect ? `/register?redirect=${encodeURIComponent(safeRedirect)}` : '/register'}
+            className="text-primary font-bold hover:underline"
+          >
             Create an Account
           </Link>
         </div>

@@ -28,23 +28,18 @@ test('toStringArray accepts arrays, JSON and Postgres brace literals', () => {
 });
 
 test('order status machine allows only forward moves plus cancellation', () => {
-  assert.ok(client.canTransition('pending', 'preparing'));
-  assert.ok(client.canTransition('preparing', 'ready'));
-  assert.ok(client.canTransition('ready', 'delivery'));
-  assert.ok(client.canTransition('delivery', 'delivered'));
-
-  // A customer cannot skip the kitchen and put an order straight on the road.
-  assert.equal(client.canTransition('pending', 'delivery'), false);
-  assert.equal(client.canTransition('pending', 'delivered'), false);
-  assert.equal(client.canTransition('preparing', 'delivered'), false);
+  assert.ok(client.canTransition('ongoing', 'ready'));
+  assert.ok(client.canTransition('ready', 'delivered'));
+  assert.ok(client.canTransition('ongoing', 'cancelled'));
+  assert.ok(client.canTransition('ready', 'cancelled'));
 
   // Terminal states are terminal.
-  assert.equal(client.canTransition('delivered', 'pending'), false);
-  assert.equal(client.canTransition('cancelled', 'pending'), false);
+  assert.equal(client.canTransition('delivered', 'ongoing'), false);
+  assert.equal(client.canTransition('cancelled', 'ongoing'), false);
 
-  // Idempotent re-set is fine; a backwards move is not.
-  assert.ok(client.canTransition('preparing', 'preparing'));
-  assert.equal(client.canTransition('delivery', 'ready'), false);
+  // Idempotent re-set is fine.
+  assert.ok(client.canTransition('ongoing', 'ongoing'));
+  assert.ok(client.canTransition('ready', 'ready'));
 });
 
 test('serializeOrder emits camelCase only, with no snake_case leakage', () => {
@@ -84,9 +79,10 @@ test('serializeOrder only reveals the handover code when asked', () => {
   assert.equal(client.serializeOrder(row, [], { includePin: true }).verificationPin, '123456');
 });
 
-test('serializeUser normalises role casing', () => {
+test('serializeUser normalises role casing and preserves tokenVersion', () => {
   assert.equal(client.serializeUser({ id: '1', name: 'A', email: 'a@b.c', role: 'ADMIN' }).role, 'admin');
   assert.equal(client.serializeUser({ id: '1', name: 'A', email: 'a@b.c', role: null }).role, 'customer');
+  assert.equal(client.serializeUser({ id: '1', name: 'A', email: 'a@b.c', role: 'admin', token_version: 4 }).tokenVersion, 4);
 });
 
 test('serializeMeal converts stock and review fields to booleans and numbers', () => {

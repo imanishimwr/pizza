@@ -11,7 +11,9 @@ import {
   Search,
   Plus,
   Utensils,
-  User
+  User,
+  AlertTriangle as TriangleAlert,
+  RefreshCw
 } from 'lucide-react';
 import { CATEGORIES, PROMO_BANNERS } from '../../data/mockData';
 
@@ -40,6 +42,8 @@ function applyImageFallback(event, fallbackImage) {
 export default function Home({
   meals = [],
   loading = false,
+  error = null,
+  onRetry,
   onSelectMeal,
   searchQuery = '',
   selectedCategory = 'all',
@@ -138,7 +142,7 @@ export default function Home({
   const recentFoods = useMemo(() => [...mealList.slice(0, 6), ...mealList.slice(0, 6)], [mealList]);
 
   const banner = BANNER_COUNT ? PROMO_BANNERS[activeBanner % BANNER_COUNT] : null;
-  const menuIsEmpty = !loading && mealList.length === 0;
+  const menuIsEmpty = !loading && !error && mealList.length === 0;
 
   return (
     <div className="space-y-8 pb-16">
@@ -148,12 +152,6 @@ export default function Home({
       >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
           <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-md">
-              <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-white">
-                <Flame className="w-4 h-4" aria-hidden="true" />
-              </div>
-              <span className="tracking-wider uppercase text-amber-300">Hot Pot Kigali • We Deliver 24/7 🚀</span>
-            </div>
 
             <div className="space-y-1">
               <h2 className="text-base sm:text-xl font-extrabold text-amber-400 tracking-wide uppercase">
@@ -418,6 +416,31 @@ export default function Home({
               </div>
             ))}
             <span className="sr-only">Loading the menu…</span>
+          </div>
+        ) : error ? (
+          <div
+            role="alert"
+            className="py-16 px-4 text-center bg-surface-card/60 rounded-2xl border border-red-500/20 shadow-xl space-y-4 max-w-lg mx-auto my-6"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/30 flex items-center justify-center mx-auto shadow-inner">
+              <TriangleAlert className="w-7 h-7" aria-hidden="true" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-extrabold text-white">Failed to load dishes</h3>
+              <p className="text-xs sm:text-sm text-text-muted max-w-sm mx-auto">
+                {error || 'Unable to retrieve menu items right now. Please check your connection and try again.'}
+              </p>
+            </div>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 inline-flex items-center gap-2 shadow-lg transition-transform hover:scale-105 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Try again</span>
+              </button>
+            )}
           </div>
         ) : menuIsEmpty ? (
           <div className="py-16 text-center bg-surface-card/50 rounded-2xl border border-white/5 space-y-3">

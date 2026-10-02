@@ -10,7 +10,15 @@
  *     end users by the server and are safe to display.
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+const _apiBaseRaw = import.meta.env.VITE_API_BASE_URL;
+if (!_apiBaseRaw) {
+  console.warn(
+    '[apiService] VITE_API_BASE_URL is not set. ' +
+    'Falling back to relative /api (works locally via Vite proxy, ' +
+    'but WILL break in production). Add it to your .env file.'
+  );
+}
+const API_BASE_URL = (_apiBaseRaw || '/api').replace(/\/$/, '');
 
 const TOKEN_KEY = 'hotpot_token_v1';
 const USER_KEY = 'hotpot_user_v1';
@@ -191,27 +199,124 @@ const qs = (params) => {
 };
 
 // ---------------------------------------------------------------------------
-// Menu (with in-memory caching & explicit invalidation)
+// Menu — IndexedDB-backed cache (survives page refresh) + in-memory L1 cache
 // ---------------------------------------------------------------------------
-let mealsCache = null;
-let mealsCacheTimestamp = 0;
-const MEALS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-export function clearMealsCache() {
-  mealsCache = null;
-  mealsCacheTimestamp = 0;
+const IDB_NAME = 'hotpot_cache';
+const IDB_STORE = 'meals';
+const IDB_KEY = 'menu';
+const MEALS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+/** Open (or reuse) the IndexedDB database. */
+function openCacheDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      e.target.result.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
+/** Read the cached meals record from IndexedDB. Returns null if missing. */
+async function idbRead() {
+  try {
+    const db = await openCacheDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Persist a meals array to IndexedDB with a timestamp. */
+async function idbWrite(data) {
+  try {
+    const db = await openCacheDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put({ data, ts: Date.now() }, IDB_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  } catch {
+    // Non-critical — silently ignore IDB write failures
+  }
+}
+
+/** Clear the meals record from IndexedDB. */
+async function idbClear() {
+  try {
+    const db = await openCacheDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(IDB_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  } catch {}
+}
+
+// L1: in-memory cache (instant within the same tab session)
+let _mealsL1 = null;
+let _mealsL1Ts = 0;
+
+export async function clearMealsCache() {
+  _mealsL1 = null;
+  _mealsL1Ts = 0;
+  await idbClear();
+}
+
+/**
+ * getMeals — stale-while-revalidate strategy:
+ *   1. If the L1 in-memory cache is fresh  → return instantly (0 ms).
+ *   2. Else if IndexedDB has a fresh entry  → return from IDB, revalidate in background if near expiry.
+ *   3. Else fetch from network, store in both IDB and L1.
+ */
 export const getMeals = async ({ signal, forceRefresh = false } = {}) => {
   const now = Date.now();
-  if (!forceRefresh && mealsCache && (now - mealsCacheTimestamp < MEALS_CACHE_TTL)) {
-    return mealsCache;
+
+  // L1 hit
+  if (!forceRefresh && _mealsL1 && (now - _mealsL1Ts < MEALS_CACHE_TTL)) {
+    return _mealsL1;
   }
+
+  // L2: IndexedDB hit
+  if (!forceRefresh) {
+    const cached = await idbRead();
+    if (cached && (now - cached.ts < MEALS_CACHE_TTL)) {
+      // Populate L1
+      _mealsL1 = cached.data;
+      _mealsL1Ts = cached.ts;
+
+      // Background revalidate if past half-life (5 min)
+      if (now - cached.ts > MEALS_CACHE_TTL / 2) {
+        request('/meals', { auth: false }).then((fresh) => {
+          const arr = Array.isArray(fresh) ? fresh : [];
+          _mealsL1 = arr;
+          _mealsL1Ts = Date.now();
+          idbWrite(arr);
+        }).catch(() => {});
+      }
+
+      return _mealsL1;
+    }
+  }
+
+  // Cache miss or force refresh — fetch from network
   const fresh = await request('/meals', { auth: false, signal });
-  mealsCache = Array.isArray(fresh) ? fresh : [];
-  mealsCacheTimestamp = now;
-  return mealsCache;
+  const arr = Array.isArray(fresh) ? fresh : [];
+  _mealsL1 = arr;
+  _mealsL1Ts = Date.now();
+  idbWrite(arr); // persist to IndexedDB async (non-blocking)
+  return _mealsL1;
 };
+
 
 export const createMeal = async (meal) => {
   clearMealsCache();
@@ -246,6 +351,9 @@ export const updateOrderNotes = (id, notes) =>
   request(`/orders/${encodeURIComponent(id)}/notes`, { method: 'PATCH', body: { notes } });
 
 export const cancelOrder = (id) => request(`/orders/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+export const deleteOrder = (id) =>
+  request(`/orders/${encodeURIComponent(id)}?permanent=true`, { method: 'DELETE' });
 
 // ---------------------------------------------------------------------------
 // Dispatch
@@ -398,6 +506,7 @@ export const apiService = {
   updateOrderStatus,
   updateOrderNotes,
   cancelOrder,
+  deleteOrder,
   getRiders,
   createRider,
   updateRider,

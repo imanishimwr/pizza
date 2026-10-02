@@ -8,7 +8,13 @@ import LiveTracking from './pages/customer/LiveTracking';
 import OrdersHistory from './pages/customer/OrdersHistory';
 import KitchenBoard from './pages/kitchen/KitchenBoard';
 import RiderDashboard from './pages/delivery/RiderDashboard';
-import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminCatalog from './pages/admin/AdminCatalog';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminFleet from './pages/admin/AdminFleet';
+import AdminSales from './pages/admin/AdminSales';
+import AdminReviews from './pages/admin/AdminReviews';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -16,8 +22,9 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import CartDrawer from './components/customer/CartDrawer';
 import CheckoutModal from './components/customer/CheckoutModal';
 import AuthModal from './components/customer/AuthModal';
+import ConfirmModal from './components/common/ConfirmModal';
 import LocationModal from './components/LocationModal';
-import HelpModal from './components/customer/HelpModal';
+import HelpPage from './pages/customer/HelpPage';
 import ProfileModal from './components/customer/ProfileModal';
 import PostDeliveryFeedbackModal from './components/customer/PostDeliveryFeedbackModal';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -29,6 +36,7 @@ import {
   createOrder,
   updateOrderStatus as apiUpdateOrderStatus,
   cancelOrder as apiCancelOrder,
+  deleteOrder as apiDeleteOrder,
   updateOrderNotes as apiUpdateOrderNotes,
   logout as apiLogout,
   refreshSession,
@@ -41,18 +49,38 @@ import {
 import { eventBus } from './services/eventBus';
 import { Bell, Flame, Loader2, AlertTriangle as TriangleAlert, WifiOff } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getAdminCache, setAdminCache, getSyncLocalCache } from './utils/adminIndexedDB';
 
 const STAFF_ROLES = ['admin', 'kitchen', 'delivery'];
 const POLL_MS = 8000;
 
+// ---------------------------------------------------------------------------
+// Route map — single source of truth for all role-based paths
+// ---------------------------------------------------------------------------
+export const ROUTES = {
+  home:       '/',
+  login:      '/login',
+  register:   '/register',
+  product:    '/product',
+  help:       '/help',
+  // Customer portal
+  dashboard:  '/hotpotcustomer/dashboard',
+  orders:     '/hotpotcustomer/orders',
+  tracking:   '/hotpotcustomer/tracking',
+  // Staff portals
+  admin:      '/hotpotadmin',
+  kitchen:    '/hotpotkitchen',
+  delivery:   '/hotpotrider',
+};
+
 function getActiveView(pathname) {
   const p = (pathname || '/').toLowerCase();
-  if (p.startsWith('/kitchen')) return 'kitchen';
-  if (p.startsWith('/delivery') || p.startsWith('/rider')) return 'delivery';
-  if (p.startsWith('/admin')) return 'admin';
-  if (p.startsWith('/tracking')) return 'tracking';
-  if (p.startsWith('/orders')) return 'orders';
-  if (p.startsWith('/dashboard')) return 'dashboard';
+  if (p.startsWith('/hotpotkitchen')) return 'kitchen';
+  if (p.startsWith('/hotpotrider')) return 'delivery';
+  if (p.startsWith('/hotpotadmin')) return 'admin';
+  if (p.startsWith('/hotpotcustomer/tracking')) return 'tracking';
+  if (p.startsWith('/hotpotcustomer/orders')) return 'orders';
+  if (p.startsWith('/hotpotcustomer')) return 'dashboard';
   if (p.startsWith('/product')) return 'product-detail';
   if (p.startsWith('/login')) return 'login';
   if (p.startsWith('/register')) return 'register';
@@ -72,11 +100,32 @@ function AppContent() {
   const [authError, setAuthError] = useState(null);
 
   // --- Server data --------------------------------------------------------
-  const [meals, setMeals] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const [meals, setMeals] = useState(() => getSyncLocalCache('meals') || []);
+  const [orders, setOrders] = useState(() => getSyncLocalCache('orders') || []);
   const [mealsError, setMealsError] = useState(null);
   const [ordersError, setOrdersError] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(false);
+
+  // Asynchronously hydrate meals & orders from IndexedDB
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const [cachedMeals, cachedOrders] = await Promise.all([
+        getAdminCache('meals'),
+        getAdminCache('orders')
+      ]);
+      if (!mounted) return;
+      if (Array.isArray(cachedMeals) && cachedMeals.length > 0) {
+        setMeals((prev) => (prev.length > 0 ? prev : cachedMeals));
+      }
+      if (Array.isArray(cachedOrders) && cachedOrders.length > 0) {
+        setOrders((prev) => (prev.length > 0 ? prev : cachedOrders));
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // --- Local UI state -----------------------------------------------------
   const [cart, setCart] = useState(() => cartStore.get());
@@ -92,11 +141,12 @@ function AppContent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [feedbackOrder, setFeedbackOrder] = useState(null);
   const [orderBusy, setOrderBusy] = useState(false);
+  const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
 
   const role = user?.role ? normalizeRole(user.role) : null;
   const isStaff = role !== null && STAFF_ROLES.includes(role);
@@ -142,6 +192,7 @@ function AppContent() {
         if (cancelled) return;
         setAuthError(`Session expired (${err.message}). Signed out for security.`);
         setUser(null);
+        setSessionExpiredOpen(true);
       })
       .finally(() => {
         if (!cancelled) setAuthChecked(true);
@@ -156,19 +207,31 @@ function AppContent() {
     const unsub = onAuthLost(() => {
       setUser(null);
       setOrders([]);
-      showToast('Session expired. Please sign in again.', 'Signed Out', 'error');
+      setSessionExpiredOpen(true);
     });
     return unsub;
-  }, [showToast]);
+  }, []);
 
   const loadMeals = useCallback(async () => {
     try {
       setMealsError(null);
-      setMeals(await getMeals());
+      const fresh = await getMeals();
+      setMeals(fresh);
+      if (Array.isArray(fresh) && fresh.length > 0) {
+        setAdminCache('meals', fresh);
+      }
     } catch (err) {
       setMeals([]);
       setMealsError(err.message);
     }
+  }, []);
+
+  const removeMeal = useCallback((mealId) => {
+    setMeals((prev) => {
+      const filtered = prev.filter((m) => String(m.id) !== String(mealId));
+      setAdminCache('meals', filtered);
+      return filtered;
+    });
   }, []);
 
   useEffect(() => {
@@ -186,6 +249,9 @@ function AppContent() {
         const fresh = await getOrders();
         setOrders(fresh);
         setOrdersError(null);
+        if (Array.isArray(fresh) && fresh.length > 0) {
+          setAdminCache('orders', fresh);
+        }
       } catch (err) {
         setOrdersError(err.message);
       } finally {
@@ -216,12 +282,19 @@ function AppContent() {
   useEffect(() => {
     if (!token) return undefined;
 
-    const base = (
+    const rawBase =
       import.meta.env.VITE_SOCKET_URL ||
       (import.meta.env.VITE_API_BASE_URL
         ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '')
-        : 'http://localhost:5002')
-    ).replace(/\/$/, '');
+        : null);
+    if (!rawBase) {
+      console.error(
+        '[socket] VITE_SOCKET_URL or VITE_API_BASE_URL must be set. '
+        + 'Add it to your .env file.'
+      );
+      return undefined;
+    }
+    const base = rawBase.replace(/\/$/, '');
 
     const socket = io(base, {
       transports: ['websocket', 'polling'],
@@ -242,13 +315,13 @@ function AppContent() {
     socket.on('new_order_placed', (order) => {
       if (!order) return;
       upsert(order);
-      eventBus.emit('NEW_ORDER', order, true);
+      eventBus.emit('NEW_ORDER', order);
     });
 
     socket.on('order_status_updated', (order) => {
       if (!order) return;
       upsert(order);
-      eventBus.emit('ORDER_STATUS_UPDATE', { orderId: order.id, status: order.status, order }, true);
+      eventBus.emit('ORDER_STATUS_UPDATE', { orderId: order.id, status: order.status, order });
       if (order.status === 'delivered' && String(order.userId) === String(session.getUser()?.id)) {
         setFeedbackOrder(order);
       }
@@ -259,39 +332,109 @@ function AppContent() {
       setOrders((prev) => prev.map((o) => (String(o.id) === String(order.id) ? { ...o, status: 'cancelled' } : o)));
     });
 
+    socket.on('order_deleted', ({ orderId } = {}) => {
+      if (!orderId) return;
+      setOrders((prev) => prev.filter((o) => String(o.id) !== String(orderId)));
+      eventBus.emit('ORDER_DELETED', { orderId });
+    });
+
+    socket.on('meal_catalog_updated', () => {
+      loadMeals();
+      eventBus.emit('MEAL_CATALOG_UPDATED');
+    });
+
+    socket.on('rider_fleet_updated', (fleet) => {
+      eventBus.emit('RIDER_FLEET_UPDATED', fleet);
+    });
+
     return () => {
       socket.removeAllListeners();
       socket.disconnect();
     };
-  }, [token]);
+  }, [token, loadMeals]);
 
   // State persistence
   useEffect(() => cartStore.set(cart), [cart]);
   useEffect(() => wishlistStore.set(wishlist), [wishlist]);
   useEffect(() => trackedOrderStore.set(trackedOrder?.id || null), [trackedOrder?.id]);
 
-  const addToCart = useCallback((meal, quantity = 1, options = {}) => {
-    if (!meal) return;
+  const addToCart = useCallback((mealOrPayload, quantity = 1, options = {}) => {
+    if (!mealOrPayload) return;
+    const isPayload = Boolean(mealOrPayload.meal);
+    const meal = isPayload ? mealOrPayload.meal : mealOrPayload;
+    const qty = Math.max(1, Number(isPayload ? mealOrPayload.quantity : quantity) || 1);
+    const selectedSpice = isPayload
+      ? (mealOrPayload.selectedSpice ?? mealOrPayload.options?.selectedSpice ?? null)
+      : (options.selectedSpice ?? options.spiceLevel ?? null);
+    const selectedBroth = isPayload
+      ? (mealOrPayload.selectedBroth ?? mealOrPayload.options?.selectedBroth ?? null)
+      : (options.selectedBroth ?? options.broth ?? null);
+    const specialNote = isPayload
+      ? (mealOrPayload.specialNote ?? mealOrPayload.options?.specialNote ?? '')
+      : (options.specialNote ?? '');
+
     setCart((prev) => {
-      const idx = prev.findIndex((i) => String(i.id) === String(meal.id));
+      const idx = prev.findIndex(
+        (i) =>
+          String(i.id || i.meal?.id) === String(meal.id) &&
+          (i.selectedSpice || null) === (selectedSpice || null) &&
+          (i.selectedBroth || null) === (selectedBroth || null)
+      );
+
       if (idx > -1) {
         const next = [...prev];
-        next[idx] = { ...next[idx], quantity: next[idx].quantity + quantity, options: { ...next[idx].options, ...options } };
+        next[idx] = {
+          ...next[idx],
+          quantity: next[idx].quantity + qty,
+          specialNote: specialNote || next[idx].specialNote
+        };
         return next;
       }
-      return [...prev, { ...meal, quantity, options }];
+
+      const newItem = {
+        meal,
+        id: meal.id,
+        name: meal.name,
+        price: Number(meal.price) || 0,
+        quantity: qty,
+        selectedSpice,
+        selectedBroth,
+        specialNote,
+        options: {
+          selectedSpice,
+          selectedBroth,
+          specialNote
+        }
+      };
+      return [...prev, newItem];
     });
   }, []);
 
-  const updateCartQty = useCallback((id, qty) => {
+  const updateCartQty = useCallback((idOrIndex, qty) => {
     setCart((prev) => {
-      if (qty <= 0) return prev.filter((i) => String(i.id) !== String(id));
-      return prev.map((i) => (String(i.id) === String(id) ? { ...i, quantity: qty } : i));
+      let index = -1;
+      if (typeof idOrIndex === 'number' && idOrIndex >= 0 && idOrIndex < prev.length) {
+        index = idOrIndex;
+      } else {
+        index = prev.findIndex((i) => String(i.id || i.meal?.id) === String(idOrIndex));
+      }
+      if (index === -1) return prev;
+      if (qty <= 0) {
+        return prev.filter((_, idx) => idx !== index);
+      }
+      const next = [...prev];
+      next[index] = { ...next[index], quantity: qty };
+      return next;
     });
   }, []);
 
-  const removeCartItem = useCallback((id) => {
-    setCart((prev) => prev.filter((i) => String(i.id) !== String(id)));
+  const removeCartItem = useCallback((idOrIndex) => {
+    setCart((prev) => {
+      if (typeof idOrIndex === 'number' && idOrIndex >= 0 && idOrIndex < prev.length) {
+        return prev.filter((_, idx) => idx !== idOrIndex);
+      }
+      return prev.filter((i) => String(i.id || i.meal?.id) !== String(idOrIndex));
+    });
   }, []);
 
   const toggleWishlist = useCallback((meal) => {
@@ -305,16 +448,16 @@ function AppContent() {
   const requestView = useCallback(
     (targetView) => {
       if (!targetView) return;
-      if (targetView === 'menu' || targetView === '/') navigate('/');
-      else if (targetView === 'kitchen') navigate('/kitchen');
-      else if (targetView === 'delivery' || targetView === 'rider') navigate('/delivery');
-      else if (targetView === 'admin') navigate('/admin');
-      else if (targetView === 'tracking') navigate('/tracking');
-      else if (targetView === 'orders') navigate('/orders');
-      else if (targetView === 'dashboard') navigate('/dashboard');
-      else if (targetView === 'product-detail' || targetView === 'product') navigate('/product');
-      else if (targetView === 'login') navigate('/login');
-      else if (targetView === 'register') navigate('/register');
+      if (targetView === 'menu' || targetView === '/') navigate(ROUTES.home);
+      else if (targetView === 'kitchen') navigate(ROUTES.kitchen);
+      else if (targetView === 'delivery' || targetView === 'rider') navigate(ROUTES.delivery);
+      else if (targetView === 'admin') navigate(ROUTES.admin);
+      else if (targetView === 'tracking') navigate(ROUTES.tracking);
+      else if (targetView === 'orders') navigate(ROUTES.orders);
+      else if (targetView === 'dashboard') navigate(ROUTES.dashboard);
+      else if (targetView === 'product-detail' || targetView === 'product') navigate(ROUTES.product);
+      else if (targetView === 'login') navigate(ROUTES.login);
+      else if (targetView === 'register') navigate(ROUTES.register);
       else if (typeof targetView === 'string' && targetView.startsWith('/')) navigate(targetView);
     },
     [navigate]
@@ -331,13 +474,13 @@ function AppContent() {
       try {
         const payload = {
           items: cart.map((i) => ({
-            id: i.id,
-            name: i.name,
+            id: i.meal?.id || i.id,
+            name: i.meal?.name || i.name,
             qty: i.quantity,
-            price: i.price,
-            spice: i.options?.spiceLevel || i.spice || null,
-            broth: i.options?.broth || i.broth || null,
-            specialNote: i.options?.specialNote || i.specialNote || ''
+            price: Number(i.meal?.price ?? i.price) || 0,
+            spice: i.selectedSpice || i.options?.selectedSpice || i.options?.spiceLevel || i.spice || null,
+            broth: i.selectedBroth || i.options?.selectedBroth || i.options?.broth || null,
+            specialNote: i.specialNote || i.options?.specialNote || ''
           })),
           customerName: details.name,
           phone: details.phone,
@@ -356,7 +499,7 @@ function AppContent() {
         setOrders((prev) => [created, ...prev.filter((o) => String(o.id) !== String(created.id))]);
         showToast(`Order #${created.id} placed! Tracking live now.`, 'Order Placed');
         setIsCheckoutOpen(false);
-        navigate('/tracking');
+        navigate(ROUTES.tracking);
         return created;
       } catch (err) {
         showToast(err.message || 'Could not place your order. Please try again.', 'Order Failed', 'error');
@@ -400,6 +543,33 @@ function AppContent() {
     [trackedOrder?.id, showToast]
   );
 
+  const removeOrder = useCallback(
+    async (orderId) => {
+      let previousOrders = [];
+      // 1. Optimistically remove from state and cache immediately
+      setOrders((prev) => {
+        previousOrders = prev;
+        const filtered = prev.filter((o) => String(o.id) !== String(orderId));
+        setAdminCache('orders', filtered);
+        return filtered;
+      });
+      if (String(trackedOrder?.id) === String(orderId)) setTrackedOrder(null);
+
+      // 2. Sync deletion to backend
+      try {
+        await apiDeleteOrder(orderId);
+        showToast(`Order #${orderId} deleted permanently.`, 'Order Deleted');
+      } catch (err) {
+        // Rollback on failure
+        setOrders(previousOrders);
+        setAdminCache('orders', previousOrders);
+        showToast(err.message || 'Could not delete that order.', 'Delete failed', 'error');
+        throw err;
+      }
+    },
+    [trackedOrder?.id, showToast]
+  );
+
   const setOrderNotes = useCallback(
     async (orderId, notes) => {
       try {
@@ -433,14 +603,18 @@ function AppContent() {
   }
 
   const showAppChrome = view !== 'login' && view !== 'register';
-  const orderActions = { onUpdateStatus: changeOrderStatus, onCancelOrder: cancelOrder, onSetNotes: setOrderNotes };
+  const orderActions = {
+    onUpdateStatus: changeOrderStatus,
+    onCancelOrder: cancelOrder,
+    onDeleteOrder: removeOrder,
+    onSetNotes: setOrderNotes
+  };
 
   // Resolve meal for product detail route
   const productId = searchParams.get('id');
   const mealToRender =
-    selectedMeal ||
     (productId ? meals.find((m) => String(m.id) === String(productId)) : null) ||
-    meals[0] ||
+    selectedMeal ||
     null;
 
   return (
@@ -498,8 +672,8 @@ function AppContent() {
           cartCount={cart.reduce((acc, item) => acc + (item.quantity || 0), 0)}
           wishlistCount={wishlist.length}
           onOpenCart={() => setIsCartOpen(true)}
-          onOpenAuth={() => navigate('/login')}
-          onOpenHelp={() => setIsHelpOpen(true)}
+          onOpenAuth={() => navigate('/login?redirect=' + encodeURIComponent(location.pathname + location.search))}
+          onOpenHelp={() => navigate('/help')}
           onOpenProfile={() => (user ? setIsProfileOpen(true) : navigate('/login'))}
           user={user}
           onLogout={signOut}
@@ -519,10 +693,6 @@ function AppContent() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex-1 w-full relative">
-        {mealsError && view === 'menu' && (
-          <ErrorPanel message={mealsError} onRetry={loadMeals} />
-        )}
-
         <Routes>
           {/* Menu / Home */}
           <Route
@@ -531,6 +701,8 @@ function AppContent() {
               <Home
                 meals={meals}
                 loading={!meals.length && !mealsError}
+                error={mealsError}
+                onRetry={loadMeals}
                 onSelectMeal={(meal) => {
                   setSelectedMeal(meal);
                   navigate(`/product?id=${meal.id}`);
@@ -543,12 +715,20 @@ function AppContent() {
                 onToggleWishlist={toggleWishlist}
                 onAddToCart={addToCart}
                 onOpenCart={() => setIsCartOpen(true)}
-                onOpenAuth={() => navigate('/login')}
+                onOpenAuth={() => navigate('/login?redirect=' + encodeURIComponent(location.pathname + location.search))}
                 signedIn={Boolean(user)}
               />
             }
           />
           <Route path="/store" element={<Navigate to="/" replace />} />
+          {/* Legacy aliases */}
+          <Route path="/dashboard" element={<Navigate to={ROUTES.dashboard} replace />} />
+          <Route path="/orders" element={<Navigate to={ROUTES.orders} replace />} />
+          <Route path="/tracking" element={<Navigate to={ROUTES.tracking} replace />} />
+          <Route path="/admin" element={<Navigate to={ROUTES.admin} replace />} />
+          <Route path="/kitchen" element={<Navigate to={ROUTES.kitchen} replace />} />
+          <Route path="/delivery" element={<Navigate to={ROUTES.delivery} replace />} />
+          <Route path="/rider" element={<Navigate to={ROUTES.delivery} replace />} />
 
           {/* Auth */}
           <Route
@@ -594,29 +774,29 @@ function AppContent() {
                 wishlist={wishlist}
                 onToggleWishlist={toggleWishlist}
                 signedIn={Boolean(user)}
-                onOpenAuth={() => navigate('/login')}
+                onOpenAuth={() => navigate('/login?redirect=' + encodeURIComponent(location.pathname + location.search))}
               />
             }
           />
 
-          {/* Customer Dashboard */}
+          {/* ── Customer Portal ── */}
           <Route
-            path="/dashboard"
+            path={ROUTES.dashboard}
             element={
               <ProtectedRoute allowedRoles={['customer', 'admin', 'kitchen', 'delivery']}>
                 {role === 'admin' ? (
-                  <Navigate to="/admin" replace />
+                  <Navigate to={ROUTES.admin} replace />
                 ) : role === 'kitchen' ? (
-                  <Navigate to="/kitchen" replace />
+                  <Navigate to={ROUTES.kitchen} replace />
                 ) : role === 'delivery' ? (
-                  <Navigate to="/delivery" replace />
+                  <Navigate to={ROUTES.delivery} replace />
                 ) : (
                   <CustomerDashboard
                     user={user}
                     orders={orders}
                     cart={cart}
                     loading={loadingOrders}
-                    onOpenAuth={() => navigate('/login')}
+                    onOpenAuth={() => navigate(ROUTES.login)}
                     onAddToCart={addToCart}
                     onOpenCart={() => setIsCartOpen(true)}
                     onUpdateUser={(updated) => {
@@ -626,10 +806,10 @@ function AppContent() {
                     onSelectOrder={(order) => {
                       setTrackedOrder(order);
                       trackedOrderStore.set(order.id);
-                      navigate('/tracking');
+                      navigate(ROUTES.tracking);
                     }}
                     onOpenProfile={() => setIsProfileOpen(true)}
-                    onExploreMenu={() => navigate('/')}
+                    onExploreMenu={() => navigate(ROUTES.home)}
                     onNavigate={requestView}
                   />
                 )}
@@ -639,7 +819,7 @@ function AppContent() {
 
           {/* Orders History */}
           <Route
-            path="/orders"
+            path={ROUTES.orders}
             element={
               <ProtectedRoute allowedRoles={['customer', 'admin', 'kitchen', 'delivery']}>
                 {orders.length ? (
@@ -648,16 +828,16 @@ function AppContent() {
                     onSelectOrder={(order) => {
                       setTrackedOrder(order);
                       trackedOrderStore.set(order.id);
-                      navigate('/tracking');
+                      navigate(ROUTES.tracking);
                     }}
-                    onExploreMenu={() => navigate('/')}
+                    onExploreMenu={() => navigate(ROUTES.home)}
                   />
                 ) : (
                   <EmptyState
                     title="No orders yet"
                     body="Once you place an order it will appear here with live tracking."
                     actionLabel="Browse the menu"
-                    onAction={() => navigate('/')}
+                    onAction={() => navigate(ROUTES.home)}
                   />
                 )}
               </ProtectedRoute>
@@ -666,7 +846,7 @@ function AppContent() {
 
           {/* Live Tracking */}
           <Route
-            path="/tracking"
+            path={ROUTES.tracking}
             element={
               orders.length || trackedOrder ? (
                 <LiveTracking
@@ -678,37 +858,47 @@ function AppContent() {
                   title="Nothing to track"
                   body="Place an order and follow your courier live on the map."
                   actionLabel="Browse the menu"
-                  onAction={() => navigate('/')}
+                  onAction={() => navigate(ROUTES.home)}
                 />
               )
             }
           />
 
-          {/* Admin Console */}
+          {/* ── Admin Portal ── */}
           <Route
-            path="/admin"
+            path={ROUTES.admin}
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <FullBleed>
-                  <AdminDashboard
+                  <AdminLayout
                     meals={meals}
                     onMealsChange={loadMeals}
+                    onDeleteMeal={removeMeal}
                     orders={orders}
                     loading={loadingOrders}
                     error={ordersError}
                     onRetry={() => loadOrders({ silent: false })}
                     {...orderActions}
                     user={user}
-                    onGoHome={() => navigate('/')}
+                    onGoHome={() => navigate(ROUTES.home)}
                   />
                 </FullBleed>
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<AdminOverview />} />
+            <Route path="catalog" element={<AdminCatalog />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="fleet" element={<AdminFleet />} />
+            <Route path="sales" element={<AdminSales />} />
+            <Route path="reviews" element={<AdminReviews />} />
+            <Route path="*" element={<Navigate to="overview" replace />} />
+          </Route>
 
-          {/* Kitchen Board */}
+          {/* ── Kitchen Portal ── */}
           <Route
-            path="/kitchen"
+            path={ROUTES.kitchen}
             element={
               <ProtectedRoute allowedRoles={['kitchen', 'admin']}>
                 <FullBleed>
@@ -718,16 +908,16 @@ function AppContent() {
                     meals={meals}
                     user={user}
                     {...orderActions}
-                    onGoHome={() => navigate('/')}
+                    onGoHome={() => navigate(ROUTES.home)}
                   />
                 </FullBleed>
               </ProtectedRoute>
             }
           />
 
-          {/* Delivery Fleet */}
+          {/* ── Rider Portal ── */}
           <Route
-            path="/delivery"
+            path={ROUTES.delivery}
             element={
               <ProtectedRoute allowedRoles={['delivery', 'admin']}>
                 <FullBleed>
@@ -736,13 +926,15 @@ function AppContent() {
                     loading={loadingOrders}
                     user={user}
                     {...orderActions}
-                    onGoHome={() => navigate('/')}
+                    onGoHome={() => navigate(ROUTES.home)}
                   />
                 </FullBleed>
               </ProtectedRoute>
             }
           />
-          <Route path="/rider" element={<Navigate to="/delivery" replace />} />
+
+          {/* Help & FAQ */}
+          <Route path="/help" element={<HelpPage />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -785,7 +977,7 @@ function AppContent() {
         }}
       />
 
-      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
 
       <PostDeliveryFeedbackModal
         isOpen={Boolean(feedbackOrder)}
@@ -805,6 +997,21 @@ function AppContent() {
           showToast('Profile updated.', 'Saved');
         }}
         onLogout={signOut}
+      />
+
+      {/* Session Expired / JWT Invalidation Modal */}
+      <ConfirmModal
+        isOpen={sessionExpiredOpen}
+        onClose={() => setSessionExpiredOpen(false)}
+        onConfirm={() => {
+          setSessionExpiredOpen(false);
+          navigate('/login');
+        }}
+        title="Session Expired"
+        message="Your session has expired or your account permissions have changed. Please sign in again to continue."
+        confirmText="Sign in again"
+        cancelText="Dismiss"
+        tone="auth"
       />
 
       {role === 'customer' && (

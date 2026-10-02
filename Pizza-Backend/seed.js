@@ -21,7 +21,7 @@ const { migrate } = require('./migrate');
 
 const MEALS = [
   {
-    id: 'hp-01',
+    id: 'b3c1568f-8dba-4a97-8a57-75290c9ac03d',
     name: 'Royal Szechuan Hotpot Combo',
     category: 'hotpot',
     price: 22000,
@@ -34,7 +34,7 @@ const MEALS = [
     broths: ['Szechuan', 'Tomato', 'Mushroom']
   },
   {
-    id: 'hp-02',
+    id: '066c0752-ca4c-425e-99b4-dfb26755e095',
     name: 'BBQ Chicken & Mushroom Pizza',
     category: 'pizzas',
     price: 14500,
@@ -47,7 +47,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'hp-03',
+    id: 'aed8df9f-cb0f-43ad-ad3e-abe2af21c34a',
     name: 'Kigali Supreme Hotpot Feast',
     category: 'hotpot',
     price: 28000,
@@ -60,7 +60,7 @@ const MEALS = [
     broths: ['Szechuan', 'Bone Marrow']
   },
   {
-    id: 'pz-01',
+    id: 'b115a674-4e64-4db1-a0e4-18eb2cd0c30b',
     name: 'Margherita Classica',
     category: 'pizzas',
     price: 9000,
@@ -72,7 +72,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'pz-02',
+    id: 'a4108c6b-6ba7-498a-a6de-a8ba4bec9e8a',
     name: 'Spicy Pepperoni Inferno',
     category: 'pizzas',
     price: 16000,
@@ -84,7 +84,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'sd-01',
+    id: '479b1713-3bea-41e8-b48b-f896342e01bd',
     name: 'Spicy Beef Rice Bowl',
     category: 'sides',
     price: 6500,
@@ -96,7 +96,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'sd-02',
+    id: '3e20b2d5-01ef-4157-8433-91f9802d27ed',
     name: 'Crispy Spring Rolls',
     category: 'sides',
     price: 4500,
@@ -108,7 +108,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'dr-01',
+    id: 'e75063ba-8ed8-4334-b339-0384677005bd',
     name: 'Iced Vanilla Latte',
     category: 'drinks',
     price: 3500,
@@ -120,7 +120,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'dr-02',
+    id: '76ec01bd-f958-43a6-8ac3-9e3614546679',
     name: 'Mango Passion Smoothie',
     category: 'drinks',
     price: 4000,

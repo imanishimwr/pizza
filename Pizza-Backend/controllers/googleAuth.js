@@ -49,9 +49,15 @@ async function googleLoginHandler(req, res, neonClient, signToken) {
       googleId,
       avatarUrl: payload.picture || null
     });
-  } else if (!user.googleId) {
-    // First Google sign-in on an existing password account links the two.
-    await neonClient.linkGoogleAccount(user.id, googleId, payload.picture || null);
+  } else {
+    const hasGoogle = user.google_id || user.googleId;
+    if (!hasGoogle) {
+      await neonClient.linkGoogleAccount(user.id, googleId, payload.picture || null);
+    }
+    user = neonClient.serializeUser(user);
+    if (!user.avatarUrl && payload.picture) {
+      user.avatarUrl = payload.picture;
+    }
   }
 
   return res.json({

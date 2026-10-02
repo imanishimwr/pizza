@@ -268,7 +268,7 @@ export default function AddFoodItemModal({
 
   return (
     <div
-      className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity duration-200"
       onClick={onClose}
     >
       <div
@@ -435,6 +435,7 @@ export default function AddFoodItemModal({
                 aria-label="Food photo file"
                 onChange={(e) => {
                   applyFile(e.target.files?.[0]);
+                  e.target.value = '';
                 }}
                 className="sr-only"
               />
@@ -508,7 +509,7 @@ export default function AddFoodItemModal({
             >
               <span
                 className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                  isSpicy ? 'left-5.5' : 'left-0.5'
+                  isSpicy ? 'left-[22px]' : 'left-0.5'
                 }`}
               />
             </span>

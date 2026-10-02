@@ -5,8 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(({ mode }) => {
   // Load env from both the frontend root AND Pizza-Backend so we can read PORT
   const frontendEnv = loadEnv(mode, process.cwd(), '');
-  // Prefer BACKEND_PORT env var, then PORT from .env, then fallback 5002
-  const backendPort = frontendEnv.BACKEND_PORT || frontendEnv.PORT || '5002';
+  const backendEnv = loadEnv(mode, `${process.cwd()}/Pizza-Backend`, '');
+  // Prefer BACKEND_PORT env var, then PORT from Pizza-Backend/.env, then fallback 5002
+  const backendPort = frontendEnv.BACKEND_PORT || backendEnv.PORT || frontendEnv.PORT || '5002';
   const backendUrl = `http://localhost:${backendPort}`;
 
   return {
