@@ -22,7 +22,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const neonClient = require('./neonClient');
 const authMiddleware = require('./middleware/auth');
@@ -319,6 +319,19 @@ app.get('/api/orders', requireAuth, wrap(async (req, res) => {
     return res.json(await neonClient.getOrders({ userId: req.user.id, limit }));
   }
   const statuses = req.query.status ? String(req.query.status).split(',') : undefined;
+  if (req.user.role === 'delivery') {
+    const courier = await neonClient.findRiderForUser(req.user);
+    const riderIds = [courier?.id, req.user.id].filter(Boolean).map(String);
+    if (riderIds.length === 0 && !courier?.name) {
+      return res.json([]);
+    }
+    return res.json(await neonClient.getOrders({
+      riderId: riderIds,
+      riderName: courier?.name,
+      statuses,
+      limit
+    }));
+  }
   return res.json(await neonClient.getOrders({ statuses, limit }));
 }));
 
@@ -328,6 +341,16 @@ app.get('/api/orders/:id', requireAuth, wrap(async (req, res) => {
   const isOwner = String(order.userId) === String(req.user.id);
   if (req.user.role === 'customer' && !isOwner) {
     return res.status(403).json({ error: 'You can only view your own orders.' });
+  }
+  if (req.user.role === 'delivery') {
+    const courier = await neonClient.findRiderForUser(req.user);
+    const riderIds = [courier?.id, req.user.id].filter(Boolean).map(String);
+    const isAssigned =
+      (order.riderId && riderIds.includes(String(order.riderId))) ||
+      (!order.riderId && courier?.name && order.riderName === courier.name);
+    if (!isAssigned) {
+      return res.status(403).json({ error: 'You can only view orders assigned to you.' });
+    }
   }
   if (pinVisibilityFor(req, order)) {
     return res.json(order);
@@ -605,6 +628,10 @@ app.post('/api/orders/:id/assign-rider', requireStaff, wrap(async (req, res) => 
   const { verificationPin, ...safeOrder } = result.order;
   io.to(`order_${result.order.id}`).emit('live_order_status', safeOrder);
   io.to(`order_${result.order.id}`).emit('order_status_updated', safeOrder);
+  if (result.order.riderId) {
+    io.to(`rider_${result.order.riderId}`).emit('order_assigned_to_rider', { order: safeOrder });
+    io.to(`rider_${result.order.riderId}`).emit('order_status_updated', safeOrder);
+  }
   return res.json(result);
 }));
 
@@ -628,6 +655,10 @@ app.post('/api/orders/:id/assign-manual-rider', requireStaff, wrap(async (req, r
   const { verificationPin, ...safeOrder } = result.order;
   io.to(`order_${id}`).emit('live_order_status', safeOrder);
   io.to(`order_${id}`).emit('order_status_updated', safeOrder);
+  if (result.order.riderId) {
+    io.to(`rider_${result.order.riderId}`).emit('order_assigned_to_rider', { order: safeOrder });
+    io.to(`rider_${result.order.riderId}`).emit('order_status_updated', safeOrder);
+  }
 
   return res.json(result);
 }));
@@ -639,6 +670,10 @@ app.post('/api/orders/:id/reassign-rider', requireStaff, wrap(async (req, res) =
     const { verificationPin, ...safeOrder } = result.order;
     io.to(`order_${result.order.id}`).emit('live_order_status', safeOrder);
     io.to(`order_${result.order.id}`).emit('order_status_updated', safeOrder);
+    if (result.order.riderId) {
+      io.to(`rider_${result.order.riderId}`).emit('order_assigned_to_rider', { order: safeOrder });
+      io.to(`rider_${result.order.riderId}`).emit('order_status_updated', safeOrder);
+    }
   }
   io.to('role_admin').to('role_kitchen').emit('rider_fleet_updated', await neonClient.getRiders());
   return res.json(result);
@@ -791,6 +826,15 @@ io.use(socketUser);
 io.on('connection', (socket) => {
   const user = socket.data.user;
   socket.join(`role_${user.role}`);
+  socket.join(`user_${user.id}`);
+
+  if (user.role === 'delivery') {
+    neonClient.findRiderForUser(user).then((courier) => {
+      if (courier && courier.id) {
+        socket.join(`rider_${courier.id}`);
+      }
+    }).catch(() => {});
+  }
 
   socket.on('join_order_room', async (orderId) => {
     try {
@@ -800,6 +844,17 @@ io.on('connection', (socket) => {
       if (user.role === 'customer' && !isOwner) {
         console.warn(`[ws] User ${user.id} tried to watch order ${orderId} they do not own`);
         return;
+      }
+      if (user.role === 'delivery') {
+        const courier = await neonClient.findRiderForUser(user);
+        const riderIds = [courier?.id, user.id].filter(Boolean).map(String);
+        const isAssigned =
+          (order.riderId && riderIds.includes(String(order.riderId))) ||
+          (!order.riderId && courier?.name && order.riderName === courier.name);
+        if (!isAssigned) {
+          console.warn(`[ws] Courier ${user.id} tried to watch order ${orderId} not assigned to them`);
+          return;
+        }
       }
       socket.join(`order_${orderId}`);
     } catch (err) {

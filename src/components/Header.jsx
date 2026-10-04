@@ -77,6 +77,7 @@ export default function Header({
   const activeView = VIEWS.includes(view) ? view : 'menu';
 
   const role = user?.role ? normalizeRole(user.role) : null;
+  const isStaff = role === 'admin' || role === 'kitchen' || role === 'delivery';
   const RoleIcon = ROLE_ICONS[role] || User;
 
   const navigate = useCallback(
@@ -312,7 +313,7 @@ export default function Header({
             </button>
           )}
 
-          {(user || hasOrders) && (
+          {!isStaff && (user || hasOrders) && (
             <button
               type="button"
               onClick={() => navigate('orders')}
@@ -324,15 +325,17 @@ export default function Header({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => navigate('tracking')}
-            aria-current={activeView === 'tracking' ? 'page' : undefined}
-            className={navButtonClass(activeView === 'tracking')}
-          >
-            <MapPin className="w-3.5 h-3.5" aria-hidden="true" focusable="false" />
-            {lang === 'RW' ? 'Gukurikirana' : 'Tracking'}
-          </button>
+          {!isStaff && (
+            <button
+              type="button"
+              onClick={() => navigate('tracking')}
+              aria-current={activeView === 'tracking' ? 'page' : undefined}
+              className={navButtonClass(activeView === 'tracking')}
+            >
+              <MapPin className="w-3.5 h-3.5" aria-hidden="true" focusable="false" />
+              {lang === 'RW' ? 'Gukurikirana' : 'Tracking'}
+            </button>
+          )}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -615,7 +618,7 @@ export default function Header({
               </button>
             )}
 
-            {(user || hasOrders) && (
+            {!isStaff && (user || hasOrders) && (
               <button
                 type="button"
                 onClick={() => navigate('orders')}
@@ -629,17 +632,19 @@ export default function Header({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() => navigate('tracking')}
-              aria-current={activeView === 'tracking' ? 'page' : undefined}
-              className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                activeView === 'tracking' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
-              }`}
-            >
-              <MapPin className="w-4 h-4" aria-hidden="true" focusable="false" />
-              Tracking
-            </button>
+            {!isStaff && (
+              <button
+                type="button"
+                onClick={() => navigate('tracking')}
+                aria-current={activeView === 'tracking' ? 'page' : undefined}
+                className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
+                  activeView === 'tracking' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                }`}
+              >
+                <MapPin className="w-4 h-4" aria-hidden="true" focusable="false" />
+                Tracking
+              </button>
+            )}
           </div>
 
           <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">

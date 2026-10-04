@@ -118,11 +118,26 @@ function EmptyState({ icon, title, children }) {
   );
 }
 
+function SidebarTooltip({ text, enabled = true, children, className = '' }) {
+  if (!enabled || !text) return children;
+  return (
+    <div className={`relative group flex items-center justify-center ${className}`}>
+      {children}
+      <div
+        role="tooltip"
+        className="absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-[#1E232F] border border-slate-700 text-white text-xs font-semibold whitespace-nowrap shadow-2xl pointer-events-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-50 flex items-center gap-1.5"
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function RiderDashboard({ orders = [], user, onGoHome }) {
+export default function RiderDashboard({ orders = [], user, onGoHome, onTrackOrder }) {
   // Navigation / layout
   const [activeTab, setActiveTab] = useState('dispatch');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -255,7 +270,8 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
     return myActiveOrders.find((o) => isSameId(o.id, selectedOrderId)) || myActiveOrders[0] || null;
   }, [myActiveOrders, selectedOrderId]);
 
-  const isOnDuty = profile ? Boolean(profile.is_available) : false;
+  const isOnDuty = profile ? profile.status !== 'off_duty' : false;
+  const isAvailable = profile ? Boolean(profile.is_available) && profile.status === 'available' : false;
   const earningsToday = profile ? Number(profile.earnings_today) : null;
   const completedToday = profile ? Number(profile.completed_today) : null;
   const plateNumber = profile?.plateNumber || null;
@@ -288,21 +304,47 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
 
   const handleToggleDuty = useCallback(async () => {
     if (!profile || dutyPending) return;
-    const next = !profile.is_available;
+    const currentlyOnDuty = profile.status !== 'off_duty';
+    const nextOnDuty = !currentlyOnDuty;
     setDutyPending(true);
-    setProfile((prev) => (prev ? { ...prev, is_available: next } : prev));
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: nextOnDuty ? (myActiveOrders.length > 0 ? 'busy' : 'available') : 'off_duty',
+            is_available: nextOnDuty && myActiveOrders.length === 0
+          }
+        : prev
+    );
     try {
-      const updated = await setRiderAvailability(profile.id, next);
-      setProfile((prev) => (prev ? { ...prev, ...(updated || {}), is_available: next } : prev));
-      announce('success', next ? 'You are on duty and visible to dispatch.' : 'You are off duty.');
+      const updated = await setRiderAvailability(profile.id, nextOnDuty);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...(updated || {}),
+              status: nextOnDuty ? (myActiveOrders.length > 0 ? 'busy' : 'available') : 'off_duty',
+              is_available: nextOnDuty && myActiveOrders.length === 0
+            }
+          : prev
+      );
+      announce('success', nextOnDuty ? 'You are ON DUTY and available for deliveries.' : 'You are now OFF DUTY.');
     } catch (err) {
       // Roll the switch back so it never claims a state the server rejected.
-      setProfile((prev) => (prev ? { ...prev, is_available: !next } : prev));
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: currentlyOnDuty ? (myActiveOrders.length > 0 ? 'busy' : 'available') : 'off_duty',
+              is_available: currentlyOnDuty && myActiveOrders.length === 0
+            }
+          : prev
+      );
       announce('error', err?.message || 'Could not change your duty status.');
     } finally {
       setDutyPending(false);
     }
-  }, [profile, dutyPending, announce]);
+  }, [profile, dutyPending, myActiveOrders.length, announce]);
 
   const openPinModal = useCallback((orderId) => {
     setPinOrderId(orderId);
@@ -439,15 +481,21 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
 
       {/* ══════════════════════════ SIDEBAR ══════════════════════════ */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 md:static bg-[#14171F] border-r border-slate-800 flex flex-col shrink-0 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
+        className={`fixed inset-y-0 left-0 z-50 md:static bg-[#14171F] border-r border-slate-800 flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'md:w-[68px]' : 'md:w-64'
         } ${isMobileDrawerOpen ? 'translate-x-0 w-72 shadow-2xl' : '-translate-x-full md:translate-x-0'}`}
       >
-        <div className="h-16 px-3.5 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div
+          className={`h-16 border-b border-slate-800 flex items-center shrink-0 transition-all ${
+            isSidebarCollapsed ? 'md:justify-center md:px-0 px-3.5 justify-between' : 'px-3.5 justify-between'
+          }`}
+        >
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
-              <Bike className="w-5 h-5" aria-hidden="true" />
-            </span>
+            <SidebarTooltip text="HotPot Courier Dispatch" enabled={isSidebarCollapsed}>
+              <span className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
+                <Bike className="w-5 h-5" aria-hidden="true" />
+              </span>
+            </SidebarTooltip>
             {!isSidebarCollapsed && (
               <div className="min-w-0">
                 <span className="text-xs font-black tracking-wider text-white uppercase block truncate">HotPot Kigali</span>
@@ -456,7 +504,7 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
             )}
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className={`flex items-center gap-1 shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
             <button
               type="button"
               onClick={() => {
@@ -493,32 +541,98 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-3 space-y-4">
+        {/* Collapsed top bar toggle for desktop */}
+        {isSidebarCollapsed && (
+          <div className="hidden md:flex items-center justify-center py-2 border-b border-slate-800/60 bg-[#10131A]/60">
+            <SidebarTooltip text="Expand sidebar" enabled={true}>
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed(false)}
+                className="p-1.5 rounded-lg bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-400 hover:text-white transition-all"
+                title="Expand sidebar"
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+              </button>
+            </SidebarTooltip>
+          </div>
+        )}
+
+        <div
+          className={`flex-1 overflow-y-auto no-scrollbar [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden space-y-4 ${
+            isSidebarCollapsed ? 'md:p-2 p-3' : 'p-3'
+          }`}
+        >
           {/* Duty toggle */}
+          {isSidebarCollapsed ? (
+            <div className="hidden md:flex justify-center">
+              <SidebarTooltip
+                text={
+                  !profile
+                    ? 'Duty status unknown'
+                    : dutyPending
+                    ? 'Saving duty status...'
+                    : isOnDuty
+                    ? `Status: On Duty (${isAvailable ? 'Available' : 'On Delivery'}) — Click to go Off Duty`
+                    : 'Status: Off Duty — Click to go On Duty'
+                }
+                enabled={true}
+              >
+                <button
+                  type="button"
+                  onClick={handleToggleDuty}
+                  disabled={!profile || dutyPending}
+                  aria-pressed={isOnDuty}
+                  aria-label={dutyPending ? 'Saving duty status' : isOnDuty ? 'Go off duty' : 'Go on duty'}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isOnDuty
+                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-md shadow-emerald-500/20'
+                      : 'bg-slate-800/70 border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <span
+                    className={`w-3.5 h-3.5 rounded-full shrink-0 ${
+                      isOnDuty ? 'bg-emerald-400 ring-4 ring-emerald-500/30 animate-pulse' : 'bg-slate-500'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </SidebarTooltip>
+            </div>
+          ) : null}
+
           <div
             className={`p-3 rounded-2xl border transition-all ${
+              isSidebarCollapsed ? 'md:hidden' : ''
+            } ${
               isOnDuty ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-800/40 border-slate-700/60'
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              {!isSidebarCollapsed && (
-                <div className="min-w-0 pr-2">
-                  <span className="text-xs font-black text-white truncate flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}
-                      aria-hidden="true"
-                    />
-                    {profile ? (isOnDuty ? 'Available for orders' : 'Off duty') : 'Duty status unknown'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block truncate">
-                    {profile
-                      ? isOnDuty
+              <div className="min-w-0 pr-2">
+                <span className="text-xs font-black text-white truncate flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}
+                    aria-hidden="true"
+                  />
+                  {profile
+                    ? isOnDuty
+                      ? isAvailable
+                        ? 'On Duty — Available'
+                        : 'On Duty — Active Run'
+                      : 'Off Duty'
+                    : 'Duty status unknown'}
+                </span>
+                <span className="text-[10px] text-slate-400 block truncate">
+                  {profile
+                    ? isOnDuty
+                      ? isAvailable
                         ? 'Dispatch can assign you to a run'
-                        : 'You will not receive new runs'
-                      : 'Sign in with a courier account to go on duty'}
-                  </span>
-                </div>
-              )}
+                        : 'You are delivering an active run · Still on duty'
+                      : 'You will not receive new runs until you go on duty'
+                    : 'Sign in with a courier account to go on duty'}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={handleToggleDuty}
@@ -548,38 +662,49 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
             {navItems.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const tooltipLabel = `${tab.label}${tab.badge > 0 ? ` (${tab.badge})` : ''}`;
               return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setIsMobileDrawerOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${
-                    isActive
-                      ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
-                  title={tab.label}
-                >
-                  <span className="relative shrink-0 flex items-center justify-center">
-                    <Icon className="w-4 h-4" aria-hidden="true" />
-                    {tab.pulse && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping" aria-hidden="true" />
-                    )}
-                  </span>
-                  <span className={`flex-1 text-left truncate ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{tab.label}</span>
-                  {tab.badge > 0 && (
-                    <span
-                      className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold shrink-0 ${
-                        isActive ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
-                      } ${isSidebarCollapsed ? 'md:hidden' : ''}`}
-                    >
-                      {tab.badge}
+                <SidebarTooltip key={tab.id} text={tooltipLabel} enabled={isSidebarCollapsed}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsMobileDrawerOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 rounded-xl font-bold text-xs transition-all focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${
+                      isActive
+                        ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    } ${
+                      isSidebarCollapsed
+                        ? 'md:w-10 md:h-10 md:p-0 md:justify-center md:mx-auto px-3 py-2.5 min-h-11'
+                        : 'px-3 py-2.5 min-h-11'
+                    }`}
+                    title={isSidebarCollapsed ? undefined : tab.label}
+                    aria-label={tab.label}
+                  >
+                    <span className="relative shrink-0 flex items-center justify-center">
+                      <Icon className="w-4 h-4" aria-hidden="true" />
+                      {tab.pulse && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping" aria-hidden="true" />
+                      )}
                     </span>
-                  )}
-                </button>
+                    {!isSidebarCollapsed && (
+                      <>
+                        <span className="flex-1 text-left truncate">{tab.label}</span>
+                        {tab.badge > 0 && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold shrink-0 ${
+                              isActive ? 'bg-black/30 text-white' : 'bg-white/10 text-slate-300'
+                            }`}
+                          >
+                            {tab.badge}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </button>
+                </SidebarTooltip>
               );
             })}
           </div>
@@ -590,72 +715,114 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 block">Shift Metrics</span>
             )}
 
-            <div
-              className={`p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between min-h-10 ${
-                isSidebarCollapsed ? 'md:justify-center md:p-2' : ''
-              }`}
-            >
-              <span className="flex items-center gap-2 min-w-0">
-                <Radio className="w-3.5 h-3.5 text-orange-400 shrink-0" aria-hidden="true" />
-                <span className={`text-xs font-semibold text-slate-300 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>Active runs</span>
-              </span>
-              <span className={`font-mono font-bold text-xs text-orange-400 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                {profile ? myActiveOrders.length : '—'}
-              </span>
-            </div>
-
-            <div
-              className={`p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between min-h-10 ${
-                isSidebarCollapsed ? 'md:justify-center md:p-2' : ''
-              }`}
-            >
-              <span className="flex items-center gap-2 min-w-0">
-                <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />
-                <span className={`text-xs font-semibold text-slate-300 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                  Completed today
+            {/* Active runs */}
+            <SidebarTooltip text={`Active runs: ${profile ? myActiveOrders.length : '—'}`} enabled={isSidebarCollapsed}>
+              <div
+                className={`rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center transition-all ${
+                  isSidebarCollapsed
+                    ? 'md:w-10 md:h-10 md:p-0 md:justify-center md:mx-auto p-2.5 justify-between min-h-10 w-full'
+                    : 'p-2.5 justify-between min-h-10 w-full'
+                }`}
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <Radio className="w-3.5 h-3.5 text-orange-400 shrink-0" aria-hidden="true" />
+                  {!isSidebarCollapsed && <span className="text-xs font-semibold text-slate-300">Active runs</span>}
                 </span>
-              </span>
-              <span className={`font-mono font-bold text-xs text-blue-400 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                {completedToday === null || Number.isNaN(completedToday) ? '—' : completedToday}
-              </span>
-            </div>
-
-            <div
-              className={`p-3 rounded-2xl bg-[#10131A] border border-slate-800 text-center ${
-                isSidebarCollapsed ? 'md:p-2' : ''
-              }`}
-            >
-              <span className={`text-[10px] uppercase font-bold text-slate-400 block ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                Today&rsquo;s earnings
-              </span>
-              <div className="text-sm sm:text-base font-mono font-extrabold text-amber-400 truncate">
-                {earningsToday === null || Number.isNaN(earningsToday) ? (
-                  <span className="text-slate-500">&mdash;</span>
-                ) : (
-                  earningsToday.toLocaleString()
-                )}{' '}
-                <span className="text-[10px] font-sans font-normal text-slate-400">RWF</span>
+                {!isSidebarCollapsed && (
+                  <span className="font-mono font-bold text-xs text-orange-400">
+                    {profile ? myActiveOrders.length : '—'}
+                  </span>
+                )}
               </div>
-            </div>
+            </SidebarTooltip>
+
+            {/* Completed today */}
+            <SidebarTooltip
+              text={`Completed today: ${completedToday === null || Number.isNaN(completedToday) ? '—' : completedToday}`}
+              enabled={isSidebarCollapsed}
+            >
+              <div
+                className={`rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center transition-all ${
+                  isSidebarCollapsed
+                    ? 'md:w-10 md:h-10 md:p-0 md:justify-center md:mx-auto p-2.5 justify-between min-h-10 w-full'
+                    : 'p-2.5 justify-between min-h-10 w-full'
+                }`}
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />
+                  {!isSidebarCollapsed && <span className="text-xs font-semibold text-slate-300">Completed today</span>}
+                </span>
+                {!isSidebarCollapsed && (
+                  <span className="font-mono font-bold text-xs text-blue-400">
+                    {completedToday === null || Number.isNaN(completedToday) ? '—' : completedToday}
+                  </span>
+                )}
+              </div>
+            </SidebarTooltip>
+
+            {/* Today's earnings */}
+            <SidebarTooltip
+              text={`Today's earnings: ${
+                earningsToday === null || Number.isNaN(earningsToday) ? '—' : earningsToday.toLocaleString()
+              } RWF`}
+              enabled={isSidebarCollapsed}
+            >
+              <div
+                className={`rounded-2xl bg-[#10131A] border border-slate-800 transition-all ${
+                  isSidebarCollapsed
+                    ? 'md:w-10 md:h-10 md:p-0 md:flex md:items-center md:justify-center md:mx-auto p-3 text-center w-full'
+                    : 'p-3 text-center w-full'
+                }`}
+              >
+                {isSidebarCollapsed ? (
+                  <div className="hidden md:flex items-center justify-center">
+                    <Wallet className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                  </div>
+                ) : null}
+                <div className={isSidebarCollapsed ? 'md:hidden' : ''}>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                    Today&rsquo;s earnings
+                  </span>
+                  <div className="text-sm sm:text-base font-mono font-extrabold text-amber-400 truncate">
+                    {earningsToday === null || Number.isNaN(earningsToday) ? (
+                      <span className="text-slate-500">&mdash;</span>
+                    ) : (
+                      earningsToday.toLocaleString()
+                    )}{' '}
+                    <span className="text-[10px] font-sans font-normal text-slate-400">RWF</span>
+                  </div>
+                </div>
+              </div>
+            </SidebarTooltip>
           </div>
         </div>
 
-        <div className="p-3 border-t border-slate-800 bg-[#10131A] shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-sm border border-white/10">
-              {initialsOf(riderName)}
-            </span>
-            {!isSidebarCollapsed && (
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">{riderName}</div>
-                <div className="mt-0.5">
-                  <span className="inline-block px-1.5 py-0.2 rounded-md bg-orange-500/15 border border-orange-500/30 text-[10px] font-mono font-bold text-orange-400">
-                    {plateNumber || 'no plate on file'}
-                  </span>
+        {/* Footer Profile */}
+        <div
+          className={`border-t border-slate-800 bg-[#10131A] shrink-0 transition-all ${
+            isSidebarCollapsed ? 'md:p-2 p-3' : 'p-3'
+          }`}
+        >
+          <SidebarTooltip
+            text={`${riderName}${plateNumber ? ` (${plateNumber})` : ''}`}
+            enabled={isSidebarCollapsed}
+          >
+            <div className={`flex items-center gap-2.5 ${isSidebarCollapsed ? 'md:justify-center' : ''}`}>
+              <span className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-sm border border-white/10">
+                {initialsOf(riderName)}
+              </span>
+              {!isSidebarCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-white truncate">{riderName}</div>
+                  <div className="mt-0.5">
+                    <span className="inline-block px-1.5 py-0.2 rounded-md bg-orange-500/15 border border-orange-500/30 text-[10px] font-mono font-bold text-orange-400">
+                      {plateNumber || 'no plate on file'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </SidebarTooltip>
         </div>
       </aside>
 
@@ -670,6 +837,21 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
             >
               <Menu className="w-5 h-5 text-orange-400" aria-hidden="true" />
               <span className="sr-only">Open navigation menu</span>
+            </button>
+
+            {/* Desktop collapse toggle inside main header for quick access */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed((v) => !v)}
+              className="hidden md:flex p-2 rounded-xl bg-[#1A1D24] hover:bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-white transition-all items-center justify-center min-w-9 min-h-9"
+              title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="w-4 h-4 text-orange-400" aria-hidden="true" />
+              ) : (
+                <ChevronLeft className="w-4 h-4 text-orange-400" aria-hidden="true" />
+              )}
             </button>
 
             <div className="space-y-0.5 min-w-0">
@@ -689,19 +871,18 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               type="button"
               onClick={() => onGoHome?.()}
-              className="min-h-9.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-orange-500/15 border border-slate-700 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-all"
+              className="min-h-9 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-orange-500/15 border border-slate-700 hover:border-orange-500/40 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center gap-1.5 transition-all"
             >
-              <Home className="w-4 h-4 text-orange-400" aria-hidden="true" />
+              <Home className="w-4 h-4 text-orange-400 shrink-0" aria-hidden="true" />
               <span className="hidden sm:inline">Store Home</span>
-              <span className="sm:hidden sr-only">Store Home</span>
             </button>
 
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A1D24] border border-amber-500/30 text-amber-400 text-xs font-bold">
-              <DollarSign className="w-4 h-4 text-amber-400" aria-hidden="true" />
+              <DollarSign className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
               <span>{earningsToday === null || Number.isNaN(earningsToday) ? '— RWF' : `${formatRwf(earningsToday)} RWF`}</span>
             </div>
 
@@ -709,9 +890,16 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
               type="button"
               onClick={handleToggleDuty}
               disabled={!profile || dutyPending}
-              className={`min-h-9.5 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border disabled:opacity-40 disabled:cursor-not-allowed ${
+              aria-label={
+                dutyPending
+                  ? 'Saving duty status'
+                  : isOnDuty
+                  ? 'Currently on duty. Click to switch off duty.'
+                  : 'Currently off duty. Click to switch on duty.'
+              }
+              className={`min-h-9 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all border shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                 isOnDuty
-                  ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300'
+                  ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300 shadow-sm'
                   : 'bg-slate-800/60 hover:bg-slate-700/60 border-slate-700 text-slate-400'
               }`}
             >
@@ -719,7 +907,20 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
                 className={`w-2 h-2 rounded-full shrink-0 ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}
                 aria-hidden="true"
               />
-              <span>{!profile ? 'UNKNOWN' : dutyPending ? 'SAVING' : isOnDuty ? 'ON DUTY' : 'OFF DUTY'}</span>
+              <span className="hidden sm:inline">
+                {!profile
+                  ? 'UNKNOWN'
+                  : dutyPending
+                  ? 'SAVING'
+                  : isOnDuty
+                  ? isAvailable
+                    ? 'ON DUTY · OPEN'
+                    : 'ON DUTY · BUSY'
+                  : 'OFF DUTY'}
+              </span>
+              <span className="sm:hidden">
+                {!profile ? '—' : dutyPending ? '...' : isOnDuty ? (isAvailable ? 'ON' : 'BUSY') : 'OFF'}
+              </span>
               <span className="sr-only">{isOnDuty ? 'Go off duty' : 'Go on duty'}</span>
             </button>
           </div>
@@ -727,7 +928,7 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
 
         {/* ── TAB: DISPATCH ── */}
         {activeTab === 'dispatch' && (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden w-full">
             <div className="md:hidden flex border-b border-slate-800 bg-[#14171F] p-2 gap-2 shrink-0">
               <button
                 type="button"
@@ -757,10 +958,10 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
               </button>
             </div>
 
-            <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+            <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden w-full">
               {/* Queue */}
               <div
-                className={`w-full md:w-[38%] lg:w-[33%] flex flex-col border-r border-slate-800 bg-[#10131A] shrink-0 min-h-0 ${
+                className={`w-full md:w-80 lg:w-96 xl:w-[420px] flex flex-col border-r border-slate-800 bg-[#10131A] shrink-0 min-h-0 transition-all duration-300 ${
                   mobileViewMode === 'route' ? 'hidden md:flex' : 'flex'
                 }`}
               >
@@ -934,16 +1135,28 @@ export default function RiderDashboard({ orders = [], user, onGoHome }) {
                           <p className="text-xs text-slate-300 mt-1">{selectedOrder.address || 'No address on file'}</p>
                         </div>
                         {selectedOrder.address ? (
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.address)}`}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className="min-h-11 px-4 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all mt-2"
-                          >
-                            <Navigation className="w-4 h-4 text-orange-400" aria-hidden="true" />
-                            <span>Open route in Google Maps</span>
-                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 ml-auto" aria-hidden="true" />
-                          </a>
+                          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedOrder.address)}`}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="min-h-11 px-4 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-all flex-1"
+                            >
+                              <Navigation className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                              <span>Google Maps</span>
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400 ml-auto" aria-hidden="true" />
+                            </a>
+                            {onTrackOrder && (
+                              <button
+                                type="button"
+                                onClick={() => onTrackOrder(selectedOrder)}
+                                className="min-h-11 px-4 py-2 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/40 text-orange-300 hover:text-orange-200 text-xs font-bold flex items-center justify-center gap-2 transition-all flex-1 cursor-pointer"
+                              >
+                                <MapPin className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                                <span>Live Tracking View</span>
+                              </button>
+                            )}
+                          </div>
                         ) : null}
                       </div>
                     </div>

@@ -14,7 +14,8 @@
  *     KITCHEN_EMAIL, KITCHEN_PASSWORD, KITCHEN_NAME
  *     DELIVERY_EMAIL, DELIVERY_PASSWORD, DELIVERY_NAME
  */
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const bcrypt = require('bcryptjs');
 const neonClient = require('./neonClient');
 const { migrate } = require('./migrate');
