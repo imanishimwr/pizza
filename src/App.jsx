@@ -3,10 +3,17 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useSe
 import Header from './components/Header';
 import Home from './pages/customer/Home';
 import ProductDetailsPage from './pages/customer/ProductDetailsPage';
-import CustomerDashboard from './pages/customer/CustomerDashboard';
+import CustomerLayout from './pages/customer/CustomerLayout';
+import CustomerOverview from './pages/customer/CustomerOverview';
+import CustomerProfile from './pages/customer/CustomerProfile';
 import LiveTracking from './pages/customer/LiveTracking';
 import OrdersHistory from './pages/customer/OrdersHistory';
-import KitchenBoard from './pages/kitchen/KitchenBoard';
+import KitchenLayout from './pages/kitchen/KitchenLayout';
+import KitchenLiveBoard from './pages/kitchen/KitchenLiveBoard';
+import KitchenTracking from './pages/kitchen/KitchenTracking';
+import KitchenArchive from './pages/kitchen/KitchenArchive';
+import KitchenRecipes from './pages/kitchen/KitchenRecipes';
+import KitchenStations from './pages/kitchen/KitchenStations';
 import RiderDashboard from './pages/delivery/RiderDashboard';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminOverview from './pages/admin/AdminOverview';
@@ -20,7 +27,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 import CartDrawer from './components/customer/CartDrawer';
-import CheckoutModal from './components/customer/CheckoutModal';
+import CheckoutPage from './pages/customer/CheckoutPage';
 import AuthModal from './components/customer/AuthModal';
 import ConfirmModal from './components/common/ConfirmModal';
 import LocationModal from './components/LocationModal';
@@ -28,6 +35,7 @@ import HelpPage from './pages/customer/HelpPage';
 import ProfileModal from './components/customer/ProfileModal';
 import PostDeliveryFeedbackModal from './components/customer/PostDeliveryFeedbackModal';
 import MobileBottomNav from './components/MobileBottomNav';
+import ReceiptModal from './components/customer/ReceiptModal';
 
 import {
   session,
@@ -54,6 +62,15 @@ import { getAdminCache, setAdminCache, getSyncLocalCache } from './utils/adminIn
 const STAFF_ROLES = ['admin', 'kitchen', 'delivery'];
 const POLL_MS = 8000;
 
+const readLocalJSON = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) ?? fallback : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 // ---------------------------------------------------------------------------
 // Route map — single source of truth for all role-based paths
 // ---------------------------------------------------------------------------
@@ -62,15 +79,21 @@ export const ROUTES = {
   login:      '/login',
   register:   '/register',
   product:    '/product',
+  checkout:   '/checkout',
   help:       '/help',
   // Customer portal
   dashboard:  '/hotpotcustomer/dashboard',
   orders:     '/hotpotcustomer/orders',
   tracking:   '/hotpotcustomer/tracking',
   // Staff portals
-  admin:      '/hotpotadmin',
-  kitchen:    '/hotpotkitchen',
-  delivery:   '/hotpotrider',
+  admin:          '/hotpotadmin',
+  kitchen:        '/hotpotkitchen',
+  kitchenLive:    '/hotpotkitchen/live',
+  kitchenTracking:'/hotpotkitchen/tracking',
+  kitchenArchive: '/hotpotkitchen/archive',
+  kitchenRecipes: '/hotpotkitchen/recipes',
+  kitchenStations:'/hotpotkitchen/stations',
+  delivery:       '/hotpotrider',
 };
 
 function getActiveView(pathname) {
@@ -82,6 +105,7 @@ function getActiveView(pathname) {
   if (p.startsWith('/hotpotcustomer/orders')) return 'orders';
   if (p.startsWith('/hotpotcustomer')) return 'dashboard';
   if (p.startsWith('/product')) return 'product-detail';
+  if (p.startsWith('/checkout')) return 'checkout';
   if (p.startsWith('/login')) return 'login';
   if (p.startsWith('/register')) return 'register';
   return 'menu';
@@ -139,7 +163,6 @@ function AppContent() {
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [trackedOrder, setTrackedOrder] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -147,6 +170,7 @@ function AppContent() {
   const [feedbackOrder, setFeedbackOrder] = useState(null);
   const [orderBusy, setOrderBusy] = useState(false);
   const [sessionExpiredOpen, setSessionExpiredOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   const role = user?.role ? normalizeRole(user.role) : null;
   const isStaff = role !== null && STAFF_ROLES.includes(role);
@@ -456,13 +480,13 @@ function AppContent() {
       else if (targetView === 'orders') navigate(ROUTES.orders);
       else if (targetView === 'dashboard') navigate(ROUTES.dashboard);
       else if (targetView === 'product-detail' || targetView === 'product') navigate(ROUTES.product);
+      else if (targetView === 'checkout') navigate(ROUTES.checkout);
       else if (targetView === 'login') navigate(ROUTES.login);
       else if (targetView === 'register') navigate(ROUTES.register);
       else if (typeof targetView === 'string' && targetView.startsWith('/')) navigate(targetView);
     },
     [navigate]
   );
-
   const placeOrder = useCallback(
     async (details) => {
       if (orderBusy) return null;
@@ -498,8 +522,6 @@ function AppContent() {
         setTrackedOrder(created);
         setOrders((prev) => [created, ...prev.filter((o) => String(o.id) !== String(created.id))]);
         showToast(`Order #${created.id} placed! Tracking live now.`, 'Order Placed');
-        setIsCheckoutOpen(false);
-        navigate(ROUTES.tracking);
         return created;
       } catch (err) {
         showToast(err.message || 'Could not place your order. Please try again.', 'Order Failed', 'error');
@@ -508,8 +530,22 @@ function AppContent() {
         setOrderBusy(false);
       }
     },
-    [cart, orderBusy, showToast, navigate]
+    [cart, orderBusy, showToast]
   );
+
+  const handleOrderPlaced = useCallback((order) => {
+    setCart([]);
+    setTrackedOrder(order);
+    setOrders((prev) => {
+      const idx = prev.findIndex(o => String(o.id) === String(order.id));
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = order;
+        return next;
+      }
+      return [order, ...prev];
+    });
+  }, []);
 
   const changeOrderStatus = useCallback(
     async (orderId, newStatus, extra = {}) => {
@@ -779,9 +815,23 @@ function AppContent() {
             }
           />
 
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <CheckoutPage
+                  cart={cart}
+                  user={user}
+                  onOrderPlaced={handleOrderPlaced}
+                  onCartClear={() => setCart([])}
+                />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ── Customer Portal ── */}
           <Route
-            path={ROUTES.dashboard}
+            path="/hotpotcustomer"
             element={
               <ProtectedRoute allowedRoles={['customer', 'admin', 'kitchen', 'delivery']}>
                 {role === 'admin' ? (
@@ -791,38 +841,77 @@ function AppContent() {
                 ) : role === 'delivery' ? (
                   <Navigate to={ROUTES.delivery} replace />
                 ) : (
-                  <CustomerDashboard
+                  <CustomerLayout
                     user={user}
-                    orders={orders}
                     cart={cart}
-                    loading={loadingOrders}
-                    onOpenAuth={() => navigate(ROUTES.login)}
-                    onAddToCart={addToCart}
                     onOpenCart={() => setIsCartOpen(true)}
-                    onUpdateUser={(updated) => {
-                      session.updateUser(updated);
-                      setUser(updated);
-                    }}
-                    onSelectOrder={(order) => {
-                      setTrackedOrder(order);
-                      trackedOrderStore.set(order.id);
-                      navigate(ROUTES.tracking);
-                    }}
-                    onOpenProfile={() => setIsProfileOpen(true)}
                     onExploreMenu={() => navigate(ROUTES.home)}
+                    onOpenProfile={() => setIsProfileOpen(true)}
                     onNavigate={requestView}
                   />
                 )}
               </ProtectedRoute>
             }
-          />
-
-          {/* Orders History */}
-          <Route
-            path={ROUTES.orders}
-            element={
-              <ProtectedRoute allowedRoles={['customer', 'admin', 'kitchen', 'delivery']}>
-                {orders.length ? (
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route
+              path="dashboard"
+              element={
+                <CustomerOverview
+                  orders={orders}
+                  loading={loadingOrders}
+                  activeAddress={
+                    (readLocalJSON('hotpot_saved_addresses', []).find((a) => a.isDefault) ||
+                      readLocalJSON('hotpot_saved_addresses', [])[0])?.address || ''
+                  }
+                  onSelectOrder={(order) => {
+                    setTrackedOrder(order);
+                    trackedOrderStore.set(order.id);
+                    navigate(ROUTES.tracking);
+                  }}
+                  onExploreMenu={() => navigate(ROUTES.home)}
+                  onOpenReceipt={setSelectedReceipt}
+                />
+              }
+            />
+            <Route
+              path="dashboard/profile"
+              element={
+                <CustomerProfile
+                  user={user}
+                  onUpdateUser={(updated) => {
+                    session.updateUser(updated);
+                    setUser(updated);
+                  }}
+                />
+              }
+            />
+            <Route
+              path="tracking"
+              element={
+                orders.length || trackedOrder ? (
+                  <LiveTracking
+                    order={
+                      trackedOrder?.id
+                        ? orders.find((o) => String(o.id) === String(trackedOrder.id)) || trackedOrder
+                        : orders[0]
+                    }
+                    {...orderActions}
+                  />
+                ) : (
+                  <EmptyState
+                    title="Nothing to track"
+                    body="Place an order and follow your courier live on the map."
+                    actionLabel="Browse the menu"
+                    onAction={() => navigate(ROUTES.home)}
+                  />
+                )
+              }
+            />
+            <Route
+              path="orders"
+              element={
+                orders.length ? (
                   <OrdersHistory
                     orders={orders}
                     onSelectOrder={(order) => {
@@ -839,30 +928,11 @@ function AppContent() {
                     actionLabel="Browse the menu"
                     onAction={() => navigate(ROUTES.home)}
                   />
-                )}
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Live Tracking */}
-          <Route
-            path={ROUTES.tracking}
-            element={
-              orders.length || trackedOrder ? (
-                <LiveTracking
-                  order={trackedOrder?.id ? orders.find((o) => String(o.id) === String(trackedOrder.id)) || trackedOrder : orders[0]}
-                  {...orderActions}
-                />
-              ) : (
-                <EmptyState
-                  title="Nothing to track"
-                  body="Place an order and follow your courier live on the map."
-                  actionLabel="Browse the menu"
-                  onAction={() => navigate(ROUTES.home)}
-                />
-              )
-            }
-          />
+                )
+              }
+            />
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
+          </Route>
 
           {/* ── Admin Portal ── */}
           <Route
@@ -902,7 +972,7 @@ function AppContent() {
             element={
               <ProtectedRoute allowedRoles={['kitchen', 'admin']}>
                 <FullBleed>
-                  <KitchenBoard
+                  <KitchenLayout
                     orders={orders}
                     loading={loadingOrders}
                     meals={meals}
@@ -913,7 +983,17 @@ function AppContent() {
                 </FullBleed>
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Navigate to="live" replace />} />
+            <Route path="live" element={<KitchenLiveBoard />} />
+            <Route path="board" element={<Navigate to="live" replace />} />
+            <Route path="kanban" element={<Navigate to="live" replace />} />
+            <Route path="tracking" element={<KitchenTracking />} />
+            <Route path="archive" element={<KitchenArchive />} />
+            <Route path="recipes" element={<KitchenRecipes />} />
+            <Route path="stations" element={<KitchenStations />} />
+            <Route path="*" element={<Navigate to="live" replace />} />
+          </Route>
 
           {/* ── Rider Portal ── */}
           <Route
@@ -948,23 +1028,14 @@ function AppContent() {
         cart={cart}
         onUpdateQty={updateCartQty}
         onRemoveItem={removeCartItem}
-        onCheckout={() => {
+        onProceedCheckout={() => {
           setIsCartOpen(false);
           if (!user) {
-            navigate('/login');
+            navigate('/login?redirect=/checkout');
           } else {
-            setIsCheckoutOpen(true);
+            navigate('/checkout');
           }
         }}
-      />
-
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cart={cart}
-        user={user}
-        onPlaceOrder={placeOrder}
-        isSubmitting={orderBusy}
       />
 
       <AuthModal
@@ -1053,6 +1124,10 @@ function AppContent() {
             </p>
           </div>
         </footer>
+      )}
+
+      {selectedReceipt && (
+        <ReceiptModal order={selectedReceipt} onClose={() => setSelectedReceipt(null)} />
       )}
     </div>
   );

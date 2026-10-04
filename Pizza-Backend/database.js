@@ -137,14 +137,14 @@ function toStringArray(value) {
     .filter(Boolean);
 }
 
-const CANONICAL_STATUSES = ['ongoing', 'ready', 'delivered', 'cancelled'];
+const CANONICAL_STATUSES = ['pending', 'payment_review', 'preparing', 'ready', 'delivery', 'delivered', 'cancelled'];
 
 function normalizeStatus(status) {
   const s = String(status || '').toLowerCase().trim();
   if (s === 'canceled') return 'cancelled';
   if (s === 'delived') return 'delivered';
-  if (['pending', 'preparing', 'delivery'].includes(s)) return 'ongoing';
-  return s || 'ongoing';
+  if (s === 'ongoing') return 'pending';
+  return CANONICAL_STATUSES.includes(s) ? s : 'pending';
 }
 
 /**
@@ -152,14 +152,13 @@ function normalizeStatus(status) {
  * Statuses: ongoing, ready, delivered, cancelled.
  */
 const ALLOWED_TRANSITIONS = {
-  ongoing: ['ready', 'delivered', 'cancelled', 'ongoing'],
-  ready: ['ongoing', 'delivered', 'cancelled', 'ready'],
+  pending: ['payment_review', 'preparing', 'ready', 'delivered', 'cancelled', 'pending'],
+  payment_review: ['pending', 'preparing', 'ready', 'delivered', 'cancelled', 'payment_review'],
+  preparing: ['pending', 'ready', 'delivered', 'cancelled', 'preparing'],
+  ready: ['preparing', 'delivery', 'delivered', 'cancelled', 'ready'],
+  delivery: ['ready', 'delivered', 'cancelled', 'delivery'],
   delivered: ['delivered'],
-  cancelled: ['cancelled'],
-  // Legacy aliases
-  pending: ['ongoing', 'ready', 'delivered', 'cancelled'],
-  preparing: ['ongoing', 'ready', 'delivered', 'cancelled'],
-  delivery: ['ongoing', 'ready', 'delivered', 'cancelled']
+  cancelled: ['cancelled']
 };
 
 function canTransition(fromRaw, toRaw) {
@@ -169,10 +168,10 @@ function canTransition(fromRaw, toRaw) {
   return (ALLOWED_TRANSITIONS[from] || []).includes(to);
 }
 
-/** Lowercase every status in the database and convert legacy statuses to ongoing. */
+/** Lowercase every status in the database and convert legacy statuses. */
 async function normaliseLegacyStatuses() {
   await sql`UPDATE orders SET status = LOWER(status) WHERE status <> LOWER(status);`;
-  await sql`UPDATE orders SET status = 'ongoing' WHERE status IN ('pending', 'preparing', 'delivery');`;
+  await sql`UPDATE orders SET status = 'pending' WHERE status = 'ongoing';`;
 }
 
 /** Collision-resistant id. */
@@ -298,11 +297,16 @@ function serializeOrder(row, items = [], opts = {}) {
     notes: row.notes || '',
     riderId: row.rider_id || null,
     riderName: row.rider_name || null,
+    riderPhone: row.rider_phone || null,
+    riderPlate: row.rider_plate || null,
+    riderVehicle: row.rider_vehicle || null,
     assignedAt: row.assigned_at,
     handedOverAt: row.handed_over_at,
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
     paymentRef: row.payment_ref || null,
+    paymentProofUrl: row.payment_proof_url || null,
+    paymentVerifiedAt: row.payment_verified_at || null,
     distanceKm: row.distance_km === null || row.distance_km === undefined ? null : Number(row.distance_km),
     etaMinutes: row.eta_minutes === null || row.eta_minutes === undefined ? null : Number(row.eta_minutes),
     etaTime: row.eta_time || null,
@@ -572,18 +576,27 @@ module.exports = {
     let rows;
     if (userId && statusList) {
       rows = await sql`
-        SELECT * FROM orders WHERE user_id = ${userId} AND status = ANY(${statusList})
-        ORDER BY created_at DESC LIMIT ${bounded};`;
+        SELECT o.*, r.phone as rider_phone, r.plate_number as rider_plate, r.vehicle_type as rider_vehicle
+        FROM orders o LEFT JOIN riders r ON o.rider_id = r.id
+        WHERE o.user_id = ${userId} AND o.status = ANY(${statusList})
+        ORDER BY o.created_at DESC LIMIT ${bounded};`;
     } else if (userId) {
       rows = await sql`
-        SELECT * FROM orders WHERE user_id = ${userId}
-        ORDER BY created_at DESC LIMIT ${bounded};`;
+        SELECT o.*, r.phone as rider_phone, r.plate_number as rider_plate, r.vehicle_type as rider_vehicle
+        FROM orders o LEFT JOIN riders r ON o.rider_id = r.id
+        WHERE o.user_id = ${userId}
+        ORDER BY o.created_at DESC LIMIT ${bounded};`;
     } else if (statusList) {
       rows = await sql`
-        SELECT * FROM orders WHERE status = ANY(${statusList})
-        ORDER BY created_at DESC LIMIT ${bounded};`;
+        SELECT o.*, r.phone as rider_phone, r.plate_number as rider_plate, r.vehicle_type as rider_vehicle
+        FROM orders o LEFT JOIN riders r ON o.rider_id = r.id
+        WHERE o.status = ANY(${statusList})
+        ORDER BY o.created_at DESC LIMIT ${bounded};`;
     } else {
-      rows = await sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT ${bounded};`;
+      rows = await sql`
+        SELECT o.*, r.phone as rider_phone, r.plate_number as rider_plate, r.vehicle_type as rider_vehicle
+        FROM orders o LEFT JOIN riders r ON o.rider_id = r.id
+        ORDER BY o.created_at DESC LIMIT ${bounded};`;
     }
     if (rows.length === 0) return [];
 
@@ -600,7 +613,11 @@ module.exports = {
   },
 
   getOrderById: async (id, { includePin = false } = {}) => {
-    const rows = await sql`SELECT * FROM orders WHERE id = ${id} LIMIT 1;`;
+    const rows = await sql`
+      SELECT o.*, r.phone as rider_phone, r.plate_number as rider_plate, r.vehicle_type as rider_vehicle
+      FROM orders o LEFT JOIN riders r ON o.rider_id = r.id
+      WHERE o.id = ${id} LIMIT 1;
+    `;
     if (!rows[0]) return null;
     const itemRows = await sql`SELECT * FROM order_items WHERE order_id = ${id} ORDER BY name;`;
     return serializeOrder(rows[0], itemRows.map(serializeOrderItem), { includePin });
@@ -690,7 +707,7 @@ module.exports = {
                 ${order.lat ?? null},
                 ${order.lng ?? null},
                 ${order.area || null},
-                'ongoing',
+                'pending',
                 ${totalRWF},
                 ${order.orderType || 'delivery'},
                 ${order.notes ? String(order.notes).slice(0, 500) : null},
@@ -798,7 +815,7 @@ module.exports = {
   },
 
   setPaymentStatus: async (id, paymentStatus, paymentRef) => {
-    if (!['pending', 'paid', 'failed', 'refunded'].includes(paymentStatus)) {
+    if (!['pending', 'payment_review', 'paid', 'failed', 'refunded'].includes(paymentStatus)) {
       const err = new Error('Unknown payment status.');
       err.statusCode = 400;
       throw err;
@@ -806,6 +823,26 @@ module.exports = {
     const rows = await sql`
       UPDATE orders SET payment_status = ${paymentStatus}, payment_ref = ${paymentRef ?? null}, updated_at = NOW()
       WHERE id = ${id} RETURNING id;`;
+    if (!rows[0]) {
+      const err = new Error('Order not found.');
+      err.statusCode = 404;
+      throw err;
+    }
+    return module.exports.getOrderById(id);
+  },
+
+  /**
+   * Stores the payment proof file path/URL and marks payment_status as
+   * 'payment_review' so the kitchen can see it for verification.
+   */
+  setPaymentProof: async (id, proofUrl) => {
+    const rows = await sql`
+      UPDATE orders
+      SET payment_proof_url = ${proofUrl},
+          payment_status = 'payment_review',
+          updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id;`;
     if (!rows[0]) {
       const err = new Error('Order not found.');
       err.statusCode = 404;

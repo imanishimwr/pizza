@@ -355,6 +355,50 @@ export const cancelOrder = (id) => request(`/orders/${encodeURIComponent(id)}`, 
 export const deleteOrder = (id) =>
   request(`/orders/${encodeURIComponent(id)}?permanent=true`, { method: 'DELETE' });
 
+/**
+ * Upload a payment proof image for an order.
+ * Uses FormData — the Content-Type is set automatically by the browser.
+ */
+export async function uploadPaymentProof(orderId, file) {
+  const token = session.getToken();
+  if (!token) throw new ApiError('Please sign in to continue.', { status: 401 });
+
+  const formData = new FormData();
+  formData.append('proof', file);
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}/orders/${encodeURIComponent(orderId)}/payment-proof`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+  } catch (err) {
+    throw new ApiError('Cannot reach the server. Check your connection and try again.', { cause: err });
+  }
+
+  const isJSON = res.headers.get('content-type')?.includes('application/json');
+  const payload = isJSON ? await res.json().catch(() => null) : null;
+  if (!res.ok) {
+    throw new ApiError(payload?.error || `Upload failed (${res.status}).`, { status: res.status, body: payload });
+  }
+  return payload;
+}
+
+/** Build the authenticated URL for viewing a payment proof image. */
+export function getPaymentProofUrl(orderId) {
+  return `${API_BASE_URL}/orders/${encodeURIComponent(orderId)}/payment-proof/file`;
+}
+
+/** Kitchen/admin: update payment status (e.g., mark as 'paid' after verifying proof). */
+export const setPaymentStatus = (orderId, paymentStatus, paymentRef = null) =>
+  request(`/orders/${encodeURIComponent(orderId)}/payment`, {
+    method: 'PATCH',
+    body: { paymentStatus, paymentRef }
+  });
+
+
+
 // ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------

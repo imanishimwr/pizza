@@ -171,6 +171,9 @@ const COLUMN_ADDITIONS = [
   ['orders', 'distance_km', 'NUMERIC(6,2)'],
   ['orders', 'eta_minutes', 'INTEGER'],
   ['orders', 'eta_time', 'VARCHAR(16)'],
+  // Payment proof upload (added for checkout workflow)
+  ['orders', 'payment_proof_url', 'TEXT'],
+  ['orders', 'payment_verified_at', 'TIMESTAMPTZ'],
   ['users', 'location', 'TEXT'],
   ['users', 'lat', 'DOUBLE PRECISION'],
   ['users', 'lng', 'DOUBLE PRECISION'],
@@ -273,6 +276,23 @@ async function migrate() {
     if (!(await columnExists(sql, table, column))) continue;
     await sql.query(`ALTER TABLE ${table} DROP COLUMN IF EXISTS "${column}";`);
     console.log(`  - ${table}.${column} (legacy)`);
+  }
+
+  // Expand the payment_status CHECK constraint to support the new
+  // 'payment_review' value without breaking existing data.
+  try {
+    await sql.query(`
+      ALTER TABLE orders
+        DROP CONSTRAINT IF EXISTS orders_payment_status_check;
+    `);
+    await sql.query(`
+      ALTER TABLE orders
+        ADD CONSTRAINT orders_payment_status_check
+        CHECK (payment_status IN ('pending','payment_review','paid','failed','refunded'));
+    `);
+    console.log('  ✓ payment_status CHECK constraint expanded.');
+  } catch (err) {
+    console.warn('  ⚠ Could not update payment_status constraint:', err.message);
   }
 
   console.log('Schema is up to date.');

@@ -211,6 +211,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
   const [isConfirmingDelivery, setIsConfirmingDelivery] = useState(false);
   const [deliveryError, setDeliveryError] = useState('');
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [showCourierModal, setShowCourierModal] = useState(false);
   const [receiptError, setReceiptError] = useState('');
   const [secondsRemaining, setSecondsRemaining] = useState(0);
   const [busOrder, setBusOrder] = useState(null);
@@ -617,9 +618,13 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                 </span>
               </div>
               <div className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-mono">
-                <span>📱 {order?.riderPhone || '+250 788 123 456'}</span>
+                <span>📱 {tracked?.riderPhone || '+250 788 123 456'}</span>
                 <span>•</span>
-                <span className="text-amber-400 font-bold">{order?.riderPlate || order?.riderVehicle || 'Motorcycle'}</span>
+                <span className="text-amber-400 font-bold">
+                  {tracked?.riderVehicle && tracked?.riderPlate 
+                    ? `${tracked.riderVehicle} — ${tracked.riderPlate}`
+                    : tracked?.riderPlate || tracked?.riderVehicle || 'Motorcycle'}
+                </span>
               </div>
             </div>
           </div>
@@ -649,6 +654,17 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
               <MessageCircle className="w-3.5 h-3.5" />
               <span>WhatsApp</span>
             </a>
+
+            {(order?.rider_handover_status === 'in_transit' || order?.status === 'delivery') && (
+              <button
+                type="button"
+                onClick={() => setShowCourierModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>View Details</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -688,6 +704,16 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                 >
                   {isDelivered ? 'Delivered' : courierName || 'No courier yet'}
                 </span>
+                {isCourierAssigned && !isDelivered && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCourierModal(true)}
+                    className="ml-2 px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                  >
+                    <User className="w-3 h-3" />
+                    <span>View Details</span>
+                  </button>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-0.5 max-w-xl">
                 {isDelivered
@@ -699,9 +725,9 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
             </div>
           </div>
 
-          {/* Only `delivery -> delivered` is a legal transition, so the button
-              exists in that state only. */}
-          {status === 'delivery' && (
+          {/* Allow confirming delivery if it's already out for delivery, 
+              or if a courier is assigned and it's 'ready' (bypassing formal handover). */}
+          {(status === 'delivery' || (status === 'ready' && isCourierAssigned)) && (
             <button
               type="button"
               onClick={() => setShowDeliveryModal(true)}
@@ -722,6 +748,18 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                   <span>Confirm delivery received</span>
                 </>
               )}
+            </button>
+          )}
+
+          {/* After delivery, encourage rating */}
+          {isDelivered && (
+            <button
+              type="button"
+              onClick={() => setShowFeedback(true)}
+              className="px-5 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <Star className="w-4 h-4 fill-white" aria-hidden="true" />
+              <span>Rate Your Order</span>
             </button>
           )}
         </div>
@@ -1035,6 +1073,43 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
         tone="success"
         isBusy={isConfirmingDelivery}
       />
+
+      {/* Courier Details Modal */}
+      {showCourierModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowCourierModal(false)}>
+          <div className="bg-[#1A1D24] border border-slate-800 rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border bg-blue-500/15 text-blue-400 border-blue-500/30">
+                <User className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-black text-white leading-snug">Courier Details</h3>
+                <div className="text-sm text-slate-300 space-y-3 mt-4">
+                  <div>
+                    <strong className="text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Name</strong>
+                    <span className="font-bold text-white text-base">{tracked?.riderName || 'Assigned Courier'}</span>
+                  </div>
+                  <div>
+                    <strong className="text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Phone Number</strong>
+                    <span className="font-bold text-amber-400 text-base">{tracked?.riderPhone || '+250 788 123 456'}</span>
+                  </div>
+                  <div>
+                    <strong className="text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Vehicle & Plate No.</strong>
+                    <span className="font-bold text-white text-base">
+                      {tracked?.riderVehicle && tracked?.riderPlate 
+                        ? `${tracked.riderVehicle} — ${tracked.riderPlate}`
+                        : tracked?.riderPlate || tracked?.riderVehicle || 'Motorcycle'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setShowCourierModal(false)} className="w-full py-3.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 font-bold transition-all mt-4">
+              Close Details
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

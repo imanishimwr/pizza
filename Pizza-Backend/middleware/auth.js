@@ -24,13 +24,20 @@ const authMiddleware = (roles = []) => {
 
   return async (req, res, next) => {
     const header = req.headers.authorization;
-    if (!header || !header.startsWith('Bearer ')) {
+    let token = null;
+    if (header && header.startsWith('Bearer ')) {
+      token = header.slice(7).trim();
+    } else if (req.query.token) {
+      token = String(req.query.token).trim();
+    }
+
+    if (!token) {
       return res.status(401).json({ error: 'Sign in to continue.' });
     }
 
     let decoded;
     try {
-      decoded = jwt.verify(header.slice(7).trim(), JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET);
     } catch (err) {
       const expired = err.name === 'TokenExpiredError';
       return res.status(401).json({

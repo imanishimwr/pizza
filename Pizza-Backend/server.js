@@ -19,6 +19,9 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 require('dotenv').config();
 
 const neonClient = require('./neonClient');
@@ -67,6 +70,31 @@ app.use(helmet());
 if (process.env.NODE_ENV !== 'test') app.use(morgan('combined'));
 app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json({ limit: '256kb' }));
+
+// ---------------------------------------------------------------------------
+// File uploads — payment proof screenshots
+// ---------------------------------------------------------------------------
+const UPLOADS_DIR = path.join(__dirname, 'uploads', 'payment-proofs');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.jpg';
+    cb(null, `proof-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowed.includes(file.mimetype)) return cb(null, true);
+    cb(new Error('Only JPEG, PNG, GIF and WebP images are accepted.'));
+  }
+});
+
 
 // The dashboard polls the order book every few seconds. A ceiling of 5,000 per
 // 15 minutes was simultaneously "generous" and small enough that four open
@@ -315,10 +343,10 @@ app.post('/api/orders', requireAuth, wrap(async (req, res) => {
     return res.status(400).json({ error: 'Your cart is empty.' });
   }
 
-  // A customer may only place an order under their own name and phone number.
-  // Staff placing an order on someone's behalf is allowed, but only for staff.
-  const customerName = req.user.role === 'customer' ? req.user.name : String(body.customerName || req.user.name).trim();
-  const phone = req.user.role === 'customer' ? (req.user.phone || body.phone) : body.phone;
+  // Let the user specify a custom delivery name and phone during checkout.
+  // Fall back to their account details if missing.
+  const customerName = String(body.customerName || req.user.name).trim();
+  const phone = String(body.phone || req.user.phone || '').trim();
   const address = String(body.address || '').trim();
 
   if (!customerName) return res.status(400).json({ error: 'A delivery name is required.' });
@@ -341,10 +369,22 @@ app.post('/api/orders', requireAuth, wrap(async (req, res) => {
   return res.status(201).json(order);
 }));
 
-app.patch('/api/orders/:id/status', requireStaff, wrap(async (req, res) => {
-  const order = await neonClient.updateOrderStatus(req.params.id, req.body.status, {
-    riderName: req.body.riderName
-  });
+app.patch('/api/orders/:id/status', requireAuth, wrap(async (req, res) => {
+  const { id } = req.params;
+  const { status, riderName } = req.body;
+  
+  // Security: Non-staff can ONLY set their own order to 'delivered' or 'cancelled'
+  if (req.user.role !== 'admin' && req.user.role !== 'kitchen' && req.user.role !== 'delivery') {
+    if (status !== 'delivered' && status !== 'cancelled') {
+      return res.status(403).json({ error: 'Customers can only confirm delivery or cancel orders.' });
+    }
+    const orderCheck = await neonClient.getOrderById(id);
+    if (!orderCheck || String(orderCheck.userId) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'You do not have permission to update this order.' });
+    }
+  }
+
+  const order = await neonClient.updateOrderStatus(id, status, { riderName });
   io.to('role_admin').to('role_kitchen').emit('order_status_updated', order);
   const { verificationPin, ...safeOrder } = order;
   io.to(`order_${order.id}`).emit('live_order_status', safeOrder);
@@ -423,6 +463,68 @@ app.patch('/api/orders/:id/payment', requireStaff, wrap(async (req, res) => {
   io.to(`order_${order.id}`).emit('order_status_updated', safeOrder);
   return res.json(order);
 }));
+
+/**
+ * POST /api/orders/:id/payment-proof
+ * Customer uploads a screenshot/image of their payment.
+ * The file is stored on disk, the path is saved in the DB, and the kitchen
+ * is notified via Socket.IO so they can see it immediately.
+ */
+app.post('/api/orders/:id/payment-proof', requireAuth, upload.single('proof'), wrap(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image file was uploaded. Please select a payment screenshot.' });
+  }
+
+  // Ownership check: only the order's owner may upload a proof.
+  const existing = await neonClient.getOrderById(req.params.id);
+  if (!existing) {
+    fs.unlink(req.file.path, () => {});
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+  if (req.user.role === 'customer' && String(existing.userId) !== String(req.user.id)) {
+    fs.unlink(req.file.path, () => {});
+    return res.status(403).json({ error: 'You can only upload proof for your own orders.' });
+  }
+
+  // Prevent duplicate proof uploads (idempotent: allow replacement by owner)
+  const proofUrl = `/api/orders/${req.params.id}/payment-proof/file`;
+  const order = await neonClient.setPaymentProof(req.params.id, req.file.filename);
+
+  // Notify kitchen in real-time
+  io.to('role_admin').to('role_kitchen').emit('order_status_updated', order);
+  const { verificationPin, ...safeOrder } = order;
+  io.to(`order_${order.id}`).emit('live_order_status', safeOrder);
+  io.to(`order_${order.id}`).emit('order_status_updated', safeOrder);
+
+  return res.status(201).json({ success: true, proofUrl, order });
+}));
+
+/**
+ * GET /api/orders/:id/payment-proof/file
+ * Serve the actual image to authorized viewers only (order owner or staff).
+ */
+app.get('/api/orders/:id/payment-proof/file', requireAuth, wrap(async (req, res) => {
+  const order = await neonClient.getOrderById(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+  const isOwner = String(order.userId) === String(req.user.id);
+  const isStaffUser = STAFF.includes(req.user.role);
+  if (!isOwner && !isStaffUser) {
+    return res.status(403).json({ error: 'Access denied.' });
+  }
+
+  if (!order.paymentProofUrl) {
+    return res.status(404).json({ error: 'No payment proof has been uploaded for this order.' });
+  }
+
+  const filePath = path.join(UPLOADS_DIR, order.paymentProofUrl);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Payment proof file not found.' });
+  }
+
+  res.sendFile(filePath);
+}));
+
 
 app.patch('/api/users/:id/role', requireAdmin, wrap(async (req, res) => {
   const { role } = req.body;
