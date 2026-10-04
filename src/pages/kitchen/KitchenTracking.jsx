@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import L from 'leaflet';
 import { useKitchen } from '../../context/KitchenContext';
-import { apiService } from '../../services/apiService';
+
 
 const KITCHEN_PIN = { lat: -1.9355, lng: 30.1035 };
 const KIGALI_BOUNDS = { minLat: -1.985, maxLat: -1.885, minLng: 29.985, maxLng: 30.145 };
@@ -89,13 +89,12 @@ export default function KitchenTracking() {
   const [selectedRiderId, setSelectedRiderId] = useState('all');
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'delivery' | 'ready'
-  const [viewTab, setViewTab] = useState('split'); // 'split' | 'map' | 'list' (on mobile)
+
 
   // Map references
   const mapContainerRef = useRef(null);
   const leafletMapRef = useRef(null);
   const markersLayerRef = useRef(null);
-  const routeLineRef = useRef(null);
 
   // Active trackable orders (out for delivery or ready with rider assigned)
   const activeDeliveries = useMemo(() => {
@@ -254,7 +253,7 @@ export default function KitchenTracking() {
     layer.clearLayers();
 
     // 1. Kitchen HQ Pin
-    const kitchenMarker = L.marker([KITCHEN_PIN.lat, KITCHEN_PIN.lng], {
+    L.marker([KITCHEN_PIN.lat, KITCHEN_PIN.lng], {
       icon: buildPillIcon('#EA580C', 'HotPot Kitchen HQ', '🍲')
     }).bindPopup('<b>HotPot Kitchen HQ</b><br/>Nyarutarama, Kigali').addTo(layer);
 
@@ -296,7 +295,7 @@ export default function KitchenTracking() {
       // Fit map to encompass route
       try {
         map.fitBounds(L.latLngBounds(boundsPoints), { padding: [50, 50], maxZoom: 15 });
-      } catch (e) {
+      } catch (_e) {
         map.setView([riderPos.lat, riderPos.lng], 14);
       }
     } else {
@@ -315,7 +314,7 @@ export default function KitchenTracking() {
         } else {
           map.setView([KITCHEN_PIN.lat, KITCHEN_PIN.lng], 13);
         }
-      } catch (e) {
+      } catch (_e) {
         map.setView([KITCHEN_PIN.lat, KITCHEN_PIN.lng], 13);
       }
     }

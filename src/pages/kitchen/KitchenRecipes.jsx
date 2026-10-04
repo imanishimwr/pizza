@@ -108,7 +108,7 @@ const DEFAULT_RECIPES = [
 ];
 
 export default function KitchenRecipes() {
-  const { meals } = useKitchen();
+  useKitchen(); // keep provider connection for future use
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [search, setSearch] = useState('');
 

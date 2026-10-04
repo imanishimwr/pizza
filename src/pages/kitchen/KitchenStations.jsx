@@ -6,7 +6,7 @@ import {
 import { useKitchen } from '../../context/KitchenContext';
 
 export default function KitchenStations() {
-  const { aggregatedPrepList, activeStation, setActiveStation, pendingOrders, preparingOrders } = useKitchen();
+  const { aggregatedPrepList, pendingOrders, preparingOrders } = useKitchen();
 
   const totalDishesToCook = aggregatedPrepList.reduce((acc, it) => acc + it.totalQty, 0);
 

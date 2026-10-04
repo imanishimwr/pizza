@@ -511,51 +511,6 @@ function AppContent() {
     },
     [navigate, user?.role]
   );
-  const placeOrder = useCallback(
-    async (details) => {
-      if (orderBusy) return null;
-      if (!cart.length) {
-        showToast('Your cart is empty.', 'Empty Cart', 'error');
-        return null;
-      }
-      setOrderBusy(true);
-      try {
-        const payload = {
-          items: cart.map((i) => ({
-            id: i.meal?.id || i.id,
-            name: i.meal?.name || i.name,
-            qty: i.quantity,
-            price: Number(i.meal?.price ?? i.price) || 0,
-            spice: i.selectedSpice || i.options?.selectedSpice || i.options?.spiceLevel || i.spice || null,
-            broth: i.selectedBroth || i.options?.selectedBroth || i.options?.broth || null,
-            specialNote: i.specialNote || i.options?.specialNote || ''
-          })),
-          customerName: details.name,
-          phone: details.phone,
-          address: details.address,
-          area: details.area || null,
-          lat: details.lat || null,
-          lng: details.lng || null,
-          orderType: details.orderType || 'delivery',
-          notes: details.notes || null,
-          paymentMethod: details.paymentMethod || 'MTN Mobile Money'
-        };
-
-        const created = await createOrder(payload);
-        setCart([]);
-        setTrackedOrder(created);
-        setOrders((prev) => [created, ...prev.filter((o) => String(o.id) !== String(created.id))]);
-        showToast(`Order #${created.id} placed! Tracking live now.`, 'Order Placed');
-        return created;
-      } catch (err) {
-        showToast(err.message || 'Could not place your order. Please try again.', 'Order Failed', 'error');
-        throw err;
-      } finally {
-        setOrderBusy(false);
-      }
-    },
-    [cart, orderBusy, showToast]
-  );
 
   const handleOrderPlaced = useCallback((order) => {
     setCart([]);

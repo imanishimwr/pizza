@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   ChefHat, Clock, AlertCircle, CheckCircle2, ArrowRight, Bell, Sparkles,
   Volume2, VolumeX, Search, Filter, RefreshCw, Flame, UtensilsCrossed,
@@ -13,7 +13,6 @@ import AddWalkInModal from './AddWalkInModal';
 
 function KitchenShell() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const {
     orders = [],
@@ -32,7 +31,6 @@ function KitchenShell() {
     pendingOrders,
     preparingOrders,
     readyOrders,
-    completedOrders,
     aggregatedPrepList,
     selectedOrder,
     setSelectedOrder,
