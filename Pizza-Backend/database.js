@@ -13,7 +13,8 @@
  *   - Every function throws a descriptive Error on failure. No function ever
  *     returns a fabricated fallback value, and no function swallows an error.
  */
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { Pool } = require('pg');
@@ -560,7 +561,7 @@ module.exports = {
    * @param {string} [scope.status]  comma-separated status list
    * @param {number} [scope.limit]   bounded read (default 200)
    */
-  getOrders: async ({ userId, statuses, limit = 200 } = {}) => {
+  getOrders: async ({ userId, riderId, riderName, statuses, limit = 200 } = {}) => {
     const statusList = Array.isArray(statuses)
       ? statuses.map(normalizeStatus).filter((s) => CANONICAL_STATUSES.includes(s))
       : typeof statuses === 'string' && statuses
@@ -568,6 +569,11 @@ module.exports = {
         : null;
 
     const bounded = Math.min(Math.max(Number(limit) || 200, 1), 500);
+
+    const riderIds = riderId
+      ? (Array.isArray(riderId) ? riderId : [riderId]).map(String).filter(Boolean)
+      : [];
+    const hasRiderFilter = riderIds.length > 0 || Boolean(riderName);
 
     let rows;
     if (userId && statusList) {
@@ -578,6 +584,43 @@ module.exports = {
       rows = await sql`
         SELECT * FROM orders WHERE user_id = ${userId}
         ORDER BY created_at DESC LIMIT ${bounded};`;
+    } else if (hasRiderFilter && statusList) {
+      if (riderIds.length > 0 && riderName) {
+        rows = await sql`
+          SELECT * FROM orders
+          WHERE (rider_id = ANY(${riderIds}) OR (rider_id IS NULL AND rider_name = ${riderName}))
+            AND status = ANY(${statusList})
+          ORDER BY created_at DESC LIMIT ${bounded};`;
+      } else if (riderIds.length > 0) {
+        rows = await sql`
+          SELECT * FROM orders
+          WHERE rider_id = ANY(${riderIds})
+            AND status = ANY(${statusList})
+          ORDER BY created_at DESC LIMIT ${bounded};`;
+      } else {
+        rows = await sql`
+          SELECT * FROM orders
+          WHERE rider_name = ${riderName}
+            AND status = ANY(${statusList})
+          ORDER BY created_at DESC LIMIT ${bounded};`;
+      }
+    } else if (hasRiderFilter) {
+      if (riderIds.length > 0 && riderName) {
+        rows = await sql`
+          SELECT * FROM orders
+          WHERE (rider_id = ANY(${riderIds}) OR (rider_id IS NULL AND rider_name = ${riderName}))
+          ORDER BY created_at DESC LIMIT ${bounded};`;
+      } else if (riderIds.length > 0) {
+        rows = await sql`
+          SELECT * FROM orders
+          WHERE rider_id = ANY(${riderIds})
+          ORDER BY created_at DESC LIMIT ${bounded};`;
+      } else {
+        rows = await sql`
+          SELECT * FROM orders
+          WHERE rider_name = ${riderName}
+          ORDER BY created_at DESC LIMIT ${bounded};`;
+      }
     } else if (statusList) {
       rows = await sql`
         SELECT * FROM orders WHERE status = ANY(${statusList})

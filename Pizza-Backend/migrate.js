@@ -17,7 +17,8 @@
  *   - Dispatch columns (rider_id, verification_pin, timestamps) live on the
  *     order so assignments survive a restart and are visible to every reader.
  */
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { Pool } = require('pg');
 
 const SCHEMA = [

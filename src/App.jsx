@@ -75,9 +75,9 @@ export const ROUTES = {
 
 function getActiveView(pathname) {
   const p = (pathname || '/').toLowerCase();
-  if (p.startsWith('/hotpotkitchen')) return 'kitchen';
-  if (p.startsWith('/hotpotrider')) return 'delivery';
-  if (p.startsWith('/hotpotadmin')) return 'admin';
+  if (p.startsWith('/hotpotkitchen') || p.startsWith('/kitchen')) return 'kitchen';
+  if (p.startsWith('/hotpotrider') || p.startsWith('/delivery') || p.startsWith('/rider')) return 'delivery';
+  if (p.startsWith('/hotpotadmin') || p.startsWith('/admin')) return 'admin';
   if (p.startsWith('/hotpotcustomer/tracking')) return 'tracking';
   if (p.startsWith('/hotpotcustomer/orders')) return 'orders';
   if (p.startsWith('/hotpotcustomer')) return 'dashboard';
@@ -190,9 +190,14 @@ function AppContent() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setAuthError(`Session expired (${err.message}). Signed out for security.`);
-        setUser(null);
-        setSessionExpiredOpen(true);
+        if (err?.status === 401) {
+          setAuthError(`Session expired (${err.message}). Signed out for security.`);
+          setUser(null);
+          setSessionExpiredOpen(true);
+        } else {
+          // Server briefly unreachable or restarting — preserve current offline/local user state
+          console.warn('[session] could not reach server to refresh user:', err.message);
+        }
       })
       .finally(() => {
         if (!cancelled) setAuthChecked(true);
@@ -272,11 +277,24 @@ function AppContent() {
   }, [token, loadOrders]);
 
   useEffect(() => {
+    if (!orders.length) {
+      if (user?.role === 'delivery') setTrackedOrder(null);
+      return;
+    }
     const id = trackedOrder?.id;
-    if (!id || !orders.length) return;
+    if (user?.role === 'delivery') {
+      const assigned = orders.find((o) => id && String(o.id) === String(id)) || orders[0] || null;
+      if (assigned && String(assigned.id) !== String(trackedOrder?.id)) {
+        setTrackedOrder(assigned);
+      } else if (!assigned) {
+        setTrackedOrder(null);
+      }
+      return;
+    }
+    if (!id) return;
     const found = orders.find((o) => String(o.id) === String(id));
     if (found) setTrackedOrder(found);
-  }, [orders, trackedOrder?.id]);
+  }, [orders, trackedOrder?.id, user?.role]);
 
   // Realtime Socket.IO connection
   useEffect(() => {
@@ -452,7 +470,13 @@ function AppContent() {
       else if (targetView === 'kitchen') navigate(ROUTES.kitchen);
       else if (targetView === 'delivery' || targetView === 'rider') navigate(ROUTES.delivery);
       else if (targetView === 'admin') navigate(ROUTES.admin);
-      else if (targetView === 'tracking') navigate(ROUTES.tracking);
+      else if (targetView === 'tracking') {
+        if (user?.role === 'delivery') {
+          navigate(ROUTES.delivery);
+        } else {
+          navigate(ROUTES.tracking);
+        }
+      }
       else if (targetView === 'orders') navigate(ROUTES.orders);
       else if (targetView === 'dashboard') navigate(ROUTES.dashboard);
       else if (targetView === 'product-detail' || targetView === 'product') navigate(ROUTES.product);
@@ -460,7 +484,7 @@ function AppContent() {
       else if (targetView === 'register') navigate(ROUTES.register);
       else if (typeof targetView === 'string' && targetView.startsWith('/')) navigate(targetView);
     },
-    [navigate]
+    [navigate, user?.role]
   );
 
   const placeOrder = useCallback(
@@ -594,6 +618,23 @@ function AppContent() {
     navigate('/');
   }, [navigate, showToast]);
 
+  const trackOrder = useCallback(
+    (order) => {
+      if (!order) return;
+      if (user?.role === 'delivery') {
+        const isAssigned = orders.some((o) => String(o.id) === String(order.id));
+        if (!isAssigned) {
+          showToast('You can only track orders assigned to you.', 'Access Denied', 'error');
+          return;
+        }
+      }
+      setTrackedOrder(order);
+      trackedOrderStore.set(order.id);
+      navigate(ROUTES.tracking);
+    },
+    [orders, user?.role, showToast, navigate]
+  );
+
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-bg-dark text-text-main flex items-center justify-center">
@@ -602,12 +643,14 @@ function AppContent() {
     );
   }
 
-  const showAppChrome = view !== 'login' && view !== 'register';
+  const isDedicatedPortal = view === 'admin' || view === 'kitchen' || view === 'delivery';
+  const showAppChrome = !isDedicatedPortal && view !== 'login' && view !== 'register';
   const orderActions = {
     onUpdateStatus: changeOrderStatus,
     onCancelOrder: cancelOrder,
     onDeleteOrder: removeOrder,
-    onSetNotes: setOrderNotes
+    onSetNotes: setOrderNotes,
+    onTrackOrder: trackOrder
   };
 
   // Resolve meal for product detail route
@@ -656,7 +699,7 @@ function AppContent() {
         </div>
       )}
 
-      {ordersError && isStaff && (
+      {ordersError && isStaff && !isDedicatedPortal && (
         <div
           role="alert"
           className="bg-red-500/10 border-b border-red-500/30 text-red-300 text-xs px-4 py-2 flex items-center gap-2 justify-center"
@@ -692,7 +735,13 @@ function AppContent() {
         />
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex-1 w-full relative">
+      <main
+        className={
+          isDedicatedPortal
+            ? 'w-full flex-1 p-0 m-0 min-h-screen relative'
+            : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex-1 w-full relative'
+        }
+      >
         <Routes>
           {/* Menu / Home */}
           <Route
@@ -848,18 +897,27 @@ function AppContent() {
           <Route
             path={ROUTES.tracking}
             element={
-              orders.length || trackedOrder ? (
-                <LiveTracking
-                  order={trackedOrder?.id ? orders.find((o) => String(o.id) === String(trackedOrder.id)) || trackedOrder : orders[0]}
-                  {...orderActions}
-                />
+              user?.role === 'delivery' ? (
+                <Navigate to={ROUTES.delivery} replace />
               ) : (
-                <EmptyState
-                  title="Nothing to track"
-                  body="Place an order and follow your courier live on the map."
-                  actionLabel="Browse the menu"
-                  onAction={() => navigate(ROUTES.home)}
-                />
+                (() => {
+                  const activeOrder = trackedOrder?.id
+                    ? orders.find((o) => String(o.id) === String(trackedOrder.id)) || trackedOrder
+                    : orders[0];
+
+                  if (activeOrder) {
+                    return <LiveTracking order={activeOrder} {...orderActions} />;
+                  }
+
+                  return (
+                    <EmptyState
+                      title="Nothing to track"
+                      body="Place an order and follow your courier live on the map."
+                      actionLabel="Browse the menu"
+                      onAction={() => navigate(ROUTES.home)}
+                    />
+                  );
+                })()
               )
             }
           />
@@ -1067,7 +1125,7 @@ export default function App() {
 }
 
 function FullBleed({ children }) {
-  return <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-24">{children}</div>;
+  return <div className="w-full h-full min-h-screen">{children}</div>;
 }
 
 function ErrorPanel({ message, onRetry }) {

@@ -111,3 +111,24 @@ test('makeId is unique and prefixed', () => {
   assert.equal(ids.size, 200);
   for (const id of ids) assert.ok(String(id).startsWith('user-'));
 });
+
+test('serializeOrder preserves riderId and riderName correctly', () => {
+  const row = {
+    id: 'HP-123456',
+    user_id: 'user-1',
+    customer_name: 'Aline',
+    phone: '0780000000',
+    address: 'Kicukiro',
+    status: 'delivery',
+    total_rwf: '22000',
+    rider_id: 'rider-007',
+    rider_name: 'Jean Claude',
+    payment_method: 'MTN Mobile Money',
+    payment_status: 'paid',
+    created_at: '2026-01-01T10:00:00.000Z',
+    updated_at: '2026-01-01T10:00:00.000Z'
+  };
+  const order = client.serializeOrder(row, []);
+  assert.equal(order.riderId, 'rider-007');
+  assert.equal(order.riderName, 'Jean Claude');
+});
