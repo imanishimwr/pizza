@@ -1,0 +1,52 @@
+CRITICAL (SECURITY)
+[~] 1. Live secrets in Pizza-Backend/.env (Neon password, Google OAuth secret STILL old - rotate; JWT_SECRET now strong hex) — rotate
+[x] 2. Write rate limiter dead code - server.js:98 regex now checks req.method properly
+[x] 3. Client can mark own order paid - database.js:642 paymentStatus forced 'pending'
+[x] 4. Handover PIN broadcast to all sockets - now only to role_admin/role_kitchen; customers get safeOrder
+[x] 5. Order details broadcast via io.emit - rider fleet/availability + payment emits now scoped; only public meal_catalog_updated remains global (non-sensitive)
+
+BACKEND CORRECTNESS
+[x] 6. Customer never sees handover PIN - server.js:284 getOrderById includePin:true + pinVisibilityFor
+[x] 7. Order cancellation strands rider - database.js:751,758 clears current_order_id/status
+[x] 8. State machine bypass - verifyHandover (database.js:857) checks ready status; updateOrderStatus enforces transitions
+[x] 9. createOrder accepts unknown meal IDs - database.js:595 throws on invalid menu item
+[x] 10. Google sign-in avatarUrl null - googleAuth.js:57 serializeUser + fallback at :58-59
+[x] 11. Race conditions - withTransaction + FOR UPDATE row locks in completeDelivery/createOrder/verifyHandover
+[x] 12. seed.js not idempotent - database.js:471,1150 ON CONFLICT upserts
+[x] 13. 500 responses leak raw DB errors - server.js:712 generic message for status>=500
+[x] 14. Rider user<->rider ID confusion - findRiderForUser used in server.js:519,555,672
+[x] 15. Handover trusts body riderId - server.js:513 delivery role resolves courier via findRiderForUser
+[x] 16. Handover PIN weak - crypto.randomInt used (database.js:818,924) + handoverLimiter in server.js
+[x] 17. GPS spoofing - server.js:555 delivery courier verified against assigned order
+[x] 18. No token invalidation on role change - token_version column added to users, incremented on setUserRole; JWT includes tokenVersion; authMiddleware & socketUser reject stale tokens and evict active sockets
+[x] 19. completeDelivery leaves rider off_duty - database.js:1066 status='available', is_available=TRUE
+[x] 20. Dummy bcrypt month - now a real-format $2a$10$ hash stored inline (database.js:397) for timing equalization
+[x] 21. Order-id collision loop - crypto.randomInt TP range + uniqueness retry (database.js:626,634)
+[x] 22. Test glob/engines - package.json now "test": "node --test"
+[x] 23. Unused cleanup - db.js deleted; GOOGLE_CLIENT_SECRET removed from .env.example; role_ rooms scoped; pg is actively used by database.js & migrate.js (required)
+[x] 24. migrate.js COLUMN_ADDITIONS covers users.google_id/password_hash/avatar_url/updated_at etc.
+[x] 25. PII logging - auth routes now log only user id + role
+
+FRONTEND ADMIN
+[x] 26. Sidebar can't be re-expanded - toggle no longer has invisible class (AdminLayout.jsx:150)
+[x] 27. Off-duty filter includes busy riders - AdminFleet.jsx:58,190 now use !is_available && !isRiderBusy
+[x] 28. Payment-method filter never matches - AdminSales.jsx:48-54 uses includes('momo'/'mobile money'/'visa'/'cash')
+[x] 29. Release-rider button wrong flag - AdminOrders.jsx:531,718,726 use isReassigning
+[x] 30. Dispatch defaults to arbitrary first free rider - explicit draftRider selection (AdminOrders.jsx:567)
+[x] 31. busy flag global not per-order - AdminOrders.jsx:463 pendingStatusChange.startsWith(order.id + ':')
+[x] 32. Reassign modal select uncontrolled - controlled reassignSelectedRider state
+[x] 33. Analytics KPI crash on partial data - AdminOverview.jsx:87,135 null/!= null guards
+[x] 34. Unused ShoppingBag import - removed
+[x] 35. App subscribes to order_deleted/meal_catalog_updated/rider_fleet_updated
+[x] 36. trackingOrderId effect dep - AdminOrders.jsx:54 [searchParams, trackingOrderId]
+[x] 37. AdminContext value not memoized - useMemo at AdminContext.jsx:91
+[x] 38. Tracking map overlays rebuilt every tick - deps now [mapNode, trackingOrderId] (:145)
+[x] 39. eventBus.emit third arg ignored - removed from App.jsx
+[x] 40. AddFoodItemModal file input - e.target.value = '' after applyFile (:438)
+[x] 41. AdminSales CSV export ignores filters - exports filteredSoldOrders with empty-guard announcement
+[x] 42. AdminCatalog broken image - FALLBACK_DISH_IMAGE + onError handler (:199,203)
+[x] 43. handleAssignRider stale rider validation - looks up rider before dispatch (:267)
+[x] 44. Server status only analyticsError - now shows 'Server offline'/'Analytics unavailable'/'Server connected' (:257)
+[x] 45. In-place searchParams mutation - new URLSearchParams used (:767)
+[x] 46. Pager aria-label noun default - noun = 'items' default (AdminComponents.jsx:54)
+[x] 47. Tailwind v4-only classes left-5.5/z-9999 - no longer present

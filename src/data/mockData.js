@@ -1,10 +1,10 @@
 /**
  * UI configuration only.
  *
- * Meals, orders, riders, users and revenue all come from the API. Nothing in
- * this file may be presented to a customer as real inventory or as a real
- * transaction.
+ * Meals, orders, riders, users and revenue all come from the API via apiService.
  */
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const CATEGORIES = [
   { id: 'all', name: 'All items', icon: 'UtensilsCrossed' },
@@ -21,12 +21,13 @@ export const CATEGORY_LABELS = CATEGORIES.reduce((acc, category) => {
 
 /** Readable label for a canonical lowercase order status. */
 export const ORDER_STATUS_LABELS = {
-  pending: 'Received',
-  preparing: 'In the kitchen',
-  ready: 'Ready for pickup',
-  delivery: 'Out for delivery',
+  ongoing: 'Ongoing',
+  ready: 'Ready',
   delivered: 'Delivered',
-  cancelled: 'Cancelled'
+  cancelled: 'Cancelled',
+  pending: 'Ongoing',
+  preparing: 'Ongoing',
+  delivery: 'Ongoing'
 };
 
 export const PROMO_BANNERS = [

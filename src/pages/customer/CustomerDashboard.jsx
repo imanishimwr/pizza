@@ -26,6 +26,7 @@ import {
   X,
   Home,
   Smartphone,
+  Phone,
   User
 } from 'lucide-react';
 import ReceiptModal from '../../components/customer/ReceiptModal';
@@ -1353,7 +1354,7 @@ export default function CustomerDashboard({
                         setHistoryPage(1);
                       }}
                       aria-pressed={historyFilter === f.id}
-                      className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      className={`min-h-9.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                         historyFilter === f.id
                           ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                           : 'bg-[#1A1D24] border border-slate-800 text-slate-400 hover:text-white'
@@ -1383,7 +1384,7 @@ export default function CustomerDashboard({
                     setHistoryPage(1);
                   }}
                   placeholder="Search orders by ID, dish name, or address..."
-                  className="w-full bg-[#1A1D24] border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-all min-h-[44px]"
+                  className="w-full bg-[#1A1D24] border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-all min-h-11"
                 />
               </div>
 

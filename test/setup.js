@@ -16,8 +16,37 @@ if (!window.matchMedia) {
   });
 }
 
+class LocalStorageMock {
+  constructor() {
+    this.store = {};
+  }
+  clear() {
+    this.store = {};
+  }
+  getItem(key) {
+    return Object.prototype.hasOwnProperty.call(this.store, key) ? this.store[key] : null;
+  }
+  setItem(key, value) {
+    this.store[key] = String(value);
+  }
+  removeItem(key) {
+    delete this.store[key];
+  }
+}
+
+if (!globalThis.localStorage || typeof globalThis.localStorage.clear !== 'function') {
+  const mock = new LocalStorageMock();
+  Object.defineProperty(globalThis, 'localStorage', { value: mock, writable: true });
+  if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'localStorage', { value: mock, writable: true });
+  }
+}
+
 afterEach(() => {
   cleanup();
-  localStorage.clear();
+  try {
+    localStorage.clear();
+    // eslint-disable-next-line no-empty
+  } catch {}
   vi.restoreAllMocks();
 });

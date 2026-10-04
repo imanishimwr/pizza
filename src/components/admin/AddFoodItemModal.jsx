@@ -435,6 +435,7 @@ export default function AddFoodItemModal({
                 aria-label="Food photo file"
                 onChange={(e) => {
                   applyFile(e.target.files?.[0]);
+                  e.target.value = '';
                 }}
                 className="sr-only"
               />

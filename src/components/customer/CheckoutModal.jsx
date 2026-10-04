@@ -281,7 +281,7 @@ export default function CheckoutModal({ isOpen, onClose, checkoutData, onOrderPl
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md transition-opacity duration-200"
+      className="fixed inset-0 z-1000 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md transition-opacity duration-200"
       onClick={requestClose}
     >
       <div

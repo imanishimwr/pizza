@@ -33,6 +33,7 @@ import {
   User,
   XCircle
 } from 'lucide-react';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import L from 'leaflet';
 import ReceiptModal from '../../components/customer/ReceiptModal';
 import PostDeliveryFeedbackModal from '../../components/customer/PostDeliveryFeedbackModal';
@@ -49,27 +50,26 @@ const DASH = '\u2014';
  */
 const CANCEL_GRACE_SECONDS = 120;
 
-/** The five visible stages, keyed to the canonical lowercase statuses. */
+/** The visible stages, keyed to canonical lowercase statuses: ongoing, ready, delivered, cancelled. */
 const STEPS = [
-  { num: 1, label: 'Order received', hint: 'Payment confirmed and sent to the kitchen' },
-  { num: 2, label: 'In the kitchen', hint: 'Broths simmering and dishes being assembled' },
-  { num: 3, label: 'Ready for pickup', hint: 'Cooked, packed and waiting for a courier' },
-  { num: 4, label: 'Out for delivery', hint: 'Handed to a courier riding to your address' },
-  { num: 5, label: 'Delivered', hint: 'Handed over at your address' }
+  { num: 1, label: 'Ongoing', hint: 'Order received and being prepared in the kitchen' },
+  { num: 2, label: 'Ready', hint: 'Cooked, packed and ready for delivery handover' },
+  { num: 3, label: 'Delivered', hint: 'Handed over at your address' }
 ];
 
-/** Canonical statuses only: pending|preparing|ready|delivery|delivered|cancelled. */
+/** Canonical statuses: ongoing|ready|delivered|cancelled. */
 const STEP_FOR_STATUS = {
+  ongoing: 1,
+  ready: 2,
+  delivered: 3,
+  cancelled: 0,
   pending: 1,
-  preparing: 2,
-  ready: 3,
-  delivery: 4,
-  delivered: 5,
-  cancelled: 0
+  preparing: 1,
+  delivery: 2
 };
 
-/** Server-side `cancelOrder` refuses these two before it ever looks at the clock. */
-const UNCANCELLABLE_STATUSES = ['delivery', 'delivered'];
+/** Terminal delivered status cannot be cancelled. */
+const UNCANCELLABLE_STATUSES = ['delivered'];
 
 /**
  * One approximate pin for the kitchen. `CONTACT.address` is free text, so the
@@ -207,8 +207,10 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
   const [noteError, setNoteError] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [isConfirmingDelivery, setIsConfirmingDelivery] = useState(false);
   const [deliveryError, setDeliveryError] = useState('');
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [receiptError, setReceiptError] = useState('');
   const [secondsRemaining, setSecondsRemaining] = useState(0);
   const [busOrder, setBusOrder] = useState(null);
@@ -702,7 +704,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
           {status === 'delivery' && (
             <button
               type="button"
-              onClick={handleConfirmDelivery}
+              onClick={() => setShowDeliveryModal(true)}
               disabled={isConfirmingDelivery}
               className="px-5 py-3 rounded-xl bg-linear-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
@@ -771,7 +773,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
 
             <button
               type="button"
-              onClick={handleCancelOrder}
+              onClick={() => setShowCancelModal(true)}
               disabled={!canCancel || isCancelling}
               className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -1000,6 +1002,38 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
         isOpen={showFeedback}
         onClose={() => setShowFeedback(false)}
         order={tracked}
+      />
+
+      {/* Confirm Order Cancellation Modal */}
+      <ConfirmModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={async () => {
+          setShowCancelModal(false);
+          await handleCancelOrder();
+        }}
+        title={`Cancel order #${orderRef}?`}
+        message={`Are you sure you want to cancel order #${orderRef}? The kitchen will stop cooking and preparing your meal immediately.`}
+        confirmText="Yes, Cancel Order"
+        cancelText="Keep Order"
+        tone="danger"
+        isBusy={isCancelling}
+      />
+
+      {/* Confirm Delivery Received Modal */}
+      <ConfirmModal
+        isOpen={showDeliveryModal}
+        onClose={() => setShowDeliveryModal(false)}
+        onConfirm={async () => {
+          setShowDeliveryModal(false);
+          await handleConfirmDelivery();
+        }}
+        title={`Confirm delivery for order #${orderRef}?`}
+        message="Please confirm that your meal was safely delivered by the courier and handed over in full."
+        confirmText="Confirm Received"
+        cancelText="Not Yet"
+        tone="success"
+        isBusy={isConfirmingDelivery}
       />
     </div>
   );

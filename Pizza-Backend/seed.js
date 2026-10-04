@@ -21,7 +21,7 @@ const { migrate } = require('./migrate');
 
 const MEALS = [
   {
-    id: 'hp-01',
+    id: 'b3c1568f-8dba-4a97-8a57-75290c9ac03d',
     name: 'Royal Szechuan Hotpot Combo',
     category: 'hotpot',
     price: 22000,
@@ -34,7 +34,7 @@ const MEALS = [
     broths: ['Szechuan', 'Tomato', 'Mushroom']
   },
   {
-    id: 'hp-02',
+    id: '066c0752-ca4c-425e-99b4-dfb26755e095',
     name: 'BBQ Chicken & Mushroom Pizza',
     category: 'pizzas',
     price: 14500,
@@ -47,7 +47,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'hp-03',
+    id: 'aed8df9f-cb0f-43ad-ad3e-abe2af21c34a',
     name: 'Kigali Supreme Hotpot Feast',
     category: 'hotpot',
     price: 28000,
@@ -60,7 +60,7 @@ const MEALS = [
     broths: ['Szechuan', 'Bone Marrow']
   },
   {
-    id: 'pz-01',
+    id: 'b115a674-4e64-4db1-a0e4-18eb2cd0c30b',
     name: 'Margherita Classica',
     category: 'pizzas',
     price: 9000,
@@ -72,7 +72,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'pz-02',
+    id: 'a4108c6b-6ba7-498a-a6de-a8ba4bec9e8a',
     name: 'Spicy Pepperoni Inferno',
     category: 'pizzas',
     price: 16000,
@@ -84,7 +84,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'sd-01',
+    id: '479b1713-3bea-41e8-b48b-f896342e01bd',
     name: 'Spicy Beef Rice Bowl',
     category: 'sides',
     price: 6500,
@@ -96,7 +96,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'sd-02',
+    id: '3e20b2d5-01ef-4157-8433-91f9802d27ed',
     name: 'Crispy Spring Rolls',
     category: 'sides',
     price: 4500,
@@ -108,7 +108,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'dr-01',
+    id: 'e75063ba-8ed8-4334-b339-0384677005bd',
     name: 'Iced Vanilla Latte',
     category: 'drinks',
     price: 3500,
@@ -120,7 +120,7 @@ const MEALS = [
     broths: []
   },
   {
-    id: 'dr-02',
+    id: '76ec01bd-f958-43a6-8ac3-9e3614546679',
     name: 'Mango Passion Smoothie',
     category: 'drinks',
     price: 4000,
@@ -175,28 +175,54 @@ async function seed() {
   }
   console.log(`  ${MEALS.length} menu items ensured.`);
 
-  console.log('Seeding staff accounts...');
+  console.log('Seeding staff and test accounts...');
   await seedStaffAccount({
-    name: process.env.ADMIN_NAME,
-    email: process.env.ADMIN_EMAIL,
-    password: process.env.ADMIN_PASSWORD,
-    phone: process.env.ADMIN_PHONE,
+    name: process.env.ADMIN_NAME || 'System Admin',
+    email: process.env.ADMIN_EMAIL || 'admin@hotpot.rw',
+    password: process.env.ADMIN_PASSWORD || 'Admin1234!',
+    phone: process.env.ADMIN_PHONE || '+250 788 000 001',
     role: 'admin'
   });
   await seedStaffAccount({
-    name: process.env.KITCHEN_NAME,
-    email: process.env.KITCHEN_EMAIL,
-    password: process.env.KITCHEN_PASSWORD,
-    phone: process.env.KITCHEN_PHONE,
+    name: process.env.KITCHEN_NAME || 'Head Chef',
+    email: process.env.KITCHEN_EMAIL || 'kitchen@hotpot.rw',
+    password: process.env.KITCHEN_PASSWORD || 'Kitchen1234!',
+    phone: process.env.KITCHEN_PHONE || '+250 788 000 003',
     role: 'kitchen'
   });
-  await seedStaffAccount({
-    name: process.env.DELIVERY_NAME,
-    email: process.env.DELIVERY_EMAIL,
-    password: process.env.DELIVERY_PASSWORD,
-    phone: process.env.DELIVERY_PHONE,
+  const rider = await seedStaffAccount({
+    name: process.env.DELIVERY_NAME || 'Kigali Rider',
+    email: process.env.DELIVERY_EMAIL || 'rider@hotpot.rw',
+    password: process.env.DELIVERY_PASSWORD || 'Rider1234!',
+    phone: process.env.DELIVERY_PHONE || '+250 788 000 004',
     role: 'delivery'
   });
+  await seedStaffAccount({
+    name: process.env.CUSTOMER_NAME || 'HotPot Customer',
+    email: process.env.CUSTOMER_EMAIL || 'user@hotpot.rw',
+    password: process.env.CUSTOMER_PASSWORD || 'Customer1234!',
+    phone: process.env.CUSTOMER_PHONE || '+250 788 000 002',
+    role: 'customer'
+  });
+
+  if (rider) {
+    try {
+      await neonClient.sql`
+        INSERT INTO riders (id, name, email, phone, plate_number, vehicle_type, shift, is_available, status, last_lat, last_lng, updated_at)
+        VALUES (${rider.id}, ${rider.name}, ${rider.email}, ${rider.phone || '+250 788 000 004'}, 'RAD 777 K', 'Motorcycle', 'Day Shift', true, 'available', -1.9441, 30.0619, NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          email = EXCLUDED.email,
+          phone = EXCLUDED.phone,
+          status = 'available',
+          is_available = true,
+          updated_at = NOW();
+      `;
+      console.log(`  - synced rider profile in fleet for ${rider.email}`);
+    } catch (err) {
+      console.warn('  - rider fleet sync note:', err.message);
+    }
+  }
 
   const meals = await neonClient.getMeals();
   const users = await neonClient.listUsers();
