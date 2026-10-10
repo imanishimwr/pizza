@@ -5,6 +5,7 @@
   "description": "HotPot Delights API — orders, dispatch and realtime tracking.",
   "main": "server.js",
   "scripts": {
+    "build": "echo \"No build step required for Express\"",
     "start": "node server.js",
     "dev": "node --watch server.js",
     "migrate": "node migrate.js",
