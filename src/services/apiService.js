@@ -259,7 +259,9 @@ async function idbClear() {
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
     });
-  } catch {}
+  } catch {
+    /* ignore IDB clearing failures */
+  }
 }
 
 // L1: in-memory cache (instant within the same tab session)

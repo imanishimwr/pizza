@@ -231,10 +231,12 @@ async function seed() {
 }
 
 if (require.main === module) {
-  seed().catch((err) => {
-    console.error('Seeding failed:', err.message);
-    process.exit(1);
-  });
+  seed()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('Seeding failed:', err.message);
+      process.exit(1);
+    });
 }
 
 module.exports = { seed, MEALS };

@@ -61,7 +61,6 @@ export default function AdminOrders() {
     if (locallyDeletedIds.size === 0) return list;
     return list.filter((o) => !locallyDeletedIds.has(String(o.id)));
   }, [orders, locallyDeletedIds]);
-  const readyOrders = useMemo(() => displayOrders.filter((o) => normalizeOrderStatus(o.status) === 'ready'), [displayOrders]);
   const freeRiders = useMemo(() => (Array.isArray(riders) ? riders.filter(isRiderFree) : []), [riders]);
 
   const riderDeliveryCounts = useMemo(() => {
@@ -161,7 +160,7 @@ export default function AdminOrders() {
       staticLayersRef.current.forEach((l) => l.remove());
       staticLayersRef.current = [];
     };
-  }, [mapNode, trackingOrderId]);
+  }, [mapNode, trackingOrderId, trackingOrder]);
 
   // Live courier marker — updates coordinates without rebuilding static map layers
   useEffect(() => {

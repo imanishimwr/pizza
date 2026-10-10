@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import {
   Shield, TrendingUp, ShoppingBag, Bike, DollarSign, Star,
   UtensilsCrossed, ChevronLeft, ChevronRight, Home, X,
@@ -22,7 +22,7 @@ const TAB_ICONS = {
 // ─── Inner shell (needs useAdmin context) ────────────────────────────────────
 function AdminShell() {
   const {
-    analytics, analyticsError,
+    analyticsError,
     orders, meals, onMealsChange,
     riders, reviews,
     isRefreshing, loadSnapshot,
@@ -31,7 +31,6 @@ function AdminShell() {
     user, onGoHome, error, onRetry,
   } = useAdmin();
 
-  const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [showAddMeal, setShowAddMeal] = useState(false);

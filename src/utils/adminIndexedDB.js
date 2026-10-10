@@ -74,7 +74,7 @@ export async function getAdminCache(key) {
       };
       req.onerror = () => resolve(getSyncLocalCache(key));
     });
-  } catch (err) {
+  } catch {
     return getSyncLocalCache(key);
   }
 }
