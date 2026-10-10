@@ -234,7 +234,7 @@ export default function Header({
           </div>
         )}
 
-        <nav aria-label="Main" className="flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-white/10">
+        <nav aria-label="Main" className="hidden md:flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-white/10">
           <button
             type="button"
             onClick={() => navigate('menu')}
@@ -338,7 +338,7 @@ export default function Header({
           )}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden sm:flex items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => setLang && setLang(lang === 'EN' ? 'RW' : 'EN')}
@@ -451,7 +451,7 @@ export default function Header({
           )}
         </div>
 
-        <div className="flex sm:hidden items-center gap-2">
+        <div className="flex md:hidden items-center gap-2">
           {!user && onOpenAuth && (
             <button
               type="button"
@@ -501,7 +501,7 @@ export default function Header({
       {isMobileMenuOpen && (
         <div
           id="header-mobile-menu"
-          className="sm:hidden border-t border-white/10 bg-surface-dark px-4 py-4 space-y-4 transition-opacity duration-200"
+          className="md:hidden border-t border-white/10 bg-surface-dark px-4 py-4 space-y-4 transition-opacity duration-200"
         >
           {typeof setSearchQuery === 'function' && (
             <div className="relative">
