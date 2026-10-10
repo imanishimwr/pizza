@@ -22,6 +22,8 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const neonClient = require('./neonClient');
@@ -72,21 +74,29 @@ app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json({ limit: '256kb' }));
 
 // ---------------------------------------------------------------------------
-// File uploads — payment proof screenshots
+// File uploads — payment proof screenshots via Cloudinary
 // ---------------------------------------------------------------------------
-const UPLOADS_DIR = path.join(__dirname, 'uploads', 'payment-proofs');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.jpg';
-    cb(null, `proof-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'payment-proofs',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    public_id: (_req, file) => {
+      const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.jpg';
+      return `proof-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
   }
 });
 
 const upload = multer({
-  storage,
+  storage: cloudinaryStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -501,17 +511,19 @@ app.post('/api/orders/:id/payment-proof', requireAuth, upload.single('proof'), w
   // Ownership check: only the order's owner may upload a proof.
   const existing = await neonClient.getOrderById(req.params.id);
   if (!existing) {
-    fs.unlink(req.file.path, () => {});
+    // Clean up Cloudinary upload on error
+    if (req.file.public_id) await cloudinary.uploader.destroy(req.file.public_id).catch(() => {});
     return res.status(404).json({ error: 'Order not found.' });
   }
   if (req.user.role === 'customer' && String(existing.userId) !== String(req.user.id)) {
-    fs.unlink(req.file.path, () => {});
+    if (req.file.public_id) await cloudinary.uploader.destroy(req.file.public_id).catch(() => {});
     return res.status(403).json({ error: 'You can only upload proof for your own orders.' });
   }
 
-  // Prevent duplicate proof uploads (idempotent: allow replacement by owner)
+  // Save the Cloudinary URL directly to the database
+  const cloudinaryUrl = req.file.path; // multer-storage-cloudinary sets path = secure_url
   const proofUrl = `/api/orders/${req.params.id}/payment-proof/file`;
-  const order = await neonClient.setPaymentProof(req.params.id, req.file.filename);
+  const order = await neonClient.setPaymentProof(req.params.id, cloudinaryUrl);
 
   // Notify kitchen in real-time
   io.to('role_admin').to('role_kitchen').emit('order_status_updated', order);
@@ -519,7 +531,7 @@ app.post('/api/orders/:id/payment-proof', requireAuth, upload.single('proof'), w
   io.to(`order_${order.id}`).emit('live_order_status', safeOrder);
   io.to(`order_${order.id}`).emit('order_status_updated', safeOrder);
 
-  return res.status(201).json({ success: true, proofUrl, order });
+  return res.status(201).json({ success: true, proofUrl, cloudinaryUrl, order });
 }));
 
 /**
@@ -540,11 +552,17 @@ app.get('/api/orders/:id/payment-proof/file', requireAuth, wrap(async (req, res)
     return res.status(404).json({ error: 'No payment proof has been uploaded for this order.' });
   }
 
+  // If it's a Cloudinary URL, redirect directly to it
+  if (order.paymentProofUrl.startsWith('http')) {
+    return res.redirect(order.paymentProofUrl);
+  }
+
+  // Legacy: serve from local disk (old uploads before Cloudinary)
+  const UPLOADS_DIR = path.join(__dirname, 'uploads', 'payment-proofs');
   const filePath = path.join(UPLOADS_DIR, order.paymentProofUrl);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Payment proof file not found.' });
   }
-
   res.sendFile(filePath);
 }));
 
