@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://pizza-eight-zeta.vercel.app/api/:path*"
+      "destination": "https://pizza-7ihc.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
