@@ -606,6 +606,21 @@ app.get('/api/riders', requireStaff, wrap(async (req, res) => {
 
 app.post('/api/riders', requireAdmin, wrap(async (req, res) => {
   if (!req.body.name) return res.status(400).json({ error: 'Rider name is required.' });
+
+  if (req.body.email && req.body.password) {
+    try {
+      const user = await neonClient.registerUser({
+        name: req.body.name,
+        email: req.body.email,
+        phone: req.body.phone,
+        password: req.body.password
+      });
+      await neonClient.setUserRole(user.id, 'delivery');
+    } catch (err) {
+      return res.status(400).json({ error: err.message || 'Could not create user account for rider. Email might be in use.' });
+    }
+  }
+
   const rider = await neonClient.createRider(req.body);
   io.to('role_admin').to('role_kitchen').emit('rider_fleet_updated', await neonClient.getRiders());
   res.status(201).json(rider);

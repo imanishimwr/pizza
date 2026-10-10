@@ -28,6 +28,8 @@ export default function AdminFleet() {
   const [isSavingRider, setIsSavingRider] = useState(false);
   const [newRiderForm, setNewRiderForm] = useState({
     name: '',
+    email: '',
+    password: '',
     phone: '',
     plateNumber: '',
     vehicleType: '',
@@ -105,6 +107,8 @@ export default function AdminFleet() {
     try {
       const created = await createRider({
         name: newRiderForm.name.trim(),
+        email: newRiderForm.email.trim(),
+        password: newRiderForm.password.trim(),
         phone: newRiderForm.phone.trim(),
         plateNumber: newRiderForm.plateNumber.trim(),
         vehicleType: newRiderForm.vehicleType.trim(),
@@ -114,6 +118,8 @@ export default function AdminFleet() {
       setShowAddRiderModal(false);
       setNewRiderForm({
         name: '',
+        email: '',
+        password: '',
         phone: '',
         plateNumber: '',
         vehicleType: '',
@@ -469,6 +475,28 @@ export default function AdminFleet() {
                 className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
               />
             </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Email (for login)" id="rider-email">
+                <input
+                  id="rider-email"
+                  type="email"
+                  placeholder="eric@hotpot.rw"
+                  value={newRiderForm.email}
+                  onChange={(e) => setNewRiderForm((prev) => ({ ...prev, email: e.target.value }))}
+                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </Field>
+              <Field label="Password" id="rider-password">
+                <input
+                  id="rider-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newRiderForm.password}
+                  onChange={(e) => setNewRiderForm((prev) => ({ ...prev, password: e.target.value }))}
+                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </Field>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Phone" id="rider-phone">
                 <input
