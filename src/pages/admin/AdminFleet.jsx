@@ -475,7 +475,7 @@ export default function AdminFleet() {
                 className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Email (for login)" id="rider-email">
                 <input
                   id="rider-email"
@@ -497,7 +497,7 @@ export default function AdminFleet() {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Phone" id="rider-phone">
                 <input
                   id="rider-phone"
@@ -520,7 +520,7 @@ export default function AdminFleet() {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Vehicle type" id="rider-vehicle">
                 <input
                   id="rider-vehicle"
@@ -649,7 +649,7 @@ export default function AdminFleet() {
           label="Close edit courier dialog"
         >
           <form onSubmit={handleSaveEditRider} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Full name" id="edit-rider-name">
                 <input
                   id="edit-rider-name"
@@ -671,7 +671,7 @@ export default function AdminFleet() {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Motorcycle plate number" id="edit-rider-plate">
                 <input
                   id="edit-rider-plate"
