@@ -149,7 +149,7 @@ export default function HelpModal({ isOpen, onClose }) {
         </div>
 
         {/* Contact Quick Links */}
-        <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <a
             href="tel:+250788000000"
             className="p-3 rounded-xl bg-surface-card border border-white/5 hover:border-primary/40 transition-all flex items-center gap-2"

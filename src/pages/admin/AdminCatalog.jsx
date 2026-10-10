@@ -321,7 +321,7 @@ export default function AdminCatalog() {
                 className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/70"
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Price (RWF)" id="edit-price">
                 <input
                   id="edit-price"

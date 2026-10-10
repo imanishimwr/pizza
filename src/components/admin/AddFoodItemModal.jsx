@@ -395,7 +395,7 @@ export default function AddFoodItemModal({
             <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
               <ImageIcon className="w-3 h-3 text-orange-400" aria-hidden="true" focusable="false" /> Food Photo
             </span>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Drop Zone */}
               <div
                 role="button"

@@ -219,7 +219,7 @@ export default function ProductDetailsPage({
           </div>
 
           {/* Quick Perks */}
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div className="p-3.5 rounded-2xl bg-surface-card border border-white/5 space-y-1">
               <div className="font-bold text-text-main flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-amber-400" aria-hidden="true" />
