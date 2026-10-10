@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import {
-  formatRwf, formatWhen, rwf, isRiderFree, isRiderBusy, normalizeOrderStatus
+  formatRwf, rwf, isRiderFree, isRiderBusy, normalizeOrderStatus
 } from '../../utils/adminHelpers';
 import {
   createRider, updateRider, setRiderAvailability, reassignRider
@@ -63,11 +63,6 @@ export default function AdminFleet() {
     });
     return map;
   }, [orders]);
-
-  const freeRiders = useMemo(
-    () => (Array.isArray(riders) ? riders.filter((r) => isRiderFree(r, (activeOrdersByRider[String(r.id)] || []).length)) : []),
-    [riders, activeOrdersByRider]
-  );
 
   const filteredRiders = useMemo(() => {
     const q = riderSearch.trim().toLowerCase();

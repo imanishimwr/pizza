@@ -22,10 +22,6 @@ export default function AdminOverview() {
     () => displayOrders.filter((o) => normalizeOrderStatus(o.status) === 'ongoing').length,
     [displayOrders]
   );
-  const soldOrders = useMemo(
-    () => displayOrders.filter((o) => normalizeOrderStatus(o.status) === 'delivered'),
-    [displayOrders]
-  );
 
   const topSellingDishes = useMemo(() => {
     const serverRows = Array.isArray(analytics?.topDishes) ? analytics.topDishes : null;
