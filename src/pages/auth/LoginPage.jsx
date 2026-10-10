@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Flame, Lock, Mail, Eye, EyeOff, LogIn, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { login, normalizeRole } from '../../services/apiService';
-import QuickLoginHelper from '../../components/auth/QuickLoginHelper';
 
 export default function LoginPage({ onLoginSuccess }) {
   const navigate = useNavigate();
@@ -143,19 +142,6 @@ export default function LoginPage({ onLoginSuccess }) {
             <span>{isSubmitting ? 'Authenticating...' : 'Sign In'}</span>
           </button>
         </form>
-
-        <QuickLoginHelper
-          disabled={isSubmitting}
-          onSelect={(demoEmail, demoPass) => {
-            setEmail(demoEmail);
-            setPassword(demoPass);
-          }}
-          onInstantLogin={(demoEmail, demoPass) => {
-            setEmail(demoEmail);
-            setPassword(demoPass);
-            handleLogin(null, demoEmail, demoPass);
-          }}
-        />
 
         <div className="mt-6 text-center text-xs text-text-muted">
           Don&apos;t have an account yet?{' '}
