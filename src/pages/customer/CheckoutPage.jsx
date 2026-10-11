@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { uploadPaymentProof, createOrder, session } from '../../services/apiService';
 
-const DELIVERY_FEE = 1500;
+const DELIVERY_FEE = 0;
 const rwf = (v) => Number(v || 0).toLocaleString();
 const validatePhone = (num) => /^(078|079|072|073)\d{7}$/.test(String(num || '').replace(/\s+/g, ''));
 
@@ -46,8 +46,10 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
   const [error, setError] = useState('');
 
   const items = Array.isArray(cart) ? cart : [];
-  const subtotal = items.reduce((s, i) => s + (Number(i?.meal?.price) || 0) * (Number(i?.quantity) || 0), 0);
-  const grandTotal = subtotal + DELIVERY_FEE;
+  const [frozenItems, setFrozenItems] = useState(null);
+  const displayItems = frozenItems || items;
+  const subtotal = displayItems.reduce((s, i) => s + (Number(i?.meal?.price) || 0) * (Number(i?.quantity) || 0), 0);
+  const grandTotal = placedOrder?.totalRWF ? Number(placedOrder.totalRWF) : (subtotal + DELIVERY_FEE);
 
   useEffect(() => {
     if (items.length === 0 && !placedOrder) navigate('/');
@@ -102,9 +104,11 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
 
     setCreating(true);
     try {
+      const orderItems = [...items];
+      setFrozenItems(orderItems);
       const fullAddress = addressDetail.trim();
       const payload = {
-        items: items.map((i) => ({
+        items: orderItems.map((i) => ({
           id: i.meal?.id || i.id,
           name: i.meal?.name || i.name,
           qty: Number(i.quantity) || 1,
@@ -484,7 +488,7 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 280, overflowY: 'auto' }}>
-              {items.map((item, idx) => {
+              {displayItems.map((item, idx) => {
                 const price = Number(item?.meal?.price) || 0;
                 const qty = Number(item?.quantity) || 1;
                 return (
@@ -506,11 +510,12 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
             </div>
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[['Subtotal', `${rwf(subtotal)} RWF`], ['Kigali Delivery', `${rwf(DELIVERY_FEE)} RWF`]].map(([label, val]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
-                  <span>{label}</span><span style={{ fontFamily: 'monospace' }}>{val}</span>
-                </div>
-              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                <span>Subtotal</span><span style={{ fontFamily: 'monospace' }}>{rwf(subtotal)} RWF</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                <span>Kigali Delivery</span><span style={{ fontFamily: 'monospace', color: '#34d399', fontWeight: 600 }}>FREE</span>
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 900, color: 'var(--text-main)', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                 <span>Total</span>
                 <span style={{ fontFamily: 'monospace', color: 'var(--primary)' }}>{rwf(grandTotal)} RWF</span>
