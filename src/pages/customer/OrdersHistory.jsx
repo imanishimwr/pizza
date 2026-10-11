@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ShoppingBag, MapPin, FileText, Download, Star, ArrowRight, Navigation } from 'lucide-react';
+import { ShoppingBag, MapPin, FileText, Download, Star, ArrowRight, Navigation, Trash2 } from 'lucide-react';
 import ReceiptModal from '../../components/customer/ReceiptModal';
 import PostDeliveryFeedbackModal from '../../components/customer/PostDeliveryFeedbackModal';
 import { downloadOrderReceiptPdf } from '../../utils/receiptGenerator';
@@ -44,10 +44,12 @@ const badgeFor = (status) => {
   return 'bg-blue-950/80 text-blue-400 border border-blue-500/40';
 };
 
-export default function OrdersHistory({ orders = [], onSelectOrder, onExploreMenu }) {
+export default function OrdersHistory({ orders = [], onSelectOrder, onExploreMenu, onDeleteOrder, onClearAll }) {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [feedbackOrder, setFeedbackOrder] = useState(null);
   const [pdfError, setPdfError] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   // Escape closes whatever this page has open.
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onExploreMen
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-black text-text-main flex items-center gap-2">
             <ShoppingBag className="w-6 h-6 text-primary" aria-hidden="true" />
@@ -87,6 +89,40 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onExploreMen
             Follow a live order, download a receipt, or review a past delivery
           </p>
         </div>
+        {onClearAll && orderList.length > 0 && (
+          confirmClearAll ? (
+            <div className="flex items-center gap-2 bg-red-500/15 border border-red-500/30 px-3 py-1.5 rounded-xl">
+              <span className="text-xs text-red-300 font-semibold">Clear all dashboard history?</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onClearAll();
+                  setConfirmClearAll(false);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors"
+              >
+                Yes, Clear All
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmClearAll(false)}
+                className="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmClearAll(true)}
+              className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5 text-xs font-bold"
+              title="Clear all orders from your dashboard history"
+            >
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+              Clear History
+            </button>
+          )
+        )}
       </div>
 
       {pdfError && (
@@ -187,6 +223,41 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onExploreMen
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
                       Rate Pizza &amp; Rider
                     </button>
+                  )}
+
+                  {onDeleteOrder && (
+                    confirmDeleteId === order.id ? (
+                      <div className="flex items-center gap-1.5 bg-red-500/15 border border-red-500/30 px-2 py-1 rounded-lg">
+                        <span className="text-[11px] text-red-300 font-semibold">Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onDeleteOrder(order.id);
+                            setConfirmDeleteId(null);
+                          }}
+                          className="px-2 py-0.5 rounded bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold transition-colors"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[11px] transition-colors"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(order.id)}
+                        className="p-1.5 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-400 hover:text-red-300 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                        title="Delete this order from your dashboard history only"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        Delete
+                      </button>
+                    )
                   )}
                 </div>
               </div>

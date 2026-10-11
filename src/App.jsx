@@ -609,6 +609,48 @@ function AppContent() {
     navigate('/');
   }, [navigate, showToast]);
 
+  // Customer-side hidden / deleted orders (removes from customer dashboard/history only)
+  const [customerDeletedOrderIds, setCustomerDeletedOrderIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('hotpot_customer_deleted_orders') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const handleCustomerDeleteOrder = useCallback(
+    (orderId) => {
+      setCustomerDeletedOrderIds((prev) => {
+        const next = Array.from(new Set([...prev, String(orderId)]));
+        try {
+          localStorage.setItem('hotpot_customer_deleted_orders', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      showToast(`Order #${orderId} deleted from your history.`, 'Order Removed');
+    },
+    [showToast]
+  );
+
+  const handleCustomerClearAllHistory = useCallback(
+    () => {
+      const allIds = orders.map((o) => String(o.id));
+      setCustomerDeletedOrderIds((prev) => {
+        const next = Array.from(new Set([...prev, ...allIds]));
+        try {
+          localStorage.setItem('hotpot_customer_deleted_orders', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      showToast('All order history removed from your dashboard.', 'History Cleared');
+    },
+    [orders, showToast]
+  );
+
+  const customerOrders = useMemo(() => {
+    return orders.filter((o) => !customerDeletedOrderIds.includes(String(o.id)));
+  }, [orders, customerDeletedOrderIds]);
+
   const trackOrder = useCallback(
     (order) => {
       if (!order) return;
@@ -862,7 +904,7 @@ function AppContent() {
               path="dashboard"
               element={
                 <CustomerOverview
-                  orders={orders}
+                  orders={customerOrders}
                   loading={loadingOrders}
                   activeAddress={
                     (readLocalJSON('hotpot_saved_addresses', []).find((a) => a.isDefault) ||
@@ -875,6 +917,7 @@ function AppContent() {
                   }}
                   onExploreMenu={() => navigate(ROUTES.home)}
                   onOpenReceipt={setSelectedReceipt}
+                  onDeleteOrder={handleCustomerDeleteOrder}
                 />
               }
             />
@@ -893,12 +936,12 @@ function AppContent() {
             <Route
               path="tracking"
               element={
-                orders.length || trackedOrder ? (
+                customerOrders.length || (trackedOrder && !customerDeletedOrderIds.includes(String(trackedOrder.id))) ? (
                   <LiveTracking
                     order={
-                      trackedOrder?.id
-                        ? orders.find((o) => String(o.id) === String(trackedOrder.id)) || trackedOrder
-                        : orders[0]
+                      trackedOrder?.id && !customerDeletedOrderIds.includes(String(trackedOrder.id))
+                        ? customerOrders.find((o) => String(o.id) === String(trackedOrder.id)) || trackedOrder
+                        : customerOrders[0]
                     }
                     {...orderActions}
                   />
@@ -915,15 +958,17 @@ function AppContent() {
             <Route
               path="orders"
               element={
-                orders.length ? (
+                customerOrders.length ? (
                   <OrdersHistory
-                    orders={orders}
+                    orders={customerOrders}
                     onSelectOrder={(order) => {
                       setTrackedOrder(order);
                       trackedOrderStore.set(order.id);
                       navigate(ROUTES.tracking);
                     }}
                     onExploreMenu={() => navigate(ROUTES.home)}
+                    onDeleteOrder={handleCustomerDeleteOrder}
+                    onClearAll={handleCustomerClearAllHistory}
                   />
                 ) : (
                   <EmptyState

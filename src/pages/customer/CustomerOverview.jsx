@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { ShoppingBag, DollarSign, Radio, ChevronRight, History, ChefHat, Bike, Award, Clock, MapPin, Navigation, Phone, FileText, XCircle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ShoppingBag, DollarSign, Radio, ChevronRight, History, ChefHat, Bike, Award, Clock, MapPin, Navigation, Phone, FileText, XCircle, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../App';
 
@@ -60,9 +60,11 @@ export default function CustomerOverview({
   activeAddress = '',
   onSelectOrder,
   onExploreMenu,
-  onOpenReceipt
+  onOpenReceipt,
+  onDeleteOrder
 }) {
   const navigate = useNavigate();
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const orderList = useMemo(() => Array.isArray(orders) ? orders : [], [orders]);
   const activeOrders = useMemo(() => orderList.filter(o => isCookingOrTransit(o.status)), [orderList]);
   const pendingOrders = useMemo(() => orderList.filter(o => o.status === 'pending'), [orderList]);
@@ -146,12 +148,24 @@ export default function CustomerOverview({
               </p>
             </div>
           </div>
-          <button
-            onClick={() => onSelectOrder(declinedOrders[0])}
-            className="min-h-10 px-3.5 py-1.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-bold transition-all shrink-0 self-end sm:self-center"
-          >
-            View Details
-          </button>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <button
+              onClick={() => onSelectOrder(declinedOrders[0])}
+              className="min-h-10 px-3.5 py-1.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-bold transition-all"
+            >
+              View Details
+            </button>
+            {onDeleteOrder && (
+              <button
+                type="button"
+                onClick={() => onDeleteOrder(declinedOrders[0].id)}
+                className="min-h-10 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 text-xs font-bold transition-all"
+                title="Dismiss and remove from dashboard"
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -318,6 +332,39 @@ export default function CustomerOverview({
                       <button onClick={() => onOpenReceipt(order)} className="min-h-11 px-3 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/60 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95">
                         <FileText className="w-3.5 h-3.5" /> Receipt
                       </button>
+                      {onDeleteOrder && (
+                        confirmDeleteId === order.id ? (
+                          <div className="flex items-center gap-1 bg-red-500/15 border border-red-500/30 px-2 py-1 rounded-xl">
+                            <span className="text-[10px] text-red-300 font-bold">Delete?</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onDeleteOrder(order.id);
+                                setConfirmDeleteId(null);
+                              }}
+                              className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold"
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="px-2 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px]"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteId(order.id)}
+                            className="min-h-11 px-2.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                            title="Delete this order from your dashboard"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
                 </div>
