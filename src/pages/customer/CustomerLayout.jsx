@@ -57,8 +57,8 @@ export default function CustomerLayout({
         <div className="h-14 flex items-center justify-between px-4 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#10131A]">
           {!isSidebarCollapsed && (
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shrink-0 shadow-md shadow-orange-500/20">
-                <Flame className="w-5 h-5 text-white" aria-hidden="true" />
+              <div className="w-8 h-8 rounded-lg bg-black border border-white/20 p-0.5 flex items-center justify-center shrink-0 shadow-md shadow-orange-500/20 overflow-hidden">
+                <img src="/hotpot-logo.png" alt="HotPot Logo" className="w-full h-full object-contain" />
               </div>
               <span className="text-base font-black text-slate-900 dark:text-white tracking-tight truncate">
                 HOTPOT <span className="text-orange-500">CUSTOMER</span>
@@ -66,8 +66,8 @@ export default function CustomerLayout({
             </div>
           )}
           {isSidebarCollapsed && (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-linear-to-br from-orange-500 to-amber-600 flex items-center justify-center shrink-0">
-              <Flame className="w-5 h-5 text-white" aria-hidden="true" />
+            <div className="w-8 h-8 mx-auto rounded-lg bg-black border border-white/20 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+              <img src="/hotpot-logo.png" alt="HotPot Logo" className="w-full h-full object-contain" />
             </div>
           )}
 

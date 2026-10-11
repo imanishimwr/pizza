@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { login, register, loginWithGoogle } from '../../services/apiService';
 import QuickLoginHelper from '../auth/QuickLoginHelper';
+import AuthHeroPanel from '../auth/AuthHeroPanel';
 
 /* â”€â”€ Constants â”€â”€ */
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -41,52 +42,7 @@ function PrimaryBtn({ children, disabled, ...rest }) {
 
 /* â”€â”€ Hero panel (left side) â”€â”€ */
 function HeroPanel() {
-  const perks = [
-    { icon: Zap,         label: 'Lightning-fast delivery across Kigali' },
-    { icon: Star,        label: 'Curated gourmet meals, freshly prepared' },
-    { icon: ShieldCheck, label: 'Secure orders & real-time tracking' },
-  ];
-  return (
-    <div className="hidden md:flex flex-col relative w-[45%] min-h-full overflow-hidden bg-gradient-to-br from-[#1a0900] via-[#2d1100] to-[#0f0500]">
-      {/* Ambient blobs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-600/20 blur-[80px] animate-soft-glow" />
-        <div className="absolute bottom-0 -left-16 w-64 h-64 rounded-full bg-red-700/15 blur-[70px] animate-soft-glow" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-orange-500/10 auth-ping-slow" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border border-orange-500/5 auth-ping-slow" style={{ animationDelay: '1s' }} />
-      </div>
-      {/* Speed-line stripes */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
-        style={{ backgroundImage: 'repeating-linear-gradient(-30deg,#FF6B00 0,#FF6B00 1px,transparent 0,transparent 50%)', backgroundSize: '32px 32px' }} />
-      {/* Brand mark */}
-      <div className="relative z-10 px-8 pt-8 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-orange-600 to-red-500 flex items-center justify-center shadow-xl ring-2 ring-orange-400/30" style={{ filter: 'drop-shadow(0 0 10px rgba(255,87,34,0.5))' }}>
-          <Flame className="w-5 h-5 text-white" />
-        </div>
-        <span className="text-white font-black text-lg tracking-tight">HotPot <span className="text-orange-400">Delights</span></span>
-      </div>
-      {/* Scooter illustration */}
-      <div className="relative z-10 flex-1 flex items-center justify-center px-6 py-6">
-        <img
-          src="/assets/delivery_rider_hotpot.png"
-          alt="HotPot delivery scooter"
-          className="w-full max-w-[300px] object-contain drop-shadow-[0_20px_40px_rgba(255,87,34,0.3)]"
-          style={{ animation: 'authScooterEntrance 0.9s cubic-bezier(0.22,1,0.36,1) forwards, authScooterFloat 3.5s ease-in-out infinite 0.9s' }}
-        />
-      </div>
-      {/* Perk list */}
-      <div className="relative z-10 px-8 pb-8 space-y-3">
-        {perks.map(({ icon: Icon, label }, i) => (
-          <div key={label} className="flex items-center gap-3" style={{ animation: `authFadeUp 0.5s ease-out ${0.2 + i * 0.1}s both` }}>
-            <div className="w-7 h-7 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0">
-              <Icon className="w-3.5 h-3.5 text-orange-400" />
-            </div>
-            <span className="text-sm text-white/70 font-medium leading-snug">{label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <AuthHeroPanel />;
 }
 
 /* â”€â”€ Main component â”€â”€ */
@@ -372,8 +328,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
               {/* Logo + heading */}
               <div className="flex items-center gap-3">
-                <div className="logo-animated-glow w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#FF5722] to-amber-500 flex items-center justify-center text-white shadow-lg ring-2 ring-orange-500/20 cursor-pointer">
-                  <Flame className="w-6 h-6 animate-pulse" />
+                <div className="logo-animated-glow w-11 h-11 rounded-2xl bg-black border border-white/20 p-1 flex items-center justify-center shadow-lg shadow-orange-500/20 ring-2 ring-orange-500/20 cursor-pointer overflow-hidden">
+                  <img src="/hotpot-logo.png" alt="HotPot Logo" className="w-full h-full object-contain rounded-xl" />
                 </div>
                 <div>
                   <h2 id={titleId} className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">

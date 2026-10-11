@@ -137,13 +137,13 @@ export default function CustomerOverview({
               <XCircle className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-white text-sm font-bold flex items-center gap-2">
+              <div className="text-slate-900 dark:text-white text-sm font-bold flex items-center gap-2">
                 <span>{declinedOrders.length === 1 ? `Order #${declinedOrders[0].id} Declined` : `${declinedOrders.length} Orders Declined`}</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/20 text-red-300 border border-red-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-300 border border-red-500/30">
                   Declined
                 </span>
               </div>
-              <p className="text-xs text-red-300/80 mt-1">
+              <p className="text-xs text-red-700 dark:text-red-300/80 mt-1">
                 Your order has been declined by the restaurant. If you already made a payment, please contact our support team for an immediate refund.
               </p>
             </div>
@@ -151,7 +151,7 @@ export default function CustomerOverview({
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
             <button
               onClick={() => onSelectOrder(declinedOrders[0])}
-              className="min-h-10 px-3.5 py-1.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-bold transition-all"
+              className="min-h-10 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-slate-100 btn-secondary-interactive text-xs font-bold transition-all"
             >
               View Details
             </button>
@@ -159,7 +159,7 @@ export default function CustomerOverview({
               <button
                 type="button"
                 onClick={() => onDeleteOrder(declinedOrders[0].id)}
-                className="min-h-10 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 text-xs font-bold transition-all"
+                className="min-h-10 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-300 btn-secondary-interactive text-xs font-bold transition-all"
                 title="Dismiss and remove from dashboard"
               >
                 Dismiss
@@ -177,20 +177,20 @@ export default function CustomerOverview({
               <Clock className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <div className="text-white text-sm font-bold flex items-center gap-2">
+              <div className="text-slate-900 dark:text-white text-sm font-bold flex items-center gap-2">
                 <span>{pendingOrders.length === 1 ? `Order #${pendingOrders[0].id} Received` : `${pendingOrders.length} Orders Received`}</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
                   Awaiting Cooking
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                 Your payment was received. This order will activate on your live cooking dashboard as soon as the kitchen starts cooking!
               </p>
             </div>
           </div>
           <button
             onClick={() => onSelectOrder(pendingOrders[0])}
-            className="min-h-10 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-[#1F242D] dark:hover:bg-slate-700/80 dark:border-slate-700/70 dark:text-slate-200 text-xs font-bold transition-all shrink-0 self-end sm:self-center"
+            className="min-h-10 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-slate-100 btn-secondary-interactive text-xs font-bold transition-all shrink-0 self-end sm:self-center"
           >
             View Details
           </button>

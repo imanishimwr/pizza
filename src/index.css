@@ -527,15 +527,34 @@ a:focus:not(:focus-visible) {
 @keyframes authScooterEntrance {
   0% {
     opacity: 0;
-    transform: translateX(-90px) scale(0.9);
+    transform: translateX(100px) scale(0.92);
   }
   60% {
     opacity: 1;
-    transform: translateX(10px) scale(1.02);
+    transform: translateX(-10px) scale(1.02);
   }
   100% {
     opacity: 1;
     transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes motoDriveRightToLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(120px) scale(0.9);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  65% {
+    opacity: 1;
+    transform: translateX(-6px) translateY(-6px) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
   }
 }
 
@@ -546,6 +565,26 @@ a:focus:not(:focus-visible) {
   50% {
     transform: translateY(-8px) rotate(-1.5deg);
   }
+}
+
+@keyframes logoPulseAura {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 16px rgba(255, 87, 34, 0.45));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 28px rgba(255, 87, 34, 0.8));
+  }
+}
+
+.auth-moto-drive-rtl {
+  animation: motoDriveRightToLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+             authScooterFloat 3s ease-in-out infinite 0.9s;
+}
+
+.auth-logo-showcase {
+  animation: logoPulseAura 3s ease-in-out infinite;
 }
 
 @keyframes authPulseRing {

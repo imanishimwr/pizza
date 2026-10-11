@@ -96,10 +96,14 @@ export default function RegisterPage({ onRegisterSuccess }) {
             {/* Logo with Soft Orange Flame Glow Pulse & Scale on Hover */}
             <div className="flex items-center gap-3.5 mb-6">
               <div
-                className="logo-animated-glow w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF5722] to-amber-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-500/30 shrink-0 cursor-pointer"
+                className="logo-animated-glow w-12 h-12 rounded-2xl bg-black border border-white/20 p-1 flex items-center justify-center shadow-lg shadow-orange-500/30 ring-2 ring-orange-500/30 shrink-0 cursor-pointer overflow-hidden"
                 title="HotPot Delights"
               >
-                <Flame className="w-6 h-6 animate-pulse" />
+                <img
+                  src="/hotpot-logo.png"
+                  alt="HotPot Logo"
+                  className="w-full h-full object-contain rounded-xl"
+                />
               </div>
               <div>
                 <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
