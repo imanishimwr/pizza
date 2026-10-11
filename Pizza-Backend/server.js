@@ -343,6 +343,14 @@ app.get('/api/orders', requireAuth, wrap(async (req, res) => {
       limit
     }));
   }
+  if (req.user.role === 'kitchen') {
+    const allOrders = await neonClient.getOrders({ statuses, limit });
+    return res.json(
+      allOrders.filter(
+        (o) => o.paymentStatus === 'paid' || o.paymentStatus === 'payment_review' || Boolean(o.paymentProofUrl) || o.status === 'preparing' || o.status === 'ready'
+      )
+    );
+  }
   return res.json(await neonClient.getOrders({ statuses, limit }));
 }));
 
@@ -398,8 +406,11 @@ app.post('/api/orders', requireAuth, wrap(async (req, res) => {
     address,
     paymentStatus: 'pending'
   });
-  // Deliver new orders only to kitchen and admin (no public PII broadcast)
-  io.to('role_admin').to('role_kitchen').emit('new_order_placed', order);
+  // Deliver new orders to admin; only deliver to kitchen once payment is made or proof attached
+  io.to('role_admin').emit('new_order_placed', order);
+  if (order.paymentStatus === 'paid' || Boolean(order.paymentProofUrl)) {
+    io.to('role_kitchen').emit('new_order_placed', order);
+  }
   return res.status(201).json(order);
 }));
 
@@ -541,8 +552,9 @@ app.post('/api/orders/:id/payment-proof', requireAuth, upload.single('proof'), w
   const proofUrl = `/api/orders/${req.params.id}/payment-proof/file`;
   const order = await neonClient.setPaymentProof(req.params.id, finalProofUrl);
 
-  // Notify kitchen in real-time
+  // Notify kitchen in real-time now that payment proof is attached
   io.to('role_admin').to('role_kitchen').emit('order_status_updated', order);
+  io.to('role_kitchen').emit('new_order_placed', order);
   const { verificationPin, ...safeOrder } = order;
   io.to(`order_${order.id}`).emit('live_order_status', safeOrder);
   io.to(`order_${order.id}`).emit('order_status_updated', safeOrder);

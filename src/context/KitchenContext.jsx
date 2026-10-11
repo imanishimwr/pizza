@@ -187,6 +187,17 @@ export function KitchenProvider({
   const filteredOrders = useMemo(() => {
     let list = Array.isArray(orders) ? orders : [];
 
+    // Kitchen only works on orders where payment is made or proof was provided
+    list = list.filter(o =>
+      o.paymentStatus === 'paid' ||
+      o.paymentStatus === 'payment_review' ||
+      Boolean(o.paymentProofUrl) ||
+      o.status === 'preparing' ||
+      o.status === 'ready' ||
+      o.status === 'delivery' ||
+      o.status === 'delivered'
+    );
+
     // 1. Station Filter
     if (activeStation === 'stoves') {
       list = list.filter(o => (o.items || []).some(it => {
@@ -236,7 +247,10 @@ export function KitchenProvider({
   // FIFO Groupings: Earliest arrived order first
   const pendingOrders = useMemo(() => {
     return filteredOrders
-      .filter(o => o.status === 'pending' || o.status === 'payment_review')
+      .filter(o =>
+        (o.status === 'pending' || o.status === 'payment_review') &&
+        (o.paymentStatus === 'paid' || o.paymentStatus === 'payment_review' || Boolean(o.paymentProofUrl))
+      )
       .sort((a, b) => {
         const timeA = (a.created_at || a.createdAt) ? new Date(a.created_at || a.createdAt).getTime() : (Number(a.id) || 0);
         const timeB = (b.created_at || b.createdAt) ? new Date(b.created_at || b.createdAt).getTime() : (Number(b.id) || 0);

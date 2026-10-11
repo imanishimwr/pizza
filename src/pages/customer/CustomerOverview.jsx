@@ -6,7 +6,7 @@ import { ROUTES } from '../../App';
 const formatRWF = (value) => Number.isFinite(Number(value)) ? `${Number(value).toLocaleString()} RWF` : '—';
 const STATUS_LABELS = { pending: 'Pending', preparing: 'Preparing', ready: 'Ready', delivery: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled' };
 const statusLabel = (status) => STATUS_LABELS[status] || 'Unknown';
-const isLive = (status) => status !== 'delivered' && status !== 'cancelled';
+const isCookingOrTransit = (status) => status === 'preparing' || status === 'ready' || status === 'delivery';
 const itemQty = (item) => Number(item?.quantity) || 1;
 const itemLineTotal = (item) => (Number(item?.meal?.price) || 0) * itemQty(item);
 
@@ -47,7 +47,9 @@ export default function CustomerOverview({
   const navigate = useNavigate();
   const orderList = useMemo(() => Array.isArray(orders) ? orders : [], [orders]);
   const totalOrders = orderList.length;
-  const activeOrders = useMemo(() => orderList.filter(o => isLive(o.status)), [orderList]);
+  // Customer sees orders in the live dashboard once the kitchen starts cooking ('preparing' or transit)
+  const activeOrders = useMemo(() => orderList.filter(o => isCookingOrTransit(o.status)), [orderList]);
+  const pendingOrders = useMemo(() => orderList.filter(o => o.status === 'pending'), [orderList]);
   const totalSpent = useMemo(() => orderList.reduce((acc, o) => (o.status === 'cancelled' ? acc : acc + (Number(o.totalRWF) || 0)), 0), [orderList]);
 
   return (
@@ -105,6 +107,34 @@ export default function CustomerOverview({
           </div>
         </button>
       </div>
+
+      {/* AWAITING KITCHEN COOKING BANNER */}
+      {pendingOrders.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="text-white text-sm font-bold flex items-center gap-2">
+                <span>{pendingOrders.length === 1 ? `Order #${pendingOrders[0].id} Received` : `${pendingOrders.length} Orders Received`}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Awaiting Cooking
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1">
+                Your payment was received. This order will activate on your live cooking dashboard as soon as the kitchen starts cooking!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onSelectOrder(pendingOrders[0])}
+            className="min-h-10 px-3.5 py-1.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-bold transition-all shrink-0 self-end sm:self-center"
+          >
+            View Details
+          </button>
+        </div>
+      )}
 
       {/* ACTIVE ORDERS */}
       {activeOrders.length > 0 && (
