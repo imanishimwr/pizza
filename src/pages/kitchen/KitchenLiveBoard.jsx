@@ -32,21 +32,21 @@ export default function KitchenLiveBoard() {
   const [confirmDeclineId, setConfirmDeclineId] = useState(null);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
       {/* Mobile Segmented Column Sticky Tabs (< 768px / md:hidden) */}
-      <div className="md:hidden flex items-center gap-1.5 p-2 bg-surface-card/95 backdrop-blur-md border-b border-white/10 shrink-0 sticky top-0 z-10">
+      <div className="md:hidden flex items-center gap-1.5 p-2 bg-white/95 dark:bg-surface-card/95 backdrop-blur-md border-b border-slate-200 dark:border-white/10 shrink-0 sticky top-0 z-10">
         <button
           type="button"
           onClick={() => setMobileColumn('pending')}
           className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-11 border ${
             mobileColumn === 'pending'
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-md ring-1 ring-amber-500/40'
-              : 'bg-black/30 border-white/5 text-text-muted hover:text-white'
+              ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/60 shadow-md ring-1 ring-amber-500/40'
+              : 'bg-slate-100 dark:bg-black/30 border-slate-200 dark:border-white/5 text-slate-600 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
           <span className="truncate">New</span>
-          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/60 text-white font-bold">
+          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-slate-200 dark:bg-black/60 text-slate-800 dark:text-white font-bold">
             {pendingOrders.length}
           </span>
         </button>
@@ -55,13 +55,13 @@ export default function KitchenLiveBoard() {
           onClick={() => setMobileColumn('preparing')}
           className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-11 border ${
             mobileColumn === 'preparing'
-              ? 'bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-md ring-1 ring-blue-500/40'
-              : 'bg-black/30 border-white/5 text-text-muted hover:text-white'
+              ? 'bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/60 shadow-md ring-1 ring-blue-500/40'
+              : 'bg-slate-100 dark:bg-black/30 border-slate-200 dark:border-white/5 text-slate-600 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Flame className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+          <Flame className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
           <span className="truncate">Cooking</span>
-          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/60 text-white font-bold">
+          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-slate-200 dark:bg-black/60 text-slate-800 dark:text-white font-bold">
             {preparingOrders.length}
           </span>
         </button>
@@ -70,13 +70,13 @@ export default function KitchenLiveBoard() {
           onClick={() => setMobileColumn('ready')}
           className={`flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 min-h-11 border ${
             mobileColumn === 'ready'
-              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/40'
-              : 'bg-black/30 border-white/5 text-text-muted hover:text-white'
+              ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/40'
+              : 'bg-slate-100 dark:bg-black/30 border-slate-200 dark:border-white/5 text-slate-600 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span className="truncate">Ready</span>
-          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/60 text-white font-bold">
+          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-slate-200 dark:bg-black/60 text-slate-800 dark:text-white font-bold">
             {readyOrders.length}
           </span>
         </button>
@@ -87,29 +87,29 @@ export default function KitchenLiveBoard() {
         {/* ────────────────────────────────────────────────────────── */}
         {/* COLUMN 1: NEW INCOMING ORDERS (PENDING)                    */}
         {/* ────────────────────────────────────────────────────────── */}
-        <div className={`flex-col h-full bg-surface-dark/70 rounded-2xl border border-white/10 border-t-4 border-t-amber-500 overflow-hidden shadow-xl ${
+        <div className={`flex-col h-full bg-white dark:bg-surface-dark/70 rounded-2xl border border-slate-200 dark:border-white/10 border-t-4 border-t-amber-500 overflow-hidden shadow-sm dark:shadow-xl w-full ${
           mobileColumn === 'pending' ? 'flex' : 'hidden md:flex'
         }`}>
           {/* Sticky Column Header */}
-          <div className="p-3 sm:p-3.5 border-b border-amber-500/30 bg-surface-card/90 backdrop-blur-md flex items-center justify-between shrink-0">
+          <div className="p-3 sm:p-3.5 border-b border-slate-200 dark:border-amber-500/30 bg-slate-50 dark:bg-surface-card/90 backdrop-blur-md flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-              <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-black uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+              <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-black uppercase tracking-wider">
                 1. New
               </span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40">
               {pendingOrders.length}
             </span>
           </div>
 
           {/* Independent Scrollable Order Cards List */}
-          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2.5 sm:p-3 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-140px)] no-scrollbar p-2.5 sm:p-3 space-y-3">
             {pendingOrders.length === 0 ? (
-              <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-text-subdued space-y-2">
-                <ChefHat className="w-8 h-8 text-text-subdued opacity-30" />
-                <span className="font-bold text-white">No new orders</span>
-                <p className="text-[11px]">New orders will show here with a sound.</p>
+              <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-slate-400 dark:text-text-subdued space-y-2">
+                <ChefHat className="w-8 h-8 text-slate-400 dark:text-text-subdued opacity-30" />
+                <span className="font-bold text-slate-800 dark:text-white">No new orders</span>
+                <p className="text-[11px] text-slate-500 dark:text-text-muted">New orders will show here with a sound.</p>
               </div>
             ) : (
               pendingOrders.map(order => {
@@ -117,13 +117,13 @@ export default function KitchenLiveBoard() {
                 return (
                   <div
                     key={order.id}
-                    className={`p-3.5 sm:p-4 rounded-2xl bg-surface-card border-2 ${urgency.borderClass} flex flex-col justify-between transition-all shadow-xl space-y-3`}
+                    className={`w-full p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-surface-card border-2 ${urgency.borderClass} flex flex-col justify-between transition-all shadow-sm dark:shadow-xl space-y-3`}
                   >
                     {/* Card Header with Color-Coded Urgency Header */}
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-amber-400 text-sm">#{order.id}</span>
-                        <span className="text-xs sm:text-sm font-bold text-white truncate max-w-35">
+                        <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-sm">#{order.id}</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate max-w-35">
                           {order.customerName || 'Customer'}
                         </span>
                       </div>
@@ -135,7 +135,7 @@ export default function KitchenLiveBoard() {
                         <button
                           type="button"
                           onClick={() => setSelectedOrder(order)}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
+                          className="p-1.5 rounded-lg bg-slate-200/60 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-text-muted dark:hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
                           title="View Details"
                           aria-label="View Details"
                         >
@@ -145,36 +145,36 @@ export default function KitchenLiveBoard() {
                     </div>
 
                     {/* Dropoff Address */}
-                    <div className="text-xs text-text-muted flex items-center gap-2 bg-black/40 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                      <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <div className="text-xs text-slate-600 dark:text-text-muted flex items-center gap-2 bg-white dark:bg-black/40 p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-white/5">
+                      <MapPin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                       <span className="truncate" title={order.deliveryAddress || order.address}>{order.deliveryAddress || order.address || 'Kigali Dropoff'}</span>
                     </div>
 
                     {/* Customer Note / Chef Instruction */}
                     {order.notes && (
-                      <div className="p-2.5 rounded-xl bg-amber-950/70 border border-amber-500/40 text-[11px] text-amber-200 flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-500/40 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-black text-amber-300 block">Note:</span>
+                          <span className="font-black text-amber-800 dark:text-amber-300 block">Note:</span>
                           <span>{order.notes}</span>
                         </div>
                       </div>
                     )}
 
                     {/* Order Items with High-Contrast Bold Quantities */}
-                    <div className="space-y-2 bg-black/40 p-2.5 sm:p-3 rounded-xl border border-white/5">
+                    <div className="space-y-2 bg-white dark:bg-black/40 p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-white/5">
                       {(order.items || []).map((item, idx) => (
                         <div key={idx} className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="px-2 py-0.5 rounded-lg bg-black text-amber-300 font-mono font-black text-xs border border-amber-500/40 shrink-0 shadow-sm">
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-black text-amber-900 dark:text-amber-300 font-mono font-black text-xs border border-amber-300 dark:border-amber-500/40 shrink-0 shadow-sm">
                               {item.qty || 1}x
                             </span>
-                            <span className="text-xs sm:text-sm md:text-base font-extrabold text-white leading-tight wrap-break-word">
+                            <span className="text-xs sm:text-sm md:text-base font-extrabold text-slate-800 dark:text-white leading-tight wrap-break-word">
                               {item.name}
                             </span>
                           </div>
                           {item.spice && (
-                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-500/30 shrink-0">
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-500/30 shrink-0">
                               🔥 {item.spice}
                             </span>
                           )}
@@ -184,18 +184,18 @@ export default function KitchenLiveBoard() {
 
                     {/* Payment Proof Button if available */}
                     {order.payment_proof_url && (
-                      <div className="p-2.5 rounded-xl bg-blue-950/70 border border-blue-500/40 text-[11px] text-blue-200 flex flex-col gap-2">
+                      <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/70 border border-blue-300 dark:border-blue-500/40 text-[11px] text-blue-900 dark:text-blue-200 flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                          <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                           <div>
-                            <span className="font-black text-blue-300 block">Payment proof sent</span>
+                            <span className="font-black text-blue-800 dark:text-blue-300 block">Payment proof sent</span>
                             <span>Check the payment before you cook.</span>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => setProofModalUrl(order.id)}
-                          className="py-1.5 px-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-bold border border-blue-500/40 text-center flex items-center justify-center gap-2 transition-colors w-full cursor-pointer"
+                          className="py-1.5 px-3 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 font-bold border border-blue-300 dark:border-blue-500/40 text-center flex items-center justify-center gap-2 transition-colors w-full cursor-pointer"
                         >
                           <Eye className="w-4 h-4" />
                           See Payment Photo
@@ -242,7 +242,7 @@ export default function KitchenLiveBoard() {
                           <button
                             type="button"
                             onClick={() => setConfirmDeclineId(null)}
-                            className="px-3 py-2 min-h-11 rounded-xl bg-surface-card border border-white/10 text-text-muted hover:text-white font-black text-xs transition-all"
+                            className="px-3 py-2 min-h-11 rounded-xl bg-slate-200 dark:bg-surface-card border border-slate-300 dark:border-white/10 text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white font-black text-xs transition-all"
                           >
                             No
                           </button>
@@ -252,7 +252,7 @@ export default function KitchenLiveBoard() {
                           type="button"
                           disabled={!!processingMap[order.id]}
                           onClick={() => setConfirmDeclineId(order.id)}
-                          className="px-3 py-2 min-h-11 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-600 hover:text-white font-black text-xs flex items-center justify-center gap-1 transition-all"
+                          className="px-3 py-2 min-h-11 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white font-black text-xs flex items-center justify-center gap-1 transition-all"
                           title="Decline this order"
                         >
                           <XCircle className="w-4 h-4" />
@@ -269,29 +269,29 @@ export default function KitchenLiveBoard() {
         {/* ────────────────────────────────────────────────────────── */}
         {/* COLUMN 2: COOKING & IN PREP (PREPARING)                    */}
         {/* ────────────────────────────────────────────────────────── */}
-        <div className={`flex-col h-full bg-surface-dark/70 rounded-2xl border border-white/10 border-t-4 border-t-blue-500 overflow-hidden shadow-xl ${
+        <div className={`flex-col h-full bg-white dark:bg-surface-dark/70 rounded-2xl border border-slate-200 dark:border-white/10 border-t-4 border-t-blue-500 overflow-hidden shadow-sm dark:shadow-xl w-full ${
           mobileColumn === 'preparing' ? 'flex' : 'hidden md:flex'
         }`}>
           {/* Sticky Column Header */}
-          <div className="p-3 sm:p-3.5 border-b border-blue-500/30 bg-surface-card/90 backdrop-blur-md flex items-center justify-between shrink-0">
+          <div className="p-3 sm:p-3.5 border-b border-slate-200 dark:border-blue-500/30 bg-slate-50 dark:bg-surface-card/90 backdrop-blur-md flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse" />
-              <span className="px-2 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-black uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="px-2 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-700 dark:text-blue-400 text-xs font-black uppercase tracking-wider">
                 2. Cooking
               </span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-blue-500/20 text-blue-300 border border-blue-500/40">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-blue-500/15 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-500/40">
               {preparingOrders.length}
             </span>
           </div>
 
           {/* Independent Scrollable Order Cards List */}
-          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2.5 sm:p-3 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-140px)] no-scrollbar p-2.5 sm:p-3 space-y-3">
             {preparingOrders.length === 0 ? (
-              <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-text-subdued space-y-2">
-                <Flame className="w-8 h-8 text-text-subdued opacity-30" />
-                <span className="font-bold text-white">Nothing cooking</span>
-                <p className="text-[11px]">Tap &quot;Start Cooking&quot; on a new order.</p>
+              <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-slate-400 dark:text-text-subdued space-y-2">
+                <Flame className="w-8 h-8 text-slate-400 dark:text-text-subdued opacity-30" />
+                <span className="font-bold text-slate-800 dark:text-white">Nothing cooking</span>
+                <p className="text-[11px] text-slate-500 dark:text-text-muted">Tap &quot;Start Cooking&quot; on a new order.</p>
               </div>
             ) : (
               preparingOrders.map(order => {
@@ -302,13 +302,13 @@ export default function KitchenLiveBoard() {
                 return (
                   <div
                     key={order.id}
-                    className={`p-3.5 sm:p-4 rounded-2xl bg-surface-card border-2 ${urgency.borderClass} flex flex-col justify-between transition-all shadow-xl space-y-3`}
+                    className={`w-full p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-surface-card border-2 ${urgency.borderClass} flex flex-col justify-between transition-all shadow-sm dark:shadow-xl space-y-3`}
                   >
                     {/* Card Header */}
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-blue-400 text-sm">#{order.id}</span>
-                        <span className="text-xs sm:text-sm font-bold text-white truncate max-w-35">
+                        <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm">#{order.id}</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate max-w-35">
                           {order.customerName || 'Customer'}
                         </span>
                       </div>
@@ -320,7 +320,7 @@ export default function KitchenLiveBoard() {
                         <button
                           type="button"
                           onClick={() => setSelectedOrder(order)}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
+                          className="p-1.5 rounded-lg bg-slate-200/60 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-text-muted dark:hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
                           title="View Details"
                           aria-label="View Details"
                         >
@@ -330,20 +330,20 @@ export default function KitchenLiveBoard() {
                     </div>
 
                     {/* Dropoff Address */}
-                    <div className="text-xs text-text-muted flex items-center gap-2 bg-black/40 p-2 sm:p-2.5 rounded-xl border border-white/5">
-                      <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <div className="text-xs text-slate-600 dark:text-text-muted flex items-center gap-2 bg-white dark:bg-black/40 p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-white/5">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                       <span className="truncate" title={order.deliveryAddress || order.address}>{order.deliveryAddress || order.address || 'Kigali Dropoff'}</span>
                     </div>
 
                     {/* Interactive Packaging Progress */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-black text-text-muted">
+                      <div className="flex justify-between text-[11px] font-black text-slate-600 dark:text-text-muted">
                         <span>Packed:</span>
-                        <span className={checkedCount === totalItemsCount && totalItemsCount > 0 ? 'text-emerald-400 font-mono' : 'text-blue-400 font-mono'}>
+                        <span className={checkedCount === totalItemsCount && totalItemsCount > 0 ? 'text-emerald-600 dark:text-emerald-400 font-mono' : 'text-blue-600 dark:text-blue-400 font-mono'}>
                           {checkedCount}/{totalItemsCount}
                         </span>
                       </div>
-                      <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                         <div
                           className="h-full bg-linear-to-r from-blue-500 to-emerald-500 transition-all duration-300"
                           style={{ width: `${totalItemsCount > 0 ? (checkedCount / totalItemsCount) * 100 : 0}%` }}
@@ -352,7 +352,7 @@ export default function KitchenLiveBoard() {
                     </div>
 
                     {/* Interactive Item Checklist with min-h-11 touch targets */}
-                    <div className="space-y-1.5 bg-black/40 p-2 sm:p-2.5 rounded-xl border border-white/5">
+                    <div className="space-y-1.5 bg-white dark:bg-black/40 p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-white/5">
                       {(order.items || []).map((item, idx) => {
                         const isChecked = checkedItems[`${order.id}-${idx}`];
                         return (
@@ -361,25 +361,25 @@ export default function KitchenLiveBoard() {
                             onClick={() => toggleCheckItem(order.id, idx)}
                             className={`text-xs sm:text-sm p-2.5 min-h-11 rounded-xl flex items-center justify-between cursor-pointer transition-all ${
                               isChecked
-                                ? 'line-through text-emerald-400/70 bg-emerald-950/40 border border-emerald-500/20'
-                                : 'text-text-main hover:bg-white/5 border border-transparent'
+                                ? 'line-through text-emerald-700/70 dark:text-emerald-400/70 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/20'
+                                : 'text-slate-800 dark:text-text-main hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               {isChecked ? (
-                                <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                                <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                               ) : (
-                                <Square className="w-4 h-4 text-text-muted shrink-0" />
+                                <Square className="w-4 h-4 text-slate-400 dark:text-text-muted shrink-0" />
                               )}
-                              <span className="px-2 py-0.5 rounded-md bg-black text-blue-300 font-mono font-black text-xs border border-blue-500/40 shrink-0">
+                              <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-black text-blue-900 dark:text-blue-300 font-mono font-black text-xs border border-blue-300 dark:border-blue-500/40 shrink-0">
                                 {item.qty || 1}x
                               </span>
-                              <span className="font-extrabold text-white text-xs sm:text-sm md:text-base leading-tight wrap-break-word">
+                              <span className="font-extrabold text-slate-800 dark:text-white text-xs sm:text-sm md:text-base leading-tight wrap-break-word">
                                 {item.name}
                               </span>
                             </div>
                             {item.spice && (
-                              <span className="text-[10px] font-black text-red-400 shrink-0">
+                              <span className="text-[10px] font-black text-red-600 dark:text-red-400 shrink-0">
                                 🔥 {item.spice}
                               </span>
                             )}
@@ -421,29 +421,29 @@ export default function KitchenLiveBoard() {
         {/* ────────────────────────────────────────────────────────── */}
         {/* COLUMN 3: READY FOR PICKUP (READY)                         */}
         {/* ────────────────────────────────────────────────────────── */}
-        <div className={`flex-col h-full bg-surface-dark/70 rounded-2xl border border-white/10 border-t-4 border-t-emerald-500 overflow-hidden shadow-xl ${
+        <div className={`flex-col h-full bg-white dark:bg-surface-dark/70 rounded-2xl border border-slate-200 dark:border-white/10 border-t-4 border-t-emerald-500 overflow-hidden shadow-sm dark:shadow-xl w-full ${
           mobileColumn === 'ready' ? 'flex' : 'hidden md:flex'
         }`}>
           {/* Sticky Column Header */}
-          <div className="p-3 sm:p-3.5 border-b border-emerald-500/30 bg-surface-card/90 backdrop-blur-md flex items-center justify-between shrink-0">
+          <div className="p-3 sm:p-3.5 border-b border-slate-200 dark:border-emerald-500/30 bg-slate-50 dark:bg-surface-card/90 backdrop-blur-md flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span className="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-wider">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-black uppercase tracking-wider">
                 3. Ready
               </span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40">
               {readyOrders.length}
             </span>
           </div>
 
           {/* Independent Scrollable Order Cards List */}
-          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2.5 sm:p-3 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-140px)] no-scrollbar p-2.5 sm:p-3 space-y-3">
             {readyOrders.length === 0 ? (
-              <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-text-subdued space-y-2">
-                <CheckCircle2 className="w-8 h-8 text-text-subdued opacity-30" />
-                <span className="font-bold text-white">No orders ready</span>
-                <p className="text-[11px]">Finished orders will show here for the rider.</p>
+              <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-slate-400 dark:text-text-subdued space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-slate-400 dark:text-text-subdued opacity-30" />
+                <span className="font-bold text-slate-800 dark:text-white">No orders ready</span>
+                <p className="text-[11px] text-slate-500 dark:text-text-muted">Finished orders will show here for the rider.</p>
               </div>
             ) : (
               readyOrders.map(order => {
@@ -464,49 +464,49 @@ export default function KitchenLiveBoard() {
                 return (
                   <div
                     key={order.id}
-                    className={`p-3.5 sm:p-4 rounded-2xl bg-surface-card border-2 flex flex-col justify-between transition-all shadow-xl space-y-3 ${
+                    className={`w-full p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-surface-card border-2 flex flex-col justify-between transition-all shadow-sm dark:shadow-xl space-y-3 ${
                       isDelayed
-                        ? 'border-red-500/80 ring-2 ring-red-500/40 bg-red-950/20'
+                        ? 'border-red-500/80 ring-2 ring-red-500/40 bg-red-50 dark:bg-red-950/20'
                         : isAssigned
                         ? 'border-amber-500/60'
                         : 'border-emerald-500/40'
                     }`}
                   >
                     {/* Card Header */}
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-emerald-400 text-sm">#{order.id}</span>
-                        <span className="text-xs sm:text-sm font-bold text-white truncate max-w-35">
+                        <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">#{order.id}</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate max-w-35">
                           {order.customerName || 'Customer'}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1.5">
                         {isAssigned ? (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                            <Bike className="w-3 h-3" />
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1">
+                            <Bike className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                             Rider Set
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-emerald-950 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3" />
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             Waiting for Rider
                           </span>
                         )}
                         {order.paymentStatus === 'payment_review' && (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-blue-500/20 text-blue-300 border border-blue-500/40 animate-pulse">
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-500/40 animate-pulse">
                             Check Payment
                           </span>
                         )}
                         {order.paymentStatus === 'pending' && (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40">
                             Unpaid
                           </span>
                         )}
                         <button
                           type="button"
                           onClick={() => setSelectedOrder(order)}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
+                          className="p-1.5 rounded-lg bg-slate-200/60 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-text-muted dark:hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
                           title="View Details"
                           aria-label="View Details"
                         >
@@ -516,43 +516,43 @@ export default function KitchenLiveBoard() {
                     </div>
 
                     {/* Dropoff Address */}
-                    <div className="text-xs text-text-muted flex items-center gap-2 bg-black/40 p-2.5 rounded-xl border border-white/5">
-                      <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <div className="text-xs text-slate-600 dark:text-text-muted flex items-center gap-2 bg-white dark:bg-black/40 p-2.5 rounded-xl border border-slate-200 dark:border-white/5">
+                      <MapPin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                       <span className="truncate">{order.deliveryAddress || order.address || 'Kigali Dropoff'}</span>
                     </div>
 
                     {/* Packed Items Summary */}
-                    <div className="space-y-1.5 text-xs bg-black/30 p-2.5 rounded-xl border border-white/5">
+                    <div className="space-y-1.5 text-xs bg-white dark:bg-black/30 p-2.5 rounded-xl border border-slate-200 dark:border-white/5">
                       {(order.items || []).map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center text-text-main gap-2">
+                        <div key={idx} className="flex justify-between items-center text-slate-800 dark:text-text-main gap-2">
                           <span className="flex items-center gap-2 min-w-0">
-                            <span className="font-mono font-black text-emerald-400 text-xs shrink-0">
+                            <span className="font-mono font-black text-emerald-700 dark:text-emerald-400 text-xs shrink-0 bg-emerald-100 dark:bg-black px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-500/40">
                               {item.qty || 1}x
                             </span>
-                            <span className="font-extrabold text-white text-xs sm:text-sm md:text-base leading-tight wrap-break-word">{item.name}</span>
+                            <span className="font-extrabold text-slate-800 dark:text-white text-xs sm:text-sm md:text-base leading-tight wrap-break-word">{item.name}</span>
                           </span>
-                          <span className="text-[10px] text-emerald-400 font-bold shrink-0">✓ Packed</span>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold shrink-0">✓ Packed</span>
                         </div>
                       ))}
                     </div>
 
                     {/* 10-Minute Delay Warning Banner */}
                     {isDelayed && (
-                      <div className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/50 flex items-center justify-between text-xs animate-pulse">
-                        <div className="flex items-center gap-2 text-red-300 font-bold">
-                          <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                      <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-500/20 border border-red-300 dark:border-red-500/50 flex items-center justify-between text-xs animate-pulse">
+                        <div className="flex items-center gap-2 text-red-800 dark:text-red-300 font-bold">
+                          <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
                           <span>Rider is late (10+ min)</span>
                         </div>
-                        <span className="text-[10px] font-mono text-red-200">Change rider?</span>
+                        <span className="text-[10px] font-mono text-red-700 dark:text-red-200">Change rider?</span>
                       </div>
                     )}
 
                     {/* Handover Flow: Courier Assignment vs Handover PIN */}
                     {!isAssigned ? (
-                      <div className="space-y-2.5 bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                      <div className="space-y-2.5 bg-slate-100 dark:bg-[#1A1D24] p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center justify-between">
                           <span>Choose a rider:</span>
-                          <span className="text-emerald-400 font-mono text-[10px]">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[10px]">
                             {availableRiders.length} free
                           </span>
                         </label>
@@ -562,7 +562,7 @@ export default function KitchenLiveBoard() {
                             <select
                               value={selectedRiderId}
                               onChange={(e) => setSelectedRiderMap(prev => ({ ...prev, [order.id]: e.target.value }))}
-                              className="w-full bg-[#12141A] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500"
+                              className="w-full bg-white dark:bg-[#12141A] border border-slate-300 dark:border-slate-700/60 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-amber-500"
                             >
                               {availableRiders.map(r => (
                                 <option key={r.id} value={r.id}>
@@ -593,7 +593,7 @@ export default function KitchenLiveBoard() {
                         )}
 
                         {availableRiders.length === 0 && (
-                          <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center font-medium">
+                          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs text-center font-medium">
                             ⚠️ No riders free right now.
                           </div>
                         )}
@@ -602,7 +602,7 @@ export default function KitchenLiveBoard() {
                         <button
                           type="button"
                           onClick={() => openManualRiderModal(order)}
-                          className="w-full py-2 px-3 rounded-xl bg-surface-card hover:bg-white/10 border border-white/15 text-amber-400 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                          className="w-full py-2 px-3 rounded-xl bg-white hover:bg-slate-50 dark:bg-surface-card dark:hover:bg-white/10 border border-slate-200 dark:border-white/15 text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
                           title="Add or assign a specific courier for this order"
                         >
                           <UserPlus className="w-4 h-4" />
@@ -610,23 +610,23 @@ export default function KitchenLiveBoard() {
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-2 bg-[#1A1D24] p-3 rounded-xl border border-amber-500/40">
+                      <div className="space-y-2 bg-slate-100 dark:bg-[#1A1D24] p-3 rounded-xl border border-amber-300 dark:border-amber-500/40">
                         {/* Assigned Courier Badge with Reassign trigger */}
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
+                            <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
                               🛵
                             </div>
                             <div className="min-w-0">
-                              <div className="font-bold text-white text-xs truncate">{assignedRider.name}</div>
-                              <div className="text-[10px] text-slate-400 font-mono truncate">{assignedRider.phone || assignedRider.plateNumber}</div>
+                              <div className="font-bold text-slate-900 dark:text-white text-xs truncate">{assignedRider.name}</div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">{assignedRider.phone || assignedRider.plateNumber}</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               type="button"
                               onClick={() => openManualRiderModal(order)}
-                              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-amber-400 text-[10px] font-bold border border-white/10 flex items-center gap-1 transition-all"
+                              className="p-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/15 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-slate-300 dark:border-white/10 flex items-center gap-1 transition-all"
                               title="Edit or Reassign Courier Info"
                             >
                               <Edit3 className="w-3 h-3" />
@@ -635,27 +635,27 @@ export default function KitchenLiveBoard() {
                             <button
                               type="button"
                               onClick={() => alert(`COURIER DETAILS\n\nName: ${assignedRider.name}\nPhone: ${assignedRider.phone || 'N/A'}\nVehicle: ${assignedRider.plateNumber || 'N/A'}`)}
-                              className="p-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-[10px] font-bold border border-blue-500/40 flex items-center gap-1 transition-all"
+                              className="p-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 text-[10px] font-bold border border-blue-300 dark:border-blue-500/40 flex items-center gap-1 transition-all"
                               title="View Courier Details"
                             >
                               <User className="w-3 h-3" />
                               <span>View</span>
                             </button>
-                            <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono text-[10px] font-bold border border-blue-500/40">
+                            <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 font-mono text-[10px] font-bold border border-blue-300 dark:border-blue-500/40">
                               Assigned
                             </span>
                           </div>
                         </div>
 
                         {/* 4-Digit Verification PIN Strip */}
-                        <div className="p-2.5 rounded-xl bg-linear-to-r from-amber-500/15 via-orange-500/15 to-emerald-500/15 border border-amber-500/40 flex items-center justify-between">
+                        <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-linear-to-r dark:from-amber-500/15 dark:via-orange-500/15 dark:to-emerald-500/15 border border-amber-300 dark:border-amber-500/40 flex items-center justify-between">
                           <div className="space-y-0.5">
-                            <span className="text-[10px] uppercase font-bold text-amber-300 tracking-wider block">
+                            <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-300 tracking-wider block">
                               Pickup PIN
                             </span>
-                            <span className="text-[10px] text-slate-400">Rider must say this code</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">Rider must say this code</span>
                           </div>
-                          <div className="px-3 py-1 rounded-lg bg-black/80 border border-amber-400/60 font-mono font-black text-amber-300 text-base tracking-widest shadow-inner">
+                          <div className="px-3 py-1 rounded-lg bg-white dark:bg-black/80 border border-amber-400/60 font-mono font-black text-amber-700 dark:text-amber-300 text-base tracking-widest shadow-inner">
                             {order.verification_pin || '4829'}
                           </div>
                         </div>

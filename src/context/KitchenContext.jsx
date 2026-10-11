@@ -142,8 +142,8 @@ export function KitchenProvider({
         tier: 'green',
         elapsedStr: '< 1m',
         label: 'Fresh (<5m)',
-        borderClass: 'border-emerald-500/40 bg-surface-card',
-        headerBadge: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+        borderClass: 'border-emerald-500/40 dark:border-emerald-500/40',
+        headerBadge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-500/40',
         pulse: false,
       };
     }
@@ -159,7 +159,7 @@ export function KitchenProvider({
         elapsedStr,
         label: '🟢 Fresh',
         borderClass: 'border-emerald-500/50 hover:border-emerald-400',
-        headerBadge: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+        headerBadge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-500/40',
         pulse: false,
       };
     } else if (mins < 10) {
@@ -168,7 +168,7 @@ export function KitchenProvider({
         elapsedStr,
         label: '🟡 Active',
         borderClass: 'border-amber-500/60 hover:border-amber-400',
-        headerBadge: 'bg-amber-950/80 text-amber-300 border-amber-500/40',
+        headerBadge: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-500/40',
         pulse: false,
       };
     } else {
@@ -177,7 +177,7 @@ export function KitchenProvider({
         elapsedStr,
         label: '🔴 Urgent (>10m)',
         borderClass: 'border-red-500 hover:border-red-400 shadow-lg shadow-red-500/20 ring-1 ring-red-500/60',
-        headerBadge: 'bg-red-950 text-red-300 border-red-500/60 animate-pulse font-black',
+        headerBadge: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-500/60 animate-pulse font-black',
         pulse: true,
       };
     }
