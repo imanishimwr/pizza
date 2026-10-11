@@ -259,31 +259,31 @@ export default function Home({
       </section>
 
       {recentFoods.length > 0 && (
-        <section className="space-y-3 bg-surface-card/60 p-4 rounded-2xl border border-white/5 overflow-hidden">
+        <section className="space-y-3 bg-white dark:bg-surface-card/60 p-4 rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden shadow-xs dark:shadow-none">
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" aria-hidden="true" />
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber-500 dark:text-amber-400 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" aria-hidden="true" />
               Recently Uploaded Dishes &amp; Specials
             </h3>
-            <span className="text-[10px] text-text-subdued font-mono">HOVER TO PAUSE</span>
+            <span className="text-[10px] text-slate-400 dark:text-text-subdued font-mono">HOVER TO PAUSE</span>
           </div>
 
-          <div className="overflow-hidden relative w-full rounded-xl bg-black/30 py-3 border border-white/5">
+          <div className="overflow-hidden relative w-full rounded-xl bg-slate-50 dark:bg-black/30 py-3 border border-slate-200 dark:border-white/5">
             <div className="animate-marquee flex gap-4 items-center">
               {recentFoods.map((item, index) => (
                 <div
                   key={`${item?.id ?? 'meal'}-${index}`}
                   onClick={() => onSelectMeal && onSelectMeal(item)}
-                  className="flex items-center gap-3 bg-surface-card border border-white/10 p-2.5 rounded-xl shrink-0 cursor-pointer hover:border-primary transition-all shadow-md group"
+                  className="flex items-center gap-3 bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 p-2.5 rounded-xl shrink-0 cursor-pointer hover:border-primary transition-all shadow-xs group"
                 >
                   <img
                     src={item?.image}
                     alt={item?.name ? `${item.name}` : ''}
-                    className="w-12 h-12 rounded-lg object-cover bg-black/40 group-hover:scale-105 transition-transform"
+                    className="w-12 h-12 rounded-lg object-cover bg-slate-100 dark:bg-black/40 group-hover:scale-105 transition-transform"
                     onError={(event) => applyImageFallback(event, item?.fallbackImage)}
                   />
                   <div>
-                    <div className="font-bold text-xs text-text-main line-clamp-1 group-hover:text-primary transition-colors">
+                    <div className="font-bold text-xs text-slate-900 dark:text-text-main line-clamp-1 group-hover:text-primary transition-colors">
                       {item?.name}
                     </div>
                     <div className="text-xs font-mono font-bold text-primary">{formatRWF(item?.price)}</div>
@@ -297,9 +297,9 @@ export default function Home({
 
       <section className="space-y-4">
         {/* Search Bar & Taste Filter Bar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-surface-card border border-white/10 p-3 sm:p-4 rounded-2xl shadow-md">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 p-3 sm:p-4 rounded-2xl shadow-sm">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" aria-hidden="true" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-muted" aria-hidden="true" />
             <label htmlFor="home-meal-search" className="sr-only">
               Search dishes
             </label>
@@ -309,13 +309,13 @@ export default function Home({
               value={searchKey}
               onChange={(e) => setSearchKey(e.target.value)}
               placeholder="Search dishes by keyword, ingredient, broth..."
-              className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-8 py-2.5 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary transition-all"
+              className="w-full bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-8 py-2.5 text-xs text-slate-900 dark:text-text-main placeholder-slate-400 dark:placeholder-text-subdued focus:outline-none focus:border-primary transition-all"
             />
             {searchKey && (
               <button
                 type="button"
                 onClick={() => setSearchKey('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-900 dark:text-text-muted dark:hover:text-white"
                 aria-label="Clear dish search"
               >
                 ✕
@@ -325,7 +325,7 @@ export default function Home({
 
           {/* Spice Filter Chips */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-text-muted font-bold mr-1">Filter:</span>
+            <span className="text-xs text-slate-500 dark:text-text-muted font-bold mr-1">Filter:</span>
             {[
               { id: 'all', label: 'All' },
               { id: 'spicy', label: 'Spicy 🌶️' },
@@ -343,7 +343,7 @@ export default function Home({
                       : chip.id === 'mild'
                         ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
                         : 'bg-primary text-white border-primary shadow-sm'
-                    : 'bg-black/40 text-text-muted border-white/10 hover:text-white'
+                    : 'bg-slate-100 dark:bg-black/40 text-slate-600 dark:text-text-muted border-slate-200 dark:border-white/10 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {chip.label}
@@ -354,11 +354,11 @@ export default function Home({
 
         {/* Category Tabs Header */}
         <div className="flex items-center justify-between pt-2">
-          <h2 className="text-lg font-extrabold text-text-main flex items-center gap-2">
+          <h2 className="text-lg font-extrabold text-slate-900 dark:text-text-main flex items-center gap-2">
             <Filter className="w-4 h-4 text-primary" aria-hidden="true" />
             Browse Food Categories
           </h2>
-          <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-2 rounded-full">
+          <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-950/60 border border-amber-500/30 px-2.5 py-1.5 rounded-full">
             {filteredMeals.length} Dishes
           </span>
         </div>
@@ -375,7 +375,7 @@ export default function Home({
                 className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border ${
                   isSelected
                     ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30 scale-105'
-                    : 'bg-surface-card text-text-muted border-white/10 hover:border-white/20 hover:text-white'
+                    : 'bg-white dark:bg-surface-card text-slate-600 dark:text-text-muted border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-900 dark:hover:text-white shadow-2xs'
                 }`}
               >
                 <span>{category.name}</span>
@@ -443,9 +443,9 @@ export default function Home({
             )}
           </div>
         ) : menuIsEmpty ? (
-          <div className="py-16 text-center bg-surface-card/50 rounded-2xl border border-white/5 space-y-3">
-            <Utensils className="w-10 h-10 text-text-muted mx-auto" aria-hidden="true" />
-            <p className="text-text-muted font-medium">The menu is empty right now — the kitchen has not published any dishes.</p>
+          <div className="py-16 text-center bg-white dark:bg-surface-card/50 rounded-2xl border border-slate-200 dark:border-white/5 space-y-3 shadow-xs">
+            <Utensils className="w-10 h-10 text-slate-400 dark:text-text-muted mx-auto" aria-hidden="true" />
+            <p className="text-slate-600 dark:text-text-muted font-medium">The menu is empty right now — the kitchen has not published any dishes.</p>
             {!signedIn && onOpenAuth && (
               <button type="button" onClick={onOpenAuth} className="btn-secondary text-xs inline-flex items-center gap-2">
                 <User className="w-3.5 h-3.5" aria-hidden="true" />
@@ -454,9 +454,9 @@ export default function Home({
             )}
           </div>
         ) : filteredMeals.length === 0 ? (
-          <div className="py-16 text-center bg-surface-card/50 rounded-2xl border border-white/5 space-y-3">
-            <Sparkles className="w-10 h-10 text-text-muted mx-auto" aria-hidden="true" />
-            <p className="text-text-muted font-medium">No dishes match your search or filters.</p>
+          <div className="py-16 text-center bg-white dark:bg-surface-card/50 rounded-2xl border border-slate-200 dark:border-white/5 space-y-3 shadow-xs">
+            <Sparkles className="w-10 h-10 text-slate-400 dark:text-text-muted mx-auto" aria-hidden="true" />
+            <p className="text-slate-600 dark:text-text-muted font-medium">No dishes match your search or filters.</p>
             <button
               type="button"
               onClick={() => {
@@ -487,7 +487,7 @@ export default function Home({
                   }`}
                   onClick={() => !meal.outOfStock && onSelectMeal && onSelectMeal(meal)}
                 >
-                  <div className="relative aspect-4/3 overflow-hidden bg-black/40 shrink-0">
+                  <div className="relative aspect-4/3 overflow-hidden bg-slate-100 dark:bg-black/40 shrink-0">
                     <img
                       src={meal.image}
                       alt={meal.name ? `${meal.name}` : ''}
@@ -545,7 +545,7 @@ export default function Home({
                     </div>
 
                     {meal.prepTime ? (
-                      <div className="absolute bottom-3 left-3 text-[11px] font-semibold text-text-muted flex items-center gap-1">
+                      <div className="absolute bottom-3 left-3 text-[11px] font-semibold text-white/90 flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
                         <span>{meal.prepTime}</span>
                       </div>
@@ -555,7 +555,7 @@ export default function Home({
                   <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="flex items-start justify-between gap-2.5">
-                        <h3 className="font-bold text-text-main text-sm sm:text-base leading-snug line-clamp-2 min-h-10 flex items-center">
+                        <h3 className="font-bold text-slate-900 dark:text-text-main text-sm sm:text-base leading-snug line-clamp-2 min-h-10 flex items-center">
                           {meal.name}
                         </h3>
                         <span className="font-mono font-extrabold text-primary text-xs sm:text-sm whitespace-nowrap shrink-0 pt-0.5">
@@ -563,23 +563,23 @@ export default function Home({
                         </span>
                       </div>
 
-                      <p className="text-xs text-text-muted leading-relaxed line-clamp-2 h-10 overflow-hidden mt-1.5">
+                      <p className="text-xs text-slate-500 dark:text-text-muted leading-relaxed line-clamp-2 h-10 overflow-hidden mt-1.5">
                         {meal.description}
                       </p>
                     </div>
 
-                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between gap-2 mt-3">
-                      <div className="flex items-center gap-1 text-xs text-text-subdued whitespace-nowrap shrink-0">
+                    <div className="pt-2.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2 mt-3">
+                      <div className="flex items-center gap-1 text-xs text-slate-400 dark:text-text-subdued whitespace-nowrap shrink-0">
                         {hasRating ? (
                           <>
                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" aria-hidden="true" />
-                            <span className="font-bold text-white text-xs">{rating.toLocaleString()}</span>
-                            <span className="text-[11px] text-text-subdued font-mono">
+                            <span className="font-bold text-slate-800 dark:text-white text-xs">{rating.toLocaleString()}</span>
+                            <span className="text-[11px] text-slate-400 dark:text-text-subdued font-mono">
                               ({Number.isFinite(reviews) ? reviews.toLocaleString() : 0})
                             </span>
                           </>
                         ) : (
-                          <span className="text-[11px] text-text-subdued">Not yet rated</span>
+                          <span className="text-[11px] text-slate-400 dark:text-text-subdued">Not yet rated</span>
                         )}
                       </div>
 

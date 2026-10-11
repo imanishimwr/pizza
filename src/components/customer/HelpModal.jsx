@@ -123,26 +123,26 @@ export default function HelpModal({ isOpen, onClose }) {
         aria-labelledby="help-modal-title"
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="bg-surface-dark border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/40 text-primary flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 text-primary flex items-center justify-center shrink-0">
               <HelpCircle className="w-5 h-5" aria-hidden="true" focusable="false" />
             </div>
             <div>
-              <h2 id="help-modal-title" className="text-lg font-bold text-text-main">
+              <h2 id="help-modal-title" className="text-lg font-bold text-slate-900 dark:text-text-main">
                 Help &amp; Frequently Asked Questions
               </h2>
-              <p className="text-xs text-text-muted">Kigali Delivery Support Center</p>
+              <p className="text-xs text-slate-600 dark:text-text-muted">Kigali Delivery Support Center</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close help and support"
-            className="p-2 text-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            className="p-2 text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
           >
             <X className="w-5 h-5" aria-hidden="true" focusable="false" />
           </button>
@@ -152,12 +152,12 @@ export default function HelpModal({ isOpen, onClose }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <a
             href="tel:+250788000000"
-            className="p-3 rounded-xl bg-surface-card border border-white/5 hover:border-primary/40 transition-all flex items-center gap-2"
+            className="p-3 rounded-xl bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/5 hover:border-primary/40 transition-all flex items-center gap-2"
           >
             <Phone className="w-4 h-4 text-primary shrink-0" aria-hidden="true" focusable="false" />
             <div>
-              <div className="font-bold text-text-main">Call Customer Care</div>
-              <div className="text-[10px] text-text-subdued">+250 788 000 000</div>
+              <div className="font-bold text-slate-900 dark:text-text-main">Call Customer Care</div>
+              <div className="text-[10px] text-slate-500 dark:text-text-subdued">+250 788 000 000</div>
             </div>
           </a>
 
@@ -165,19 +165,19 @@ export default function HelpModal({ isOpen, onClose }) {
             href="https://wa.me/250788000000"
             target="_blank"
             rel="noreferrer"
-            className="p-3 rounded-xl bg-surface-card border border-white/5 hover:border-emerald-500/40 transition-all flex items-center gap-2"
+            className="p-3 rounded-xl bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/5 hover:border-emerald-500/40 transition-all flex items-center gap-2"
           >
-            <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" focusable="false" />
+            <MessageSquare className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" aria-hidden="true" focusable="false" />
             <div>
-              <div className="font-bold text-text-main">WhatsApp Live Chat</div>
-              <div className="text-[10px] text-text-subdued">Instant Support</div>
+              <div className="font-bold text-slate-900 dark:text-text-main">WhatsApp Live Chat</div>
+              <div className="text-[10px] text-slate-500 dark:text-text-subdued">Instant Support</div>
             </div>
           </a>
         </div>
 
         {/* FAQs Accordion */}
         <div className="space-y-3 pt-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-text-muted">
             Frequently Asked Questions
           </h3>
 
@@ -186,24 +186,24 @@ export default function HelpModal({ isOpen, onClose }) {
               const expanded = openFaq === idx;
               const panelId = `help-faq-panel-${idx}`;
               return (
-                <div key={faq.q} className="rounded-xl bg-surface-card border border-white/5 overflow-hidden">
+                <div key={faq.q} className="rounded-xl bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/5 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setOpenFaq(expanded ? null : idx)}
                     aria-expanded={expanded}
                     aria-controls={panelId}
-                    className="w-full p-3.5 text-left text-xs font-bold text-text-main flex items-center justify-between gap-2"
+                    className="w-full p-3.5 text-left text-xs font-bold text-slate-900 dark:text-text-main flex items-center justify-between gap-2"
                   >
                     <span>{faq.q}</span>
                     {expanded ? (
                       <ChevronUp className="w-4 h-4 text-primary shrink-0" aria-hidden="true" focusable="false" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-text-muted shrink-0" aria-hidden="true" focusable="false" />
+                      <ChevronDown className="w-4 h-4 text-slate-400 dark:text-text-muted shrink-0" aria-hidden="true" focusable="false" />
                     )}
                   </button>
 
                   {expanded && (
-                    <div id={panelId} className="px-3.5 pb-3.5 text-xs text-text-muted leading-relaxed border-t border-white/5 pt-2">
+                    <div id={panelId} className="px-3.5 pb-3.5 text-xs text-slate-600 dark:text-text-muted leading-relaxed border-t border-slate-200 dark:border-white/5 pt-2">
                       {faq.a}
                     </div>
                   )}

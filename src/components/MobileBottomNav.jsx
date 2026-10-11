@@ -3,7 +3,7 @@ import { Home, Clock, User, ShoppingBag } from 'lucide-react';
 
 const ITEM_BASE =
   'flex flex-1 flex-col items-center justify-center gap-0.5 h-full px-1 py-2 text-[0.68rem] transition-colors select-none';
-const ITEM_IDLE = 'text-text-muted hover:text-text-main';
+const ITEM_IDLE = 'text-slate-500 hover:text-slate-900 dark:text-text-muted dark:hover:text-text-main';
 const ITEM_ACTIVE = 'text-primary font-bold';
 
 /**
@@ -28,7 +28,7 @@ export default function MobileBottomNav({
   return (
     <nav
       aria-label="Primary"
-      className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 h-16 sm:hidden flex items-stretch justify-around px-2 bg-surface-dark/95 backdrop-blur-md border-t border-white/10"
+      className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 h-16 sm:hidden flex items-stretch justify-around px-2 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-md border-t border-slate-200 dark:border-white/10 shadow-lg transition-colors"
     >
       {/* Menu */}
       <button
@@ -93,7 +93,7 @@ export default function MobileBottomNav({
           {items > 0 && (
             <span
               aria-hidden="true"
-              className="absolute -top-2 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[0.6rem] font-extrabold flex items-center justify-center border-2 border-surface-dark"
+              className="absolute -top-2 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[0.6rem] font-extrabold flex items-center justify-center border-2 border-white dark:border-surface-dark"
             >
               {items > 99 ? '99+' : items}
             </span>

@@ -188,41 +188,41 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order, onSu
         aria-labelledby="feedback-modal-title"
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="bg-[#14171F] border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-5 transition-transform duration-200"
+        className="bg-white dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-5 transition-transform duration-200"
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Close feedback form"
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all"
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
         >
           <X className="w-5 h-5" aria-hidden="true" focusable="false" />
         </button>
 
         {submitted ? (
           <div className="text-center py-8 space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 animate-bounce">
+            <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 animate-bounce">
               <Check className="w-8 h-8" aria-hidden="true" focusable="false" />
             </div>
-            <h2 id="feedback-modal-title" className="text-xl font-black text-white">
+            <h2 id="feedback-modal-title" className="text-xl font-black text-slate-900 dark:text-white">
               Murakoze! Feedback received.
             </h2>
-            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+            <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xs mx-auto">
               Your ratings for order{' '}
-              <strong className="text-amber-400 font-mono">#{order.id}</strong> and your delivery
+              <strong className="text-amber-500 dark:text-amber-400 font-mono">#{order.id}</strong> and your delivery
               courier have been saved.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="text-center space-y-1">
-              <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+              <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                 Order delivered to you
               </span>
-              <h2 id="feedback-modal-title" className="text-xl font-black text-white pt-1">
+              <h2 id="feedback-modal-title" className="text-xl font-black text-slate-900 dark:text-white pt-1">
                 Rate Your Delivery Experience
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Order #{order.id} &bull; {order.customerName || 'Customer'}
               </p>
             </div>
@@ -238,9 +238,9 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order, onSu
             )}
 
             {/* Food Quality Rating */}
-            <fieldset className="space-y-2.5 p-4 rounded-2xl bg-[#1A1D24] border border-slate-800">
-              <legend className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <UtensilsCrossed className="w-4 h-4 text-orange-400" aria-hidden="true" focusable="false" />
+            <fieldset className="space-y-2.5 p-4 rounded-2xl bg-slate-50 dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800">
+              <legend className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <UtensilsCrossed className="w-4 h-4 text-orange-500 dark:text-orange-400" aria-hidden="true" focusable="false" />
                 Food Quality &amp; Taste
               </legend>
               <StarRow
@@ -250,15 +250,15 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order, onSu
                 onChange={setPizzaRating}
                 onPreview={setHoverPizzaRating}
               />
-              <p className="text-[11px] text-amber-400 font-semibold text-center" aria-live="polite">
+              <p className="text-[11px] text-amber-500 dark:text-amber-400 font-semibold text-center" aria-live="polite">
                 {FOOD_LABELS[hoverPizzaRating || pizzaRating]}
               </p>
             </fieldset>
 
             {/* Rider Delivery Rating */}
-            <fieldset className="space-y-2.5 p-4 rounded-2xl bg-[#1A1D24] border border-slate-800">
-              <legend className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <Bike className="w-4 h-4 text-amber-400" aria-hidden="true" focusable="false" />
+            <fieldset className="space-y-2.5 p-4 rounded-2xl bg-slate-50 dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800">
+              <legend className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Bike className="w-4 h-4 text-amber-500 dark:text-amber-400" aria-hidden="true" focusable="false" />
                 Courier Speed &amp; Service
               </legend>
               <StarRow
@@ -268,7 +268,7 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order, onSu
                 onChange={setRiderRating}
                 onPreview={setHoverRiderRating}
               />
-              <p className="text-[11px] text-amber-400 font-semibold text-center" aria-live="polite">
+              <p className="text-[11px] text-amber-500 dark:text-amber-400 font-semibold text-center" aria-live="polite">
                 {RIDER_LABELS[hoverRiderRating || riderRating]}
               </p>
             </fieldset>
@@ -277,9 +277,9 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order, onSu
             <div className="space-y-1.5">
               <label
                 htmlFor="feedback-comment"
-                className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5"
+                className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 flex items-center gap-1.5"
               >
-                <MessageSquare className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" focusable="false" />
+                <MessageSquare className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" aria-hidden="true" focusable="false" />
                 Note for Kitchen &amp; Courier (Optional)
               </label>
               <textarea
@@ -289,7 +289,7 @@ export default function PostDeliveryFeedbackModal({ isOpen, onClose, order, onSu
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 placeholder="Tell us about food temperature, delivery speed or rider politeness..."
-                className="w-full bg-[#1A1D24] border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-400 resize-none"
+                className="w-full bg-slate-50 dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 resize-none"
               />
             </div>
 
@@ -340,7 +340,7 @@ function StarRow({ name, value, hover, onChange, onPreview }) {
             aria-hidden="true"
             focusable="false"
             className={`w-7 h-7 ${
-              (hover || value) >= star ? 'fill-amber-400 text-amber-400 drop-shadow-md' : 'text-slate-600'
+              (hover || value) >= star ? 'fill-amber-400 text-amber-400 drop-shadow-md' : 'text-slate-300 dark:text-slate-600'
             }`}
           />
         </label>

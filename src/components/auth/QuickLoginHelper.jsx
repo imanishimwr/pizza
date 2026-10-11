@@ -42,13 +42,13 @@ const DEMO_CREDENTIALS = [
 
 export default function QuickLoginHelper({ onSelect, onInstantLogin, disabled = false }) {
   return (
-    <div className="mt-4 pt-4 border-t border-white/10">
+    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
       <div className="flex items-center justify-between mb-2.5">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5 text-amber-400" />
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-text-muted flex items-center gap-1.5">
+          <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
           Demo Quick-Login
         </span>
-        <span className="text-[10px] text-text-subdued">1-click test access</span>
+        <span className="text-[10px] text-slate-400 dark:text-text-subdued">1-click test access</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -69,7 +69,7 @@ export default function QuickLoginHelper({ onSelect, onInstantLogin, disabled = 
               title={`Click to test as ${demo.name} (${demo.description})`}
               className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${demo.badgeColor}`}
             >
-              <div className="w-7 h-7 rounded-lg bg-black/40 flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-white/70 dark:bg-black/40 flex items-center justify-center shrink-0">
                 <Icon className="w-4 h-4" />
               </div>
               <div className="min-w-0">

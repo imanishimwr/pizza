@@ -7,9 +7,9 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const MIN_PASSWORD = 8;
 
 const fieldClass =
-  'w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all';
+  'w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all';
 const toggleFieldClass = `${fieldClass} pr-10`;
-const labelClass = 'text-xs font-bold text-text-muted uppercase tracking-wider block';
+const labelClass = 'text-xs font-bold text-slate-700 dark:text-text-muted uppercase tracking-wider block';
 const primaryButton =
   'w-full bg-linear-to-r from-primary to-orange-600 hover:from-primary-hover hover:to-orange-500 text-white text-sm py-3 font-bold rounded-xl shadow-lg shadow-primary/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
 
@@ -235,28 +235,28 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative w-full max-w-md bg-[#16161a] border border-white/10 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-md bg-white dark:bg-[#16161a] border border-slate-200 dark:border-white/10 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 left-0 w-48 h-48 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative px-6 pt-6 pb-4 border-b border-white/5 flex items-center justify-between shrink-0">
+        <div className="relative px-6 pt-6 pb-4 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-linear-to-tr from-primary to-orange-500 flex items-center justify-center text-white shadow-lg shadow-primary/30 ring-2 ring-primary/20">
               <Flame className="w-6 h-6" />
             </div>
             <div>
-              <h2 id={titleId} className="text-lg font-black text-white tracking-tight">
+              <h2 id={titleId} className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
                 {heading}
               </h2>
-              <p className="text-xs text-text-muted">{subheading}</p>
+              <p className="text-xs text-slate-600 dark:text-text-muted">{subheading}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={close}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors"
             aria-label="Close sign-in dialog"
           >
             <X className="w-4 h-4" />
@@ -264,15 +264,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         </div>
 
         <div className="px-6 py-5 overflow-y-auto space-y-4 flex-1">
-          {/* A real tablist. It used to be two plain buttons, so the mode toggle
-              and the submit button both announced as "Sign in" / "Create
-              account" — two controls, one name, and no way to tell them apart
-              with a screen reader. */}
+          {/* A real tablist. */}
           {mode !== 'forgot' && (
             <div
               role="tablist"
               aria-label="Sign in or create an account"
-              className="grid grid-cols-2 p-1 bg-black/40 border border-white/10 rounded-2xl"
+              className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-2xl"
             >
               <button
                 type="button"
@@ -287,7 +284,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                 className={`py-2 rounded-xl text-xs font-extrabold transition-all text-center flex items-center justify-center gap-1.5 ${
                   mode === 'signin'
                     ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-primary/20'
-                    : 'text-text-muted hover:text-white'
+                    : 'text-slate-600 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <LogIn className="w-3.5 h-3.5" /> Sign In
@@ -305,7 +302,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                 className={`py-2 rounded-xl text-xs font-extrabold transition-all text-center flex items-center justify-center gap-1.5 ${
                   mode === 'register'
                     ? 'bg-linear-to-r from-primary to-orange-600 text-white shadow-md shadow-primary/20'
-                    : 'text-text-muted hover:text-white'
+                    : 'text-slate-600 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" /> Create Account
@@ -328,10 +325,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
               <div ref={googleButtonHost} className="flex justify-center min-h-11" />
               {googleReady && (
                 <>
-                  <div className="flex items-center gap-3 text-[11px] text-text-subdued">
-                    <span className="h-px flex-1 bg-white/10" />
+                  <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-text-subdued">
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
                     or
-                    <span className="h-px flex-1 bg-white/10" />
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
                   </div>
                 </>
               )}
@@ -345,7 +342,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                   Registered email address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-muted" />
                   <input
                     id="auth-email"
                     ref={emailRef}
@@ -359,7 +356,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                 </div>
               </div>
 
-              <p className="text-xs text-text-muted bg-white/5 border border-white/10 rounded-xl p-3 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-text-muted bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-3 leading-relaxed">
                 <KeyRound className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                 Self-service password reset is not available on this deployment. Email{' '}
                 <a className="text-primary font-semibold" href="mailto:hello@hotpotdelights.rw">
@@ -545,7 +542,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           )}
 
           {mode !== 'forgot' && (
-            <div className="text-center text-xs text-text-muted pt-2 border-t border-white/5">
+            <div className="text-center text-xs text-slate-600 dark:text-text-muted pt-2 border-t border-slate-200 dark:border-white/5">
               {mode === 'register' ? (
                 <p>
                   Already have an account?{' '}

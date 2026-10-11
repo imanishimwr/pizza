@@ -151,22 +151,22 @@ export default function ProductDetailsPage({
   return (
     <div className="space-y-10 pb-16 animate-fade-in max-w-6xl mx-auto">
       {/* Back Button & Breadcrumbs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
         <button
           type="button"
           onClick={onBackToMenu}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-card border border-white/10 text-xs font-bold text-text-main hover:border-primary transition-all group"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-800 dark:text-text-main hover:border-primary transition-all group shadow-xs"
         >
           <ArrowLeft className="w-4 h-4 text-primary group-hover:-translate-x-1 transition-transform" aria-hidden="true" />
           Back to Menu
         </button>
 
-        <div className="text-xs text-text-muted flex items-center gap-2">
+        <div className="text-xs text-slate-500 dark:text-text-muted flex items-center gap-2">
           <span>Home</span>
           <span aria-hidden="true">/</span>
           <span className="capitalize">{meal.category}</span>
           <span aria-hidden="true">/</span>
-          <span className="text-text-main font-semibold">{meal.name}</span>
+          <span className="text-slate-900 dark:text-text-main font-semibold">{meal.name}</span>
         </div>
       </div>
 
@@ -174,7 +174,7 @@ export default function ProductDetailsPage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Product Image & Badges (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="relative rounded-3xl overflow-hidden aspect-4/3 bg-black/60 border border-white/10 shadow-2xl group">
+          <div className="relative rounded-3xl overflow-hidden aspect-4/3 bg-slate-100 dark:bg-black/60 border border-slate-200 dark:border-white/10 shadow-xl group">
             <img
               src={meal.image}
               alt={meal.name ? `${meal.name}` : ''}
@@ -211,7 +211,7 @@ export default function ProductDetailsPage({
               <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-xl bg-black/70 backdrop-blur-md border border-white/15 text-xs font-bold text-amber-400 flex items-center gap-1.5">
                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" aria-hidden="true" />
                 <span>{rating.toLocaleString()}</span>
-                <span className="text-[11px] text-text-muted">
+                <span className="text-[11px] text-white/80">
                   ({Number.isFinite(reviews) ? reviews.toLocaleString() : 0} reviews)
                 </span>
               </div>
@@ -220,20 +220,20 @@ export default function ProductDetailsPage({
 
           {/* Quick Perks */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3.5 rounded-2xl bg-surface-card border border-white/5 space-y-1">
-              <div className="font-bold text-text-main flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-400" aria-hidden="true" />
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-surface-card border border-slate-200 dark:border-white/5 space-y-1 shadow-xs">
+              <div className="font-bold text-slate-900 dark:text-text-main flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
                 Fresh Ingredients
               </div>
-              <div className="text-[11px] text-text-muted">Locally sourced daily in Kigali</div>
+              <div className="text-[11px] text-slate-500 dark:text-text-muted">Locally sourced daily in Kigali</div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-surface-card border border-white/5 space-y-1">
-              <div className="font-bold text-text-main flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-surface-card border border-slate-200 dark:border-white/5 space-y-1 shadow-xs">
+              <div className="font-bold text-slate-900 dark:text-text-main flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" aria-hidden="true" />
                 Express Delivery
               </div>
-              <div className="text-[11px] text-text-muted">Delivered hot to your door</div>
+              <div className="text-[11px] text-slate-500 dark:text-text-muted">Delivered hot to your door</div>
             </div>
           </div>
         </div>
@@ -243,7 +243,7 @@ export default function ProductDetailsPage({
           {/* Header Title & Price */}
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-2xl sm:text-3xl font-black text-text-main tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-text-main tracking-tight leading-tight">
                 {meal.name}
               </h1>
 
@@ -252,34 +252,34 @@ export default function ProductDetailsPage({
                 <button
                   type="button"
                   onClick={handleWishlist}
-                  className={`p-3 rounded-2xl border transition-all shrink-0 ${
+                  className={`p-3 rounded-2xl border transition-all shrink-0 cursor-pointer ${
                     isWishlisted
-                      ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-lg shadow-red-500/20'
-                      : 'bg-surface-card border-white/10 text-text-muted hover:text-white hover:border-white/20'
+                      ? 'bg-red-500/20 border-red-500/50 text-red-500 shadow-lg shadow-red-500/20'
+                      : 'bg-white dark:bg-surface-card border-slate-200 dark:border-white/10 text-slate-400 dark:text-text-muted hover:text-red-500 hover:border-slate-300'
                   }`}
                   title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
                   aria-label={isWishlisted ? 'Remove this dish from wishlist' : 'Add this dish to wishlist'}
                   aria-pressed={isWishlisted}
                 >
-                  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-400 text-red-400' : ''}`} />
+                  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
                 </button>
               )}
             </div>
 
             <div className="flex items-baseline gap-3 pt-1">
               <span className="text-2xl sm:text-3xl font-black font-mono text-primary">{formatRWF(meal.price)}</span>
-              <span className="text-xs text-text-muted uppercase font-bold tracking-wider">Price incl. taxes</span>
+              <span className="text-xs text-slate-400 dark:text-text-muted uppercase font-bold tracking-wider">Price incl. taxes</span>
             </div>
 
-            <p className="text-sm text-text-muted leading-relaxed pt-2">{meal.description}</p>
+            <p className="text-sm text-slate-600 dark:text-text-muted leading-relaxed pt-2">{meal.description}</p>
           </div>
 
           {/* Customizations Section */}
-          <div className="space-y-5 p-5 rounded-2xl bg-surface-card border border-white/10">
+          <div className="space-y-5 p-5 rounded-2xl bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 shadow-xs">
             {/* Spice Levels */}
             {spiceLevels.length > 0 && (
               <div className="space-y-2.5">
-                <p className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted flex items-center gap-1.5">
                   <Flame className="w-4 h-4 text-primary" aria-hidden="true" />
                   Select Spice Level
                 </p>
@@ -292,10 +292,10 @@ export default function ProductDetailsPage({
                         type="button"
                         onClick={() => setSelectedSpice(lvl)}
                         aria-pressed={isSelected}
-                        className={`p-3 rounded-xl text-xs font-bold text-left transition-all border flex items-center justify-between ${
+                        className={`p-3 rounded-xl text-xs font-bold text-left transition-all border flex items-center justify-between cursor-pointer ${
                           isSelected
-                            ? 'bg-primary/20 border-primary text-primary shadow-sm ring-1 ring-primary'
-                            : 'bg-surface-dark border-white/5 text-text-muted hover:border-white/20'
+                            ? 'bg-primary/10 border-primary text-primary shadow-xs ring-1 ring-primary'
+                            : 'bg-slate-50 dark:bg-surface-dark border-slate-200 dark:border-white/5 text-slate-700 dark:text-text-muted hover:border-primary/50'
                         }`}
                       >
                         <span>{lvl}</span>
@@ -310,7 +310,7 @@ export default function ProductDetailsPage({
             {/* Broths */}
             {broths.length > 0 && (
               <div className="space-y-2.5">
-                <p className="text-xs font-bold uppercase tracking-wider text-text-muted">Choose Broth Base</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted">Choose Broth Base</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="group" aria-label="Broth base">
                   {broths.map((broth) => {
                     const isSelected = selectedBroth === broth;
@@ -320,10 +320,10 @@ export default function ProductDetailsPage({
                         type="button"
                         onClick={() => setSelectedBroth(broth)}
                         aria-pressed={isSelected}
-                        className={`p-3 rounded-xl text-xs font-bold text-left transition-all border flex items-center justify-between ${
+                        className={`p-3 rounded-xl text-xs font-bold text-left transition-all border flex items-center justify-between cursor-pointer ${
                           isSelected
-                            ? 'bg-primary/20 border-primary text-primary shadow-sm ring-1 ring-primary'
-                            : 'bg-surface-dark border-white/5 text-text-muted hover:border-white/20'
+                            ? 'bg-primary/10 border-primary text-primary shadow-xs ring-1 ring-primary'
+                            : 'bg-slate-50 dark:bg-surface-dark border-slate-200 dark:border-white/5 text-slate-700 dark:text-text-muted hover:border-primary/50'
                         }`}
                       >
                         <span>{broth}</span>
@@ -337,7 +337,7 @@ export default function ProductDetailsPage({
 
             {/* Special Instructions */}
             <div className="space-y-2">
-              <label htmlFor="special-note" className="text-xs font-bold uppercase tracking-wider text-text-muted block">
+              <label htmlFor="special-note" className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted block">
                 Special Kitchen Instructions (Optional)
               </label>
               <input
@@ -346,7 +346,7 @@ export default function ProductDetailsPage({
                 value={specialNote}
                 onChange={(e) => setSpecialNote(e.target.value)}
                 placeholder="e.g. Extra sesame dipping sauce, no scallions..."
-                className="w-full bg-surface-dark border border-white/10 rounded-xl px-4 py-2.5 text-xs text-text-main placeholder-text-subdued focus:outline-none focus:border-primary"
+                className="w-full bg-slate-50 dark:bg-surface-dark border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-text-main placeholder-slate-400 dark:placeholder-text-subdued focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -354,15 +354,15 @@ export default function ProductDetailsPage({
           {/* DYNAMIC CART CONTROLLER: State-aware UX */}
           <div className="space-y-4 pt-2">
             {inCartQty > 0 ? (
-              <div className="p-5 rounded-2xl bg-linear-to-r from-emerald-950/50 via-surface-card to-surface-card border border-emerald-500/40 space-y-4 shadow-xl animate-fade-in">
+              <div className="p-5 rounded-2xl bg-linear-to-r from-emerald-500/10 via-white dark:via-surface-card to-white dark:to-surface-card border border-emerald-500/30 dark:border-emerald-500/40 space-y-4 shadow-sm dark:shadow-xl animate-fade-in">
                 {/* Status Notice Banner */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                     <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                     </div>
                     <span>Already in your Cart!</span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono text-xs">
                       {inCartQty} {inCartQty === 1 ? 'item' : 'items'}
                     </span>
                   </div>
@@ -371,7 +371,7 @@ export default function ProductDetailsPage({
                     <button
                       type="button"
                       onClick={onOpenCart}
-                      className="text-xs text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-1 cursor-pointer"
+                      className="text-xs text-amber-600 dark:text-amber-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
                     >
                       <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
                       View in Cart Drawer
@@ -381,7 +381,7 @@ export default function ProductDetailsPage({
 
                 {!signedIn && onOpenAuth && (
                   <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-amber-200">
+                    <p className="text-xs text-amber-800 dark:text-amber-200">
                       Sign in or register to complete your order and track delivery.
                     </p>
                     <button
@@ -394,31 +394,31 @@ export default function ProductDetailsPage({
                   </div>
                 )}
 
-                <p className="text-xs text-text-muted">
+                <p className="text-xs text-slate-500 dark:text-text-muted">
                   You already have this dish in your cart. You can increase the quantity, keep only one, or remove
                   it.
                 </p>
 
                 {/* Inline Quantity Stepper */}
-                <div className="flex items-center gap-4 bg-black/40 border border-white/10 p-2 rounded-2xl w-fit">
-                  <span className="text-xs text-text-muted font-bold pl-2">Quantity:</span>
+                <div className="flex items-center gap-4 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 p-2 rounded-2xl w-fit">
+                  <span className="text-xs text-slate-500 dark:text-text-muted font-bold pl-2">Quantity:</span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleSetQty(inCartQty - 1)}
-                      className="w-9 h-9 rounded-xl bg-surface-dark border border-white/10 text-white hover:bg-white/10 flex items-center justify-center font-bold transition-all"
+                      className="w-9 h-9 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-white/10 flex items-center justify-center font-bold transition-all cursor-pointer"
                       title={inCartQty === 1 ? 'Remove from Cart' : 'Decrease Quantity'}
                       aria-label={inCartQty === 1 ? 'Remove from cart' : 'Decrease quantity'}
                     >
                       <Minus className="w-4 h-4" aria-hidden="true" />
                     </button>
 
-                    <span className="w-8 text-center font-mono font-black text-base text-white">{inCartQty}</span>
+                    <span className="w-8 text-center font-mono font-black text-base text-slate-900 dark:text-white">{inCartQty}</span>
 
                     <button
                       type="button"
                       onClick={() => handleSetQty(inCartQty + 1)}
-                      className="w-9 h-9 rounded-xl bg-surface-dark border border-white/10 text-white hover:bg-white/10 flex items-center justify-center font-bold transition-all"
+                      className="w-9 h-9 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-white/10 flex items-center justify-center font-bold transition-all cursor-pointer"
                       title="Increase Quantity"
                       aria-label="Increase quantity"
                     >
@@ -431,10 +431,9 @@ export default function ProductDetailsPage({
                   </span>
                 </div>
 
-                {/* Quick quantity additions. These ADD to the current quantity;
-                    they no longer overwrite it with a fixed number. */}
-                <div className="space-y-2 pt-2 border-t border-white/10">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">
+                {/* Quick quantity additions */}
+                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-white/10">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted block">
                     Quick Quantity Adjustments:
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
@@ -450,7 +449,7 @@ export default function ProductDetailsPage({
                     <button
                       type="button"
                       onClick={() => handleAddOrIncrement(2)}
-                      className="text-xs py-2 px-3.5 rounded-xl font-bold border border-white/10 bg-surface-dark text-white hover:border-white/30 transition-all flex items-center gap-1.5"
+                      className="text-xs py-2 px-3.5 rounded-xl font-bold border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-dark text-slate-800 dark:text-white hover:border-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
                       Add 2 More
                     </button>
@@ -458,7 +457,7 @@ export default function ProductDetailsPage({
                     <button
                       type="button"
                       onClick={() => handleAddOrIncrement(3)}
-                      className="text-xs py-2 px-3.5 rounded-xl font-bold border border-white/10 bg-surface-dark text-white hover:border-white/30 transition-all flex items-center gap-1.5"
+                      className="text-xs py-2 px-3.5 rounded-xl font-bold border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-dark text-slate-800 dark:text-white hover:border-primary transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
                       Add 3 More
                     </button>
@@ -467,7 +466,7 @@ export default function ProductDetailsPage({
                       <button
                         type="button"
                         onClick={() => handleSetQty(1)}
-                        className="text-xs py-2 px-3.5 rounded-xl font-bold border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-all flex items-center gap-1.5"
+                        className="text-xs py-2 px-3.5 rounded-xl font-bold border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                         Keep Only 1 (Cancel Extra)
@@ -477,7 +476,7 @@ export default function ProductDetailsPage({
                     <button
                       type="button"
                       onClick={handleRemove}
-                      className="text-xs py-2 px-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-1 ml-auto"
+                      className="text-xs py-2 px-3 rounded-xl border border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all flex items-center gap-1 ml-auto cursor-pointer"
                       title="Remove entirely from cart"
                     >
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
@@ -488,25 +487,25 @@ export default function ProductDetailsPage({
               </div>
             ) : (
               /* If product is NOT YET in cart */
-              <div className="p-5 rounded-2xl bg-surface-card border border-white/10 space-y-4">
+              <div className="p-5 rounded-2xl bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 space-y-4 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   {/* Quantity Stepper */}
-                  <div className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl p-1">
+                  <div className="flex items-center gap-3 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl p-1">
                     <button
                       type="button"
                       onClick={() => setNewQty((q) => Math.max(1, q - 1))}
-                      className="w-8 h-8 rounded-lg bg-surface-dark text-text-main hover:bg-white/10 flex items-center justify-center font-bold transition-colors"
+                      className="w-8 h-8 rounded-lg bg-white dark:bg-surface-dark text-slate-700 dark:text-text-main hover:bg-slate-200 dark:hover:bg-white/10 flex items-center justify-center font-bold transition-colors cursor-pointer"
                       aria-label="Decrease quantity to add"
                     >
                       <Minus className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
-                    <span className="w-8 text-center font-bold font-mono text-sm text-white" aria-live="polite">
+                    <span className="w-8 text-center font-bold font-mono text-sm text-slate-900 dark:text-white" aria-live="polite">
                       {newQty}
                     </span>
                     <button
                       type="button"
                       onClick={() => setNewQty((q) => q + 1)}
-                      className="w-8 h-8 rounded-lg bg-surface-dark text-text-main hover:bg-white/10 flex items-center justify-center font-bold transition-colors"
+                      className="w-8 h-8 rounded-lg bg-white dark:bg-surface-dark text-slate-700 dark:text-text-main hover:bg-slate-200 dark:hover:bg-white/10 flex items-center justify-center font-bold transition-colors cursor-pointer"
                       aria-label="Increase quantity to add"
                     >
                       <Plus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -536,13 +535,13 @@ export default function ProductDetailsPage({
 
       {/* Related Dishes Section */}
       {relatedMeals.length > 0 && (
-        <section className="space-y-4 pt-8 border-t border-white/10">
+        <section className="space-y-4 pt-8 border-t border-slate-200 dark:border-white/10">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-text-main flex items-center gap-2">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-text-main flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" aria-hidden="true" />
               You Might Also Like
             </h3>
-            <span className="text-xs text-text-muted">Popular combinations in Kigali</span>
+            <span className="text-xs text-slate-500 dark:text-text-muted">Popular combinations in Kigali</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -550,9 +549,9 @@ export default function ProductDetailsPage({
               <div
                 key={relMeal.id}
                 onClick={() => onSelectMeal && onSelectMeal(relMeal)}
-                className="card-item group p-3 space-y-3 cursor-pointer overflow-hidden border-white/5 hover:border-primary/50 transition-all"
+                className="card-item group p-3 space-y-3 cursor-pointer overflow-hidden transition-all"
               >
-                <div className="aspect-video relative rounded-xl overflow-hidden bg-black/40">
+                <div className="aspect-video relative rounded-xl overflow-hidden bg-slate-100 dark:bg-black/40">
                   <img
                     src={relMeal.image}
                     alt={relMeal.name ? `${relMeal.name}` : ''}
@@ -572,10 +571,10 @@ export default function ProductDetailsPage({
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-xs text-text-main line-clamp-1 group-hover:text-primary transition-colors">
+                  <h4 className="font-bold text-xs text-slate-900 dark:text-text-main line-clamp-1 group-hover:text-primary transition-colors">
                     {relMeal.name}
                   </h4>
-                  <p className="text-[11px] text-text-muted line-clamp-1 mt-0.5">{relMeal.description}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-text-muted line-clamp-1 mt-0.5">{relMeal.description}</p>
                 </div>
               </div>
             ))}

@@ -92,17 +92,29 @@ body > div[class*="widget-overlay"] {
 }
 
 .card-item {
-  background: #231E1C;
+  background: var(--color-surface-card, #231E1C);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+html.light-theme .card-item, html:not(.dark) .card-item {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 .card-item:hover {
-  background: #2D2724;
-  border-color: rgba(174, 50, 0, 0.5);
+  background: var(--color-surface-card-hover, #2D2724);
+  border-color: rgba(255, 59, 0, 0.5);
   transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(174, 50, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 59, 0, 0.35);
+}
+
+html.light-theme .card-item:hover, html:not(.dark) .card-item:hover {
+  background: #FFFFFF;
+  border-color: rgba(255, 59, 0, 0.5);
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.1), 0 4px 12px -2px rgba(255, 59, 0, 0.15);
 }
 
 /* Primary Button Styling */
@@ -143,9 +155,20 @@ body > div[class*="widget-overlay"] {
   transition: all 0.2s ease;
 }
 
+html.light-theme .btn-secondary, html:not(.dark) .btn-secondary {
+  background: #F1F5F9;
+  color: #0F172A;
+  border: 1px solid #CBD5E1;
+}
+
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+html.light-theme .btn-secondary:hover, html:not(.dark) .btn-secondary:hover {
+  background: #E2E8F0;
+  border-color: #94A3B8;
 }
 
 /* Compact Button Variants */
@@ -192,9 +215,20 @@ body > div[class*="widget-overlay"] {
   transition: all 0.2s ease;
 }
 
+html.light-theme .btn-secondary-sm, html:not(.dark) .btn-secondary-sm {
+  background: #F1F5F9;
+  color: #0F172A;
+  border: 1px solid #CBD5E1;
+}
+
 .btn-secondary-sm:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+html.light-theme .btn-secondary-sm:hover, html:not(.dark) .btn-secondary-sm:hover {
+  background: #E2E8F0;
+  border-color: #94A3B8;
 }
 
 /* Badge Tags */

@@ -133,13 +133,13 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
         aria-labelledby="receipt-modal-title"
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="bg-surface-dark border border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:max-w-full print:w-full"
+        className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:max-w-full print:w-full"
       >
         {/* Header Actions */}
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-4 print:hidden">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4 print:hidden">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" aria-hidden="true" focusable="false" />
-            <h2 id="receipt-modal-title" className="text-base font-bold text-text-main">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0" aria-hidden="true" focusable="false" />
+            <h2 id="receipt-modal-title" className="text-base font-bold text-slate-900 dark:text-text-main">
               Official Order Receipt
             </h2>
           </div>
@@ -151,9 +151,9 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
               className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGeneratingPdf ? (
-                <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" aria-hidden="true" focusable="false" />
+                <Loader2 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 animate-spin" aria-hidden="true" focusable="false" />
               ) : (
-                <Download className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" focusable="false" />
+                <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" focusable="false" />
               )}
               {isGeneratingPdf ? 'Generating...' : 'PDF'}
             </button>
@@ -169,7 +169,7 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
               type="button"
               onClick={onClose}
               aria-label="Close receipt"
-              className="p-1.5 text-text-muted hover:text-white rounded-lg hover:bg-white/5"
+              className="p-1.5 text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-white/5"
             >
               <X className="w-5 h-5" aria-hidden="true" focusable="false" />
             </button>
@@ -189,25 +189,25 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
         {/* Printable Receipt Body */}
         <div
           ref={receiptRef}
-          className="p-4 bg-surface-card rounded-xl border border-white/5 space-y-4 font-mono text-xs print:p-0 print:bg-white print:border-none"
+          className="p-4 bg-slate-50 dark:bg-surface-card rounded-xl border border-slate-200 dark:border-white/5 space-y-4 font-mono text-xs print:p-0 print:bg-white print:border-none"
         >
-          <div className="text-center space-y-1 pb-3 border-b border-dashed border-white/20 print:border-black/20">
+          <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-300 dark:border-white/20 print:border-black/20">
             <div className="flex items-center justify-center gap-1.5 font-extrabold text-base text-primary print:text-black">
               <Flame className="w-5 h-5 text-primary print:text-black" aria-hidden="true" focusable="false" />
               HOTPOT DELIGHTS KIGALI
             </div>
-            <div className="text-[11px] text-text-muted print:text-gray-600">
+            <div className="text-[11px] text-slate-600 dark:text-text-muted print:text-gray-600">
               KG 7 Ave, Kimihurura, Kigali, Rwanda
             </div>
-            <div className="text-[11px] text-text-muted print:text-gray-600">
+            <div className="text-[11px] text-slate-600 dark:text-text-muted print:text-gray-600">
               Tel: +250 788 000 000 • TIN: 102938475
             </div>
           </div>
 
-          <div className="space-y-1 text-text-muted print:text-gray-800">
+          <div className="space-y-1 text-slate-600 dark:text-text-muted print:text-gray-800">
             <div className="flex justify-between gap-4">
               <span>Receipt No:</span>
-              <span className="font-bold text-text-main print:text-black">#{order.id}</span>
+              <span className="font-bold text-slate-900 dark:text-text-main print:text-black">#{order.id}</span>
             </div>
             <div className="flex justify-between gap-4">
               <span>Date &amp; Time:</span>
@@ -219,7 +219,7 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
             </div>
             <div className="flex justify-between gap-4">
               <span>Customer:</span>
-              <span className="font-bold text-text-main print:text-black">
+              <span className="font-bold text-slate-900 dark:text-text-main print:text-black">
                 {order.customerName || DASH}
               </span>
             </div>
@@ -233,7 +233,7 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
             </div>
             <div className="flex justify-between gap-4">
               <span>Payment Method:</span>
-              <span className="font-bold text-emerald-400 print:text-black text-right">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 print:text-black text-right">
                 {order.paymentMethod || DASH}
               </span>
             </div>
@@ -244,15 +244,15 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
           </div>
 
           {/* Itemized Table */}
-          <div className="pt-2 border-t border-dashed border-white/20 print:border-black/20 space-y-2">
-            <div className="flex justify-between font-bold text-text-main print:text-black uppercase text-[11px]">
+          <div className="pt-2 border-t border-dashed border-slate-300 dark:border-white/20 print:border-black/20 space-y-2">
+            <div className="flex justify-between font-bold text-slate-900 dark:text-text-main print:text-black uppercase text-[11px]">
               <span>Item</span>
               <span>Qty x Price</span>
             </div>
 
             <div className="space-y-1.5">
               {items.length === 0 ? (
-                <div className="text-text-subdued">No items recorded for this order.</div>
+                <div className="text-slate-400 dark:text-text-subdued">No items recorded for this order.</div>
               ) : (
                 items.map((item, idx) => {
                   const price = Number(item?.price) || 0;
@@ -260,19 +260,19 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
                   return (
                     <div
                       key={item?.id ?? `${item?.name}-${idx}`}
-                      className="flex justify-between gap-4 text-text-muted print:text-black"
+                      className="flex justify-between gap-4 text-slate-600 dark:text-text-muted print:text-black"
                     >
                       <div className="min-w-0">
-                        <div className="font-semibold text-text-main print:text-black truncate">
+                        <div className="font-semibold text-slate-900 dark:text-text-main print:text-black truncate">
                           {item?.name || 'Item'}
                         </div>
                         {item?.spice && (
-                          <div className="text-[10px] text-orange-400 print:text-gray-700">
+                          <div className="text-[10px] text-orange-600 dark:text-orange-400 print:text-gray-700">
                             Spice: {item.spice}
                           </div>
                         )}
                         {item?.broth && (
-                          <div className="text-[10px] text-amber-300 print:text-gray-700">
+                          <div className="text-[10px] text-amber-600 dark:text-amber-300 print:text-gray-700">
                             Broth: {item.broth}
                           </div>
                         )}
@@ -281,7 +281,7 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
                         <div>
                           {qty} x {rwf(price)}
                         </div>
-                        <div className="font-bold text-text-main print:text-black">{rwf(price * qty)} RWF</div>
+                        <div className="font-bold text-slate-900 dark:text-text-main print:text-black">{rwf(price * qty)} RWF</div>
                       </div>
                     </div>
                   );
@@ -291,16 +291,16 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
           </div>
 
           {/* Total Summary */}
-          <div className="pt-3 border-t border-dashed border-white/20 print:border-black/20 space-y-1">
-            <div className="flex justify-between text-text-muted print:text-black">
+          <div className="pt-3 border-t border-dashed border-slate-300 dark:border-white/20 print:border-black/20 space-y-1">
+            <div className="flex justify-between text-slate-600 dark:text-text-muted print:text-black">
               <span>Subtotal:</span>
               <span>{rwf(total)} RWF</span>
             </div>
-            <div className="flex justify-between text-text-muted print:text-black">
+            <div className="flex justify-between text-slate-600 dark:text-text-muted print:text-black">
               <span>Delivery Fee (Kigali):</span>
               <span>FREE</span>
             </div>
-            <div className="flex justify-between text-base font-extrabold text-primary print:text-black pt-1 border-t border-white/10">
+            <div className="flex justify-between text-base font-extrabold text-primary print:text-black pt-1 border-t border-slate-200 dark:border-white/10">
               <span>TOTAL PAID:</span>
               <span>{rwf(total)} RWF</span>
             </div>
