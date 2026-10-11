@@ -304,7 +304,7 @@ function AdminShell() {
 
             <div className="px-2.5 py-1.5 rounded-xl bg-black/60 border border-slate-800 text-xs font-mono font-black text-amber-300 flex items-center gap-1.5 shrink-0 min-h-11">
               <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-hidden="true" />
-              <span>{new Date(now).toLocaleTimeString()}</span>
+              <span>{new Date(now).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali' })}</span>
             </div>
 
             <button

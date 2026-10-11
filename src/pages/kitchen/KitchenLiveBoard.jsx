@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ChefHat, Clock, Flame, CheckCircle2, ArrowRight, Eye, Phone, MapPin,
   Check, AlertTriangle, ShieldCheck, Bike, Edit3, User, UserPlus,
-  RefreshCw, CheckSquare, Square
+  RefreshCw, CheckSquare, Square, XCircle
 } from 'lucide-react';
 import { useKitchen } from '../../context/KitchenContext';
 
@@ -15,6 +15,7 @@ export default function KitchenLiveBoard() {
     setSelectedOrder,
     setProofModalUrl,
     handleAdvanceStatus,
+    handleDeclineOrder,
     processingMap,
     checkedItems,
     toggleCheckItem,
@@ -27,6 +28,8 @@ export default function KitchenLiveBoard() {
     mobileColumn,
     setMobileColumn
   } = useKitchen();
+
+  const [confirmDeclineId, setConfirmDeclineId] = useState(null);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -201,29 +204,61 @@ export default function KitchenLiveBoard() {
                     )}
 
                     {/* Full-Width High-Contrast Anchored Action Button (min-h-11) */}
-                    <button
-                      type="button"
-                      disabled={!!processingMap[order.id]}
-                      onClick={() => handleAdvanceStatus(order.id, 'preparing')}
-                      className={`w-full py-3 min-h-11 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
-                        processingMap[order.id]
-                          ? 'bg-amber-900/50 text-amber-300/60 cursor-not-allowed'
-                          : 'bg-linear-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white shadow-orange-600/30 hover:shadow-orange-600/50'
-                      }`}
-                    >
-                      {processingMap[order.id] ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
-                          <span>Starting...</span>
-                        </>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={!!processingMap[order.id]}
+                        onClick={() => handleAdvanceStatus(order.id, 'preparing')}
+                        className={`flex-1 py-3 min-h-11 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] ${
+                          processingMap[order.id]
+                            ? 'bg-amber-900/50 text-amber-300/60 cursor-not-allowed'
+                            : 'bg-linear-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white shadow-orange-600/30 hover:shadow-orange-600/50'
+                        }`}
+                      >
+                        {processingMap[order.id] ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
+                            <span>Starting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Flame className="w-4 h-4 text-amber-300" />
+                            <span>{order.status === 'payment_review' ? 'Check Payment & Start' : 'Start Cooking'}</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                      {/* Decline button */}
+                      {confirmDeclineId === order.id ? (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => { handleDeclineOrder(order.id); setConfirmDeclineId(null); }}
+                            className="px-3 py-2 min-h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs flex items-center justify-center gap-1 shadow-lg transition-all"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>Yes</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeclineId(null)}
+                            className="px-3 py-2 min-h-11 rounded-xl bg-surface-card border border-white/10 text-text-muted hover:text-white font-black text-xs transition-all"
+                          >
+                            No
+                          </button>
+                        </div>
                       ) : (
-                        <>
-                          <Flame className="w-4 h-4 text-amber-300" />
-                          <span>{order.status === 'payment_review' ? 'Check Payment & Start' : 'Start Cooking'}</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </>
+                        <button
+                          type="button"
+                          disabled={!!processingMap[order.id]}
+                          onClick={() => setConfirmDeclineId(order.id)}
+                          className="px-3 py-2 min-h-11 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-600 hover:text-white font-black text-xs flex items-center justify-center gap-1 transition-all"
+                          title="Decline this order"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
                       )}
-                    </button>
+                    </div>
                   </div>
                 );
               })

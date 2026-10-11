@@ -10,14 +10,32 @@ const formatRWF = (value) =>
 
 const STATUS_LABELS = {
   pending: 'Pending',
+  payment_review: 'Payment Review',
   preparing: 'Preparing',
   ready: 'Ready',
   delivery: 'Out for delivery',
   delivered: 'Delivered',
-  cancelled: 'Cancelled'
+  cancelled: 'Declined'
 };
 
 const statusLabel = (status) => STATUS_LABELS[status] || 'Unknown';
+
+const formatKigaliTime = (order) => {
+  const raw = order?.created_at || order?.createdAt;
+  if (raw) {
+    try {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Africa/Kigali'
+        });
+      }
+    } catch {}
+  }
+  return order?.orderTime || 'Time unavailable';
+};
 
 const badgeFor = (status) => {
   if (status === 'delivered') return 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40';
@@ -114,7 +132,7 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onExploreMen
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-sm text-amber-400">Order #{order.id}</span>
                   <span className="text-xs text-text-muted">
-                    • {order.orderTime || 'Time unavailable'}
+                    • {formatKigaliTime(order)}
                   </span>
                 </div>
 

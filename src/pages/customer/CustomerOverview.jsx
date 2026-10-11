@@ -1,11 +1,29 @@
 import React, { useMemo } from 'react';
-import { ShoppingBag, DollarSign, Radio, ChevronRight, History, ChefHat, Bike, Award, Clock, MapPin, Navigation, Phone, FileText } from 'lucide-react';
+import { ShoppingBag, DollarSign, Radio, ChevronRight, History, ChefHat, Bike, Award, Clock, MapPin, Navigation, Phone, FileText, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../App';
 
 const formatRWF = (value) => Number.isFinite(Number(value)) ? `${Number(value).toLocaleString()} RWF` : '—';
-const STATUS_LABELS = { pending: 'Pending', preparing: 'Preparing', ready: 'Ready', delivery: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled' };
+const STATUS_LABELS = { pending: 'Pending', payment_review: 'Payment Review', preparing: 'Preparing', ready: 'Ready', delivery: 'Out for delivery', delivered: 'Delivered', cancelled: 'Declined' };
 const statusLabel = (status) => STATUS_LABELS[status] || 'Unknown';
+
+const formatKigaliTime = (order) => {
+  const raw = order?.created_at || order?.createdAt;
+  if (raw) {
+    try {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Africa/Kigali'
+        });
+      }
+    } catch {}
+  }
+  return order?.orderTime || 'Recently';
+};
+
 const isCookingOrTransit = (status) => status === 'preparing' || status === 'ready' || status === 'delivery';
 const itemQty = (item) => Number(item?.quantity) || 1;
 const itemLineTotal = (item) => (Number(item?.meal?.price) || 0) * itemQty(item);
@@ -46,10 +64,11 @@ export default function CustomerOverview({
 }) {
   const navigate = useNavigate();
   const orderList = useMemo(() => Array.isArray(orders) ? orders : [], [orders]);
-  const totalOrders = orderList.length;
-  // Customer sees orders in the live dashboard once the kitchen starts cooking ('preparing' or transit)
   const activeOrders = useMemo(() => orderList.filter(o => isCookingOrTransit(o.status)), [orderList]);
   const pendingOrders = useMemo(() => orderList.filter(o => o.status === 'pending'), [orderList]);
+  const declinedOrders = useMemo(() => orderList.filter(o => o.status === 'cancelled'), [orderList]);
+  const visibleRecentOrders = useMemo(() => orderList.filter(o => o.status !== 'cancelled'), [orderList]);
+  const totalOrders = visibleRecentOrders.length;
   const totalSpent = useMemo(() => orderList.reduce((acc, o) => (o.status === 'cancelled' ? acc : acc + (Number(o.totalRWF) || 0)), 0), [orderList]);
 
   return (
@@ -108,6 +127,34 @@ export default function CustomerOverview({
         </button>
       </div>
 
+      {/* DECLINED ORDERS BANNER */}
+      {declinedOrders.length > 0 && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+              <XCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-white text-sm font-bold flex items-center gap-2">
+                <span>{declinedOrders.length === 1 ? `Order #${declinedOrders[0].id} Declined` : `${declinedOrders.length} Orders Declined`}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/20 text-red-300 border border-red-500/30">
+                  Declined
+                </span>
+              </div>
+              <p className="text-xs text-red-300/80 mt-1">
+                Your order has been declined by the restaurant. If you already made a payment, please contact our support team for an immediate refund.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onSelectOrder(declinedOrders[0])}
+            className="min-h-10 px-3.5 py-1.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-bold transition-all shrink-0 self-end sm:self-center"
+          >
+            View Details
+          </button>
+        </div>
+      )}
+
       {/* AWAITING KITCHEN COOKING BANNER */}
       {pendingOrders.length > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -165,7 +212,7 @@ export default function CustomerOverview({
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-mono font-bold text-base text-white">#{order.id}</span>
-                      <span className="text-xs text-slate-400 ml-2">• {order.orderTime || 'Recently'}</span>
+                      <span className="text-xs text-slate-400 ml-2">• {formatKigaliTime(order)}</span>
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-[11px] uppercase tracking-wider border ${getStatusBadge(order.status)}`}>
                       {statusLabel(order.status)}
@@ -233,22 +280,22 @@ export default function CustomerOverview({
             </button>
           </div>
 
-          {loading && orderList.length === 0 ? (
+          {loading && visibleRecentOrders.length === 0 ? (
             <div className="py-10 text-center space-y-3">
               <span className="inline-block w-8 h-8 rounded-full border-2 border-slate-600 border-t-orange-400 animate-spin" />
               <p className="text-xs text-slate-400">Loading your orders…</p>
             </div>
-          ) : orderList.length === 0 ? (
+          ) : visibleRecentOrders.length === 0 ? (
             <div className="py-10 text-center space-y-3">
               <ShoppingBag className="w-10 h-10 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">No orders placed yet.</p>
+              <p className="text-xs text-slate-400">No active orders.</p>
               <button onClick={onExploreMenu} className="min-h-11 px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs">
                 Browse HotPot Menu
               </button>
             </div>
           ) : (
             <div className="space-y-3">
-              {orderList.slice(0, 4).map((order) => (
+              {visibleRecentOrders.slice(0, 4).map((order) => (
                 <div key={order.id} className="p-3.5 rounded-xl bg-[#14171F] border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition-all">
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -256,7 +303,7 @@ export default function CustomerOverview({
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusBadge(order.status)}`}>
                         {statusLabel(order.status)}
                       </span>
-                      <span className="text-[11px] text-slate-500">• {order.orderTime || 'Recently'}</span>
+                      <span className="text-[11px] text-slate-500">• {formatKigaliTime(order)}</span>
                     </div>
                     <p className="text-xs text-slate-300 truncate max-w-sm">
                       {(order.items || []).map((i) => `${itemQty(i)}x ${i?.name}`).join(', ') || 'No items recorded'}

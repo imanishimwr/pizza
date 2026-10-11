@@ -192,7 +192,7 @@ export default function CustomerLayout({
             <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs text-slate-300 bg-[#1A1D24] border border-slate-800 px-3 py-1.5 rounded-xl shadow-xs">
               <Clock className="w-3.5 h-3.5 text-orange-400" />
               <span>
-                {currentTime.toLocaleTimeString('en-US', { hour12: false })} <span className="text-[10px] text-slate-500">CAT</span>
+                {currentTime.toLocaleTimeString('en-US', { hour12: false, timeZone: 'Africa/Kigali' })} <span className="text-[10px] text-slate-500">CAT</span>
               </span>
             </div>
           </div>

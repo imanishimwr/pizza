@@ -145,11 +145,12 @@ function formatTimestamp(value) {
   if (!value) return DASH;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return DASH;
-  return parsed.toLocaleString([], {
+  return parsed.toLocaleString('en-GB', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Africa/Kigali'
   });
 }
 
@@ -159,7 +160,11 @@ function formatEta(etaMinutes, etaTime) {
   if (etaTime) {
     const parsed = new Date(etaTime);
     if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return parsed.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Africa/Kigali'
+      });
     }
   }
   return DASH;
@@ -507,9 +512,9 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
         >
           <XCircle className="w-8 h-8 text-red-400 shrink-0" aria-hidden="true" />
           <div>
-            <h3 className="font-bold text-lg text-red-200">Order {orderRef} cancelled</h3>
+            <h3 className="font-bold text-lg text-red-200">Order {orderRef} Declined</h3>
             <p className="text-xs text-red-300">
-              The kitchen was notified. Contact support if you were charged.
+              This order has been declined by the restaurant. If you already made a payment, please contact our support team for an immediate refund.
             </p>
           </div>
         </div>
@@ -531,11 +536,11 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                     : 'bg-slate-500/15 border-slate-500/30 text-slate-300'
               }`}
             >
-              {statusLabel}
+              {isCancelled ? 'Declined' : statusLabel}
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
-            {isCancelled ? 'Order cancelled' : isDelivered ? 'Order delivered' : 'Order status'}
+            {isCancelled ? 'Order Declined' : isDelivered ? 'Order delivered' : 'Order status'}
           </h2>
           <p className="text-xs text-slate-400">
             {isDelivered

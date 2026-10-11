@@ -736,7 +736,7 @@ export default function AdminOrders() {
                         disabled={Boolean(pendingStatusChange) || deletingOrderId === order.id}
                         className="px-3 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-600 hover:text-white transition-all min-h-11 disabled:opacity-60"
                       >
-                        Cancel order
+                        Decline order
                       </button>
                     )}
                     <button

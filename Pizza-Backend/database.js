@@ -314,7 +314,11 @@ function serializeOrder(row, items = [], opts = {}) {
     createdAt,
     updatedAt: row.updated_at,
     orderTime: createdAt
-      ? new Date(createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      ? new Date(createdAt).toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Africa/Kigali'
+        })
       : null,
     ...(opts.includePin ? { verificationPin: row.verification_pin || null } : {}),
     items: lines
@@ -718,6 +722,12 @@ module.exports = {
           special_note: String(item.specialNote || '').slice(0, 500)
         };
       });
+
+      // Transport / delivery fee (1,500 RWF for delivery orders)
+      const isDelivery = (order.orderType || 'delivery').toLowerCase() === 'delivery';
+      if (isDelivery) {
+        totalRWF += 1500;
+      }
 
       // Secure unique order ID generation
       let orderId = `HP-${crypto.randomInt(100000, 1000000)}`;

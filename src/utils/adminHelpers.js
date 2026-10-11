@@ -68,7 +68,9 @@ export const formatRwf = (value) => rwf(value).toLocaleString('en-US');
 export const formatWhen = (iso) => {
   if (!iso) return '';
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleString('en-GB', { timeZone: 'Africa/Kigali' });
 };
 
 export const formatClock = (iso) => {
@@ -76,7 +78,7 @@ export const formatClock = (iso) => {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? ''
-    : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    : date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
 };
 
 /** RFC-4180 cell escape */

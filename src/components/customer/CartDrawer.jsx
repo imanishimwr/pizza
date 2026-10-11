@@ -10,7 +10,7 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])'
 ].join(', ');
 
-const DELIVERY_FEE = 0;
+const DELIVERY_FEE = 1500;
 
 const rwf = (value) => Number(value || 0).toLocaleString();
 

@@ -450,6 +450,30 @@ export function KitchenProvider({
     }
   }, [soundEnabled, triggerToast]);
 
+  // Kitchen / Admin decline an order (staff bypass-grace cancel)
+  const handleDeclineOrder = useCallback(async (orderId) => {
+    if (processingMap[orderId]) return;
+    setProcessingMap(prev => ({ ...prev, [orderId]: true }));
+    try {
+      if (onCancelOrder) {
+        await onCancelOrder(orderId);
+      }
+      if (soundEnabled) notificationService.playChime('status_update');
+      triggerToast(`❌ Order #${orderId} declined — customer notified.`);
+    } catch (err) {
+      console.error('Decline order error:', err);
+      triggerToast(`⚠️ Could not decline order #${orderId}: ${err.message || 'Server error'}`);
+    } finally {
+      setTimeout(() => {
+        setProcessingMap(prev => {
+          const copy = { ...prev };
+          delete copy[orderId];
+          return copy;
+        });
+      }, 500);
+    }
+  }, [processingMap, onCancelOrder, soundEnabled, triggerToast]);
+
   const value = {
     orders,
     loading,
@@ -508,7 +532,8 @@ export function KitchenProvider({
     handleManualRefresh,
     mobileColumn,
     setMobileColumn,
-    getUrgency
+    getUrgency,
+    handleDeclineOrder
   };
 
   return (

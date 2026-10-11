@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { uploadPaymentProof, createOrder, session } from '../../services/apiService';
 
-const DELIVERY_FEE = 0;
+const DELIVERY_FEE = 1500;
 const rwf = (v) => Number(v || 0).toLocaleString();
 const validatePhone = (num) => /^(078|079|072|073)\d{7}$/.test(String(num || '').replace(/\s+/g, ''));
 
@@ -514,7 +514,7 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
                 <span>Subtotal</span><span style={{ fontFamily: 'monospace' }}>{rwf(subtotal)} RWF</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
-                <span>Kigali Delivery</span><span style={{ fontFamily: 'monospace', color: '#34d399', fontWeight: 600 }}>FREE</span>
+                <span>Kigali Delivery</span><span style={{ fontFamily: 'monospace' }}>{rwf(DELIVERY_FEE)} RWF</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 900, color: 'var(--text-main)', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                 <span>Total</span>

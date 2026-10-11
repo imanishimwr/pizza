@@ -132,7 +132,7 @@ export default function KitchenArchive() {
                       {order.status === 'delivered' ? '✅ DELIVERED' : '🛵 ON THE WAY'}
                     </span>
                     <span className="text-[11px] text-text-subdued font-mono">
-                      {order.orderTime || (order.created_at ? new Date(order.created_at).toLocaleTimeString() : '')}
+                      {order.orderTime || (order.created_at ? new Date(order.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' }) : '')}
                     </span>
                   </div>
 
