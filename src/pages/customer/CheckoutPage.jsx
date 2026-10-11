@@ -14,7 +14,7 @@ const validatePhone = (num) => /^(078|079|072|073)\d{7}$/.test(String(num || '')
 
 
 const MOMO_NUMBER = '0785000001';
-const MOMO_NAME = 'HotPot Delights Ltd';
+const MOMO_NAME = 'HotPot Ltd';
 
 const STEPS = [
   { id: 'details', label: 'Your Details' },

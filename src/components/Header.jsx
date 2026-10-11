@@ -151,15 +151,15 @@ export default function Header({
         <button
           type="button"
           onClick={() => navigate('menu')}
-          aria-label="HotPot Delights home"
+          aria-label="HotPot home"
           className="flex items-center gap-2.5 cursor-pointer group shrink-0 text-left"
         >
-          <span className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-black border border-slate-200 dark:border-white/20 overflow-hidden flex items-center justify-center shadow-md group-hover:scale-105 transition-transform p-0.5">
-            <img src="/assets/1152x1152_S7.png" alt="" className="w-full h-full object-contain" />
+          <span className="w-10 h-10 rounded-xl bg-black border border-slate-200 dark:border-white/20 overflow-hidden flex items-center justify-center shadow-md group-hover:scale-105 transition-transform p-0.5">
+            <img src="/hotpot-logo.png" alt="HotPot Logo" className="w-full h-full object-contain" />
           </span>
           <span>
             <span className="block text-base sm:text-xl font-extrabold tracking-tight text-slate-900 dark:bg-linear-to-r dark:from-white dark:via-orange-100 dark:to-primary dark:bg-clip-text dark:text-transparent">
-              Hot Pot
+              HotPot
             </span>
             <span className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping inline-block" aria-hidden="true" />

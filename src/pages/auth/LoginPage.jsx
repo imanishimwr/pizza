@@ -70,7 +70,7 @@ export default function LoginPage({ onLoginSuccess }) {
         
         {/* Left Panel: Hero Graphic with HotPot Scooter & Animations */}
         <AuthHeroPanel
-          title="HotPot Delights"
+          title="HotPot"
           subtitle="Fast Gourmet Delivery across Kigali"
         />
 
@@ -86,7 +86,7 @@ export default function LoginPage({ onLoginSuccess }) {
             <div className="flex items-center gap-3.5 mb-6">
               <div
                 className="logo-animated-glow w-12 h-12 rounded-2xl bg-black border border-white/20 p-1 flex items-center justify-center shadow-lg shadow-orange-500/30 ring-2 ring-orange-500/30 shrink-0 cursor-pointer overflow-hidden"
-                title="HotPot Delights"
+                title="HotPot"
               >
                 <img
                   src="/hotpot-logo.png"

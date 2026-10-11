@@ -82,8 +82,8 @@ export default function AuthHeroPanel() {
             />
           </div>
           <div>
-            <span className="text-white font-black text-lg tracking-tight block">
-              HotPot <span className="text-orange-400">Delights</span>
+            <span className="text-white font-black text-xl tracking-tight block">
+              HotPot
             </span>
             <span className="text-white/50 text-[11px] font-semibold uppercase tracking-wider block">
               Kigali Delivery Hub
@@ -149,7 +149,7 @@ export default function AuthHeroPanel() {
             />
           </div>
           <div className="mt-4 text-center">
-            <div className="text-sm font-black text-white tracking-tight">HotPot Delights Rwanda</div>
+            <div className="text-sm font-black text-white tracking-tight">HotPot Rwanda</div>
             <div className="text-[11px] text-orange-400 font-semibold uppercase tracking-wider">
               The Home of Authentic Pizza &amp; Hotpot
             </div>

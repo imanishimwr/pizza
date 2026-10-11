@@ -131,7 +131,7 @@ export default function AdminOrders() {
       fillColor: '#AE3200',
       fillOpacity: 1
     }).addTo(map);
-    restaurantMarker.bindPopup('HotPot Delights kitchen');
+    restaurantMarker.bindPopup('HotPot kitchen');
     staticLayersRef.current.push(restaurantMarker);
 
     if (destination) {
@@ -343,7 +343,7 @@ export default function AdminOrders() {
 
       doc.setFont('courier', 'bold');
       doc.setFontSize(11);
-      doc.text('HOTPOT DELIGHTS', width / 2, y, { align: 'center' });
+      doc.text('HOTPOT', width / 2, y, { align: 'center' });
       y += 4.5;
       doc.setFont('courier', 'normal');
       doc.setFontSize(7);
@@ -398,7 +398,7 @@ export default function AdminOrders() {
       y += 6;
       doc.setFont('courier', 'normal');
       doc.setFontSize(7);
-      doc.text('Thank you for dining with HotPot Delights!', width / 2, y, { align: 'center' });
+      doc.text('Thank you for dining with HotPot!', width / 2, y, { align: 'center' });
 
       doc.save(`HotPot_Kitchen_Ticket_${order.id}.pdf`);
     } catch (err) {

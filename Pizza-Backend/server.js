@@ -194,7 +194,7 @@ function pinVisibilityFor(req, order) {
 // Health
 // ===========================================================================
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'HotPot Delights API', time: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'HotPot API', time: new Date().toISOString() });
 });
 
 // ===========================================================================

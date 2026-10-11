@@ -192,9 +192,9 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
           className="p-4 bg-slate-50 dark:bg-surface-card rounded-xl border border-slate-200 dark:border-white/5 space-y-4 font-mono text-xs print:p-0 print:bg-white print:border-none"
         >
           <div className="text-center space-y-1 pb-3 border-b border-dashed border-slate-300 dark:border-white/20 print:border-black/20">
-            <div className="flex items-center justify-center gap-1.5 font-extrabold text-base text-primary print:text-black">
-              <Flame className="w-5 h-5 text-primary print:text-black" aria-hidden="true" focusable="false" />
-              HOTPOT DELIGHTS KIGALI
+            <div className="flex items-center justify-center gap-2 font-extrabold text-base text-primary print:text-black">
+              <img src="/hotpot-logo.png" alt="HotPot" className="w-6 h-6 object-contain inline-block rounded-md" />
+              HOTPOT KIGALI
             </div>
             <div className="text-[11px] text-slate-600 dark:text-text-muted print:text-gray-600">
               KG 7 Ave, Kimihurura, Kigali, Rwanda
@@ -307,7 +307,7 @@ export default function ReceiptModal({ isOpen, onClose, order }) {
           </div>
 
           <div className="text-center text-[10px] text-text-subdued pt-4 print:text-gray-500">
-            Murakoze! Thank you for ordering with HotPot Delights.
+            Murakoze! Thank you for ordering with HotPot.
             <br />Enjoy your authentic gourmet meal!
           </div>
         </div>

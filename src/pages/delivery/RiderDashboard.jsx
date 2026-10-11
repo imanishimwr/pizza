@@ -32,7 +32,7 @@ const PICKUP_STATUSES = ['preparing', 'ready'];
 const DROPOFF_STATUSES = ['delivery'];
 
 const RESTAURANT = Object.freeze({
-  name: 'HotPot Delights Kitchen HQ',
+  name: 'HotPot Kitchen HQ',
   address: 'KG 7 Ave, Kimihurura, Kigali'
 });
 

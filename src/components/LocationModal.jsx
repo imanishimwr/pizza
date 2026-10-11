@@ -255,7 +255,7 @@ export default function LocationModal({ isOpen, onClose, user, onSave }) {
           </div>
 
           <p id="location-modal-description" className="text-xs text-text-muted leading-relaxed">
-            HotPot Delights requires your location to assign the nearest delivery rider in Kigali and
+            HotPot requires your location to assign the nearest delivery rider in Kigali and
             provide live order tracking.
           </p>
 

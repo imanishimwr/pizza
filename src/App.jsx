@@ -1164,8 +1164,11 @@ function AppContent() {
         <footer className="border-t border-white/10 bg-surface-dark py-12 px-4 mt-auto">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
             <div className="space-y-3">
-              <h4 className="font-extrabold text-white text-lg flex items-center justify-center md:justify-start gap-2">
-                <Flame className="w-5 h-5 text-primary" /> HotPot Delights
+              <h4 className="font-extrabold text-white text-lg flex items-center justify-center md:justify-start gap-2.5">
+                <span className="w-8 h-8 rounded-lg bg-black border border-white/20 p-0.5 inline-flex items-center justify-center overflow-hidden shrink-0">
+                  <img src="/hotpot-logo.png" alt="HotPot" className="w-full h-full object-contain" />
+                </span>
+                <span>HotPot</span>
               </h4>
               <p className="text-xs text-text-muted leading-relaxed">
                 Authentic Gourmet Hotpot &amp; Artisanal Pizza Delivery in Kigali.
@@ -1178,13 +1181,13 @@ function AppContent() {
               <div className="text-xs text-text-muted space-y-1">
                 <p>KG 9 Ave, Nyarutarama, Kigali</p>
                 <p>+250 788 000 001</p>
-                <p>hello@hotpotdelights.rw</p>
+                <p>hello@hotpot.rw</p>
               </div>
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center justify-center gap-2 text-center text-[11px] text-text-subdued">
             <p className="font-semibold text-text-muted">
-              HotPot Delights © {new Date().getFullYear()} — Premium Kigali Dining Experience
+              HotPot © {new Date().getFullYear()} — Premium Kigali Dining Experience
             </p>
           </div>
         </footer>

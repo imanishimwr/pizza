@@ -408,12 +408,12 @@ function KitchenShell() {
 
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs sm:text-sm font-black text-white tracking-wide shrink-0 whitespace-nowrap">
-                HotPot Delights KDS
+                HotPot KDS
               </span>
               <span className="hidden lg:inline-block text-white/30">•</span>
               <span className="hidden lg:inline-flex items-center gap-1.5 text-xs text-amber-400 font-bold bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 shrink-0 whitespace-nowrap shadow-sm">
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
-                <span>HotPot Delights — Nyarutarama Station</span>
+                <span>HotPot — Nyarutarama Station</span>
               </span>
               <span className="hidden xl:inline-block text-white/30">•</span>
               <span className="hidden xl:inline-block text-xs font-mono text-text-muted shrink-0 whitespace-nowrap capitalize">

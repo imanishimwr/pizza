@@ -194,15 +194,15 @@ export default function Home({
                   <div className="relative p-6 sm:p-8 rounded-3xl bg-surface-dark/95 border-2 border-amber-500/50 shadow-2xl flex flex-col items-center text-center space-y-3 backdrop-blur-md">
                     <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-black border border-white/20 p-1 flex items-center justify-center shadow-2xl shadow-primary/50 overflow-hidden group-hover:scale-105 transition-transform">
                       <img
-                        src="/assets/1152x1152_S7.png"
-                        alt="HotPot Delights logo"
+                        src="/hotpot-logo.png"
+                        alt="HotPot logo"
                         className="w-full h-full object-contain rounded-xl"
                         onError={(event) => applyImageFallback(event)}
                       />
                     </div>
                     <div>
                       <h3 className="text-2xl font-black bg-linear-to-r from-white via-orange-200 to-amber-400 bg-clip-text text-transparent">
-                        Hot Pot
+                        HotPot
                       </h3>
                       <p className="text-xs font-bold text-amber-300 uppercase tracking-widest mt-1">
                         Welcome to the home of pizza • 24/7 Delivery

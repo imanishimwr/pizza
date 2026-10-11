@@ -255,7 +255,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     : 'Welcome back';
   const subheading =
     mode === 'forgot' ? 'Our support team will help you recover access'
-    : mode === 'register' ? 'Join HotPot Delights â€” fast gourmet delivery in Kigali'
+    : mode === 'register' ? 'Join HotPot — fast gourmet delivery in Kigali'
     : 'Sign in to track and manage your orders';
 
   return (
@@ -407,7 +407,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                   <p className="text-xs text-slate-600 dark:text-white/50 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-3 leading-relaxed">
                     <KeyRound className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5 text-orange-500" />
                     Self-service reset is not available here. Email{' '}
-                    <a className="text-orange-500 font-semibold hover:underline" href="mailto:hello@hotpotdelights.rw">hello@hotpotdelights.rw</a>
+                    <a className="text-orange-500 font-semibold hover:underline" href="mailto:hello@hotpot.rw">hello@hotpot.rw</a>
                     {' '}or call <span className="font-semibold">+250 788 000 001</span>.
                   </p>
                   <button type="button" onClick={() => { setMode('signin'); setErrorMsg(''); }}

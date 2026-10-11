@@ -57,5 +57,5 @@ export const PROMO_BANNERS = [
 export const CONTACT = {
   address: 'KG 9 Ave, Nyarutarama, Kigali',
   phone: '+250 788 000 001',
-  email: 'hello@hotpotdelights.rw'
+  email: 'hello@hotpot.rw'
 };

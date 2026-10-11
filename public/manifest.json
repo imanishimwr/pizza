@@ -1,8 +1,9 @@
 {
   "short_name": "HotPot",
-  "name": "HotPot Delights - Kigali Gourmet Delivery",
+  "name": "HotPot - Kigali Gourmet Delivery",
   "description": "Order authentic hotpot combos, spicy broths, gourmet pizzas, and sides delivered fresh in Kigali, Rwanda.",
   "icons": [
+    { "src": "/hotpot-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
     { "src": "/assets/128x128_8h.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
     { "src": "/assets/288x288_gV.png", "sizes": "288x288", "type": "image/png", "purpose": "any" },
     { "src": "/assets/512x512_2h.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

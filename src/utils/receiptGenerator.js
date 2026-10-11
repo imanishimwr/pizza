@@ -65,12 +65,12 @@ export function buildOrderReceipt(order) {
   doc.setTextColor(249, 115, 22);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('HOTPOT DELIGHTS', pageWidth / 2, y + 9, { align: 'center' });
+  doc.text('HOTPOT', pageWidth / 2, y + 9, { align: 'center' });
   doc.setTextColor(214, 211, 209);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.text('Artisanal Hotpot & Pizza · Nyarutarama, Kigali', pageWidth / 2, y + 15, { align: 'center' });
-  doc.text('Tel: +250 788 000 001  |  orders@hotpotdelights.rw', pageWidth / 2, y + 20, { align: 'center' });
+  doc.text('Tel: +250 788 000 001  |  orders@hotpot.rw', pageWidth / 2, y + 20, { align: 'center' });
   y += 30;
 
   // --- Title + order status ----------------------------------------------
@@ -212,10 +212,10 @@ export function buildOrderReceipt(order) {
   doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
   doc.setTextColor(120, 113, 108);
   doc.setFontSize(7.5);
-  doc.text('Murakoze cyane — thank you for dining with HotPot Delights.', pageWidth / 2, footerY, {
+  doc.text('Murakoze cyane — thank you for dining with HotPot.', pageWidth / 2, footerY, {
     align: 'center'
   });
-  doc.text('hotpotdelights.rw · +250 788 000 001', pageWidth / 2, footerY + 4, { align: 'center' });
+  doc.text('hotpot.rw · +250 788 000 001', pageWidth / 2, footerY + 4, { align: 'center' });
 
   return doc;
 }

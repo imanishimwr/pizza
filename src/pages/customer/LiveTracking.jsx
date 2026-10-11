@@ -335,9 +335,9 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       L.marker([KITCHEN_PIN.lat, KITCHEN_PIN.lng], {
         icon: buildPillIcon('#EA580C', `\u{1F372} HotPot ${CONTACT.address.split(',').slice(0, 2).join(',')}`),
         keyboard: true,
-        title: `HotPot Delights kitchen \u2014 ${CONTACT.address}`
+        title: `HotPot kitchen \u2014 ${CONTACT.address}`
       })
-        .bindPopup(buildMapPopup('HotPot Delights kitchen', CONTACT.address))
+        .bindPopup(buildMapPopup('HotPot kitchen', CONTACT.address))
         .addTo(map);
 
       destinationMarkerRef.current = L.marker([KITCHEN_PIN.lat, KITCHEN_PIN.lng], {
