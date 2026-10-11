@@ -127,12 +127,14 @@ export default function CustomerLayout({
             )}
             <button
               onClick={() => navigate(ROUTES.home)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-600 dark:text-orange-300 text-xs font-bold transition-all min-h-11 ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white text-xs font-bold transition-all min-h-11 btn-primary-interactive group shadow-md shadow-orange-500/20 ${
                 isSidebarCollapsed ? 'md:justify-center md:px-0' : ''
               }`}
             >
-              <Flame className="w-4 h-4 shrink-0" />
+              <span className="btn-shimmer" />
+              <Flame className="w-4 h-4 shrink-0 text-white animate-pulse" />
               <span className={`${isSidebarCollapsed ? 'md:hidden' : ''}`}>Explore Food Menu</span>
+              <ArrowRight className={`w-3.5 h-3.5 ml-auto btn-icon-slide ${isSidebarCollapsed ? 'md:hidden' : ''}`} />
             </button>
             <button
               onClick={onOpenCart}

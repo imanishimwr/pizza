@@ -520,3 +520,165 @@ a:focus:not(:focus-visible) {
 .skip-link:focus {
   top: 0;
 }
+
+/* ==========================================================================
+   Auth & Hero Keyframe Animations
+   ========================================================================== */
+@keyframes authScooterEntrance {
+  0% {
+    opacity: 0;
+    transform: translateX(-90px) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(10px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes authScooterFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes authPulseRing {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(0.92);
+    opacity: 0.5;
+  }
+}
+
+@keyframes authFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes authFormIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes flameGlowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(255, 87, 34, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(255, 87, 34, 0.8));
+  }
+}
+
+.auth-scooter-entrance {
+  animation: authScooterEntrance 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+             authScooterFloat 3.5s ease-in-out infinite 0.9s;
+}
+
+.auth-pulse-ring-1 {
+  animation: authPulseRing 4s ease-in-out infinite;
+}
+
+.auth-pulse-ring-2 {
+  animation: authPulseRing 4s ease-in-out infinite 2s;
+}
+
+.auth-stagger > *:nth-child(1) { animation: authFadeUp 0.35s ease-out 0.05s both; }
+.auth-stagger > *:nth-child(2) { animation: authFadeUp 0.35s ease-out 0.12s both; }
+.auth-stagger > *:nth-child(3) { animation: authFadeUp 0.35s ease-out 0.19s both; }
+.auth-stagger > *:nth-child(4) { animation: authFadeUp 0.35s ease-out 0.26s both; }
+.auth-stagger > *:nth-child(5) { animation: authFadeUp 0.35s ease-out 0.33s both; }
+.auth-stagger > *:nth-child(6) { animation: authFadeUp 0.35s ease-out 0.40s both; }
+.auth-stagger > *:nth-child(7) { animation: authFadeUp 0.35s ease-out 0.47s both; }
+.auth-stagger > *:nth-child(8) { animation: authFadeUp 0.35s ease-out 0.54s both; }
+
+.logo-animated-glow {
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+.logo-animated-glow:hover,
+.logo-animated-glow:focus {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 14px rgba(255, 87, 34, 0.65));
+}
+
+/* ==========================================================================
+   Primary & Secondary Interactive Button Styles & Shimmer
+   ========================================================================== */
+.btn-primary-interactive {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #FF5722 0%, #F97316 100%);
+  color: #FFFFFF !important;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-primary-interactive:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(255, 87, 34, 0.35);
+}
+.btn-primary-interactive:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.btn-primary-interactive:disabled {
+  opacity: 0.8;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+.btn-primary-interactive .btn-shimmer {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: transform 0.65s ease;
+  pointer-events: none;
+}
+.btn-primary-interactive:hover:not(:disabled) .btn-shimmer {
+  transform: translateX(100%);
+}
+.btn-primary-interactive .btn-icon-slide {
+  transition: transform 0.2s ease;
+}
+.btn-primary-interactive:hover:not(:disabled) .btn-icon-slide {
+  transform: translateX(3px);
+}
+
+.btn-secondary-interactive {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-secondary-interactive:hover:not(:disabled) {
+  transform: scale(1.05);
+  border-color: rgba(255, 87, 34, 0.4) !important;
+}
+.btn-secondary-interactive:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.btn-secondary-interactive:disabled {
+  opacity: 0.8;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+

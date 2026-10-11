@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   X, Lock, User, Mail, LogIn, ArrowRight, Flame, Phone,
   Eye, EyeOff, AlertCircle, Sparkles, KeyRound, ChevronLeft,
@@ -28,24 +28,12 @@ function PrimaryBtn({ children, disabled, ...rest }) {
       {...rest}
       disabled={disabled}
       className={
-        'relative w-full overflow-hidden group ' +
-        'bg-gradient-to-r from-orange-600 via-red-500 to-orange-500 ' +
-        'hover:from-orange-500 hover:via-red-400 hover:to-orange-400 ' +
-        'text-white text-sm py-3 font-black rounded-xl ' +
-        'shadow-lg shadow-orange-600/30 hover:shadow-orange-600/50 ' +
-        'transition-all duration-200 active:scale-[0.98] ' +
-        'flex items-center justify-center gap-2 cursor-pointer ' +
-        'disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none'
+        'btn-primary-interactive group relative w-full overflow-hidden ' +
+        'text-white text-sm py-3.5 font-black rounded-xl ' +
+        'flex items-center justify-center gap-2 cursor-pointer mt-2'
       }
     >
-      <span
-        aria-hidden="true"
-        className={
-          'pointer-events-none absolute inset-0 -translate-x-full ' +
-          'bg-gradient-to-r from-transparent via-white/20 to-transparent ' +
-          'group-hover:translate-x-full transition-transform duration-700'
-        }
-      />
+      <span className="btn-shimmer" />
       {children}
     </button>
   );
@@ -384,8 +372,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
               {/* Logo + heading */}
               <div className="flex items-center gap-3">
-                <div className="logo-flame-btn w-11 h-11 rounded-2xl bg-gradient-to-tr from-orange-600 to-red-500 flex items-center justify-center text-white shadow-lg ring-2 ring-orange-500/20">
-                  <Flame className="w-6 h-6" />
+                <div className="logo-animated-glow w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#FF5722] to-amber-500 flex items-center justify-center text-white shadow-lg ring-2 ring-orange-500/20 cursor-pointer">
+                  <Flame className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
                   <h2 id={titleId} className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
@@ -569,7 +557,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                       <>
                         <LogIn className="w-4 h-4" />
                         <span>{mode === 'register' ? 'Create account' : 'Sign in'}</span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                        <ArrowRight className="w-4 h-4 btn-icon-slide transition-transform" />
                       </>
                     )}
                   </PrimaryBtn>

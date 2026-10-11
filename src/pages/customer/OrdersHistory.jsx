@@ -185,31 +185,31 @@ export default function OrdersHistory({ orders = [], onSelectOrder, onExploreMen
                     <button
                       type="button"
                       onClick={() => onSelectOrder(order)}
-                      className="p-1.5 px-3 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-600 dark:text-primary font-bold transition-all flex items-center gap-1.5 text-[11px]"
+                      className="p-1.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700 btn-secondary-interactive font-bold flex items-center gap-1.5 text-[11px]"
                       title="Open this order in live tracking"
                     >
-                      <Navigation className="w-3.5 h-3.5" aria-hidden="true" />
-                      Track order
+                      <Navigation className="w-3.5 h-3.5 text-orange-500" aria-hidden="true" />
+                      Track Order
                     </button>
                   )}
 
                   <button
                     type="button"
                     onClick={() => handleDownloadReceipt(order)}
-                    className="p-1.5 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                    className="p-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700 btn-secondary-interactive flex items-center gap-1 text-[11px] font-bold"
                     title="Download PDF Receipt"
                   >
                     <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" />
-                    PDF
+                    Download PDF
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setSelectedReceipt(order)}
-                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-white/5 dark:hover:bg-white/10 dark:border-white/10 dark:text-slate-300 dark:hover:text-white transition-colors flex items-center gap-1 text-[11px]"
+                    className="p-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700 btn-secondary-interactive flex items-center gap-1 text-[11px] font-bold"
                     title="View & Print Receipt"
                   >
-                    <FileText className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+                    <FileText className="w-3.5 h-3.5 text-orange-500" aria-hidden="true" />
                     Receipt
                   </button>
 
