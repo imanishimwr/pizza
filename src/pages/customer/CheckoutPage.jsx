@@ -174,47 +174,45 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
   const stepIdx = STEPS.findIndex((s) => s.id === step);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-dark)', color: 'var(--text-main)' }}>
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F1117] text-slate-800 dark:text-slate-200 transition-colors">
       {/* Header */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 40,
-        background: 'rgba(18,18,24,0.96)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12
-      }}>
+      <div className="sticky top-0 z-40 bg-white/95 dark:bg-[#121218]/95 backdrop-blur-md border-b border-slate-200 dark:border-white/10 px-4 py-3 flex items-center gap-3 shadow-xs">
         <button
           type="button"
           onClick={() => step === 'details' ? navigate('/') : setStep(step === 'proof' ? 'payment' : 'details')}
-          style={{
-            padding: '8px', borderRadius: 10, background: 'transparent', border: 'none',
-            color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center'
-          }}
+          className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-text-muted dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer flex items-center"
+          aria-label="Back"
         >
           <ArrowLeft size={20} />
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Flame size={20} color="var(--primary)" />
-          <span style={{ fontWeight: 800, color: 'white', fontSize: 17 }}>Secure Checkout</span>
+        <div className="flex items-center gap-2">
+          <Flame size={20} className="text-primary" />
+          <span className="font-extrabold text-slate-900 dark:text-white text-base">Secure Checkout</span>
         </div>
         {/* Step indicators */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className="ml-auto flex items-center gap-1">
           {STEPS.map((s, i) => (
             <React.Fragment key={s.id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700,
-                  border: `2px solid ${i <= stepIdx ? 'var(--primary)' : 'rgba(255,255,255,0.15)'}`,
-                  background: i < stepIdx ? 'var(--primary)' : i === stepIdx ? 'rgba(var(--primary-rgb),0.15)' : 'transparent',
-                  color: i < stepIdx ? 'white' : i === stepIdx ? 'var(--primary)' : 'rgba(255,255,255,0.3)'
-                }}>
+              <div className="flex items-center gap-1.5">
+                <div
+                  className={`w-6.5 h-6.5 rounded-full flex items-center justify-center text-[11px] font-bold border-2 transition-all ${
+                    i <= stepIdx ? 'border-primary' : 'border-slate-300 dark:border-white/15'
+                  } ${
+                    i < stepIdx
+                      ? 'bg-primary text-white'
+                      : i === stepIdx
+                        ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                        : 'bg-transparent text-slate-400 dark:text-white/30'
+                  }`}
+                >
                   {i < stepIdx ? <Check size={12} /> : i + 1}
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: i <= stepIdx ? 'var(--primary)' : 'rgba(255,255,255,0.3)', display: 'none' }}
-                  className="sm-show">{s.label}</span>
+                <span className={`text-[11px] font-semibold hidden sm:inline ${i <= stepIdx ? 'text-primary' : 'text-slate-400 dark:text-white/30'}`}>
+                  {s.label}
+                </span>
               </div>
               {i < STEPS.length - 1 && (
-                <div style={{ width: 28, height: 2, borderRadius: 2, background: i < stepIdx ? 'var(--primary)' : 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+                <div className={`w-7 h-0.5 rounded mx-1 ${i < stepIdx ? 'bg-primary' : 'bg-slate-200 dark:bg-white/10'}`} />
               )}
             </React.Fragment>
           ))}
@@ -226,69 +224,55 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
         <div>
           {/* Error */}
           {error && (
-            <div style={{
-              padding: '12px 16px', borderRadius: 12, marginBottom: 20,
-              background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)',
-              color: '#fca5a5', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 8
-            }} role="alert">
-              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div className="p-3 sm:p-4 rounded-xl mb-5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-300 text-xs sm:text-sm font-semibold flex items-start gap-2" role="alert">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {/* STEP 1: Details */}
           {step === 'details' && (
-            <form onSubmit={handleProceedToPayment} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ padding: 24, borderRadius: 20, background: 'var(--surface-dark)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <User size={16} color="var(--primary)" /> Delivery Details
+            <form onSubmit={handleProceedToPayment} className="flex flex-col gap-5">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-white/10 flex flex-col gap-4.5 shadow-sm dark:shadow-xl">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white m-0 flex items-center gap-2">
+                  <User size={16} className="text-primary" /> Delivery Details
                 </h2>
 
                 <div>
-                  <label htmlFor="co-name" style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 6 }}>Full Name</label>
+                  <label htmlFor="co-name" className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted mb-1.5">Full Name</label>
                   <input id="co-name" type="text" autoComplete="name" required value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)} placeholder="Your full name"
-                    style={{ width: '100%', background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 16px', fontSize: 14, color: 'var(--text-main)', outline: 'none', boxSizing: 'border-box' }} />
+                    className="w-full bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-text-main outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
                 </div>
 
                 <div>
-                  <label htmlFor="co-phone" style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 6 }}>Rwanda Phone Number</label>
+                  <label htmlFor="co-phone" className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted mb-1.5">Rwanda Phone Number</label>
                   <input id="co-phone" type="tel" autoComplete="tel" required inputMode="tel"
                     pattern="0(78|79|72|73)[0-9]{7}" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0788000001"
-                    style={{ width: '100%', background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 16px', fontSize: 14, color: 'var(--text-main)', outline: 'none', boxSizing: 'border-box' }} />
+                    className="w-full bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-text-main outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Delivery Address</label>
-                    <button type="button" onClick={handleScanGps} disabled={isScanningGps} style={{
-                      padding: '4px 10px', borderRadius: 8, background: 'rgba(var(--primary-rgb,255,140,0),0.15)',
-                      border: '1px solid rgba(var(--primary-rgb,255,140,0),0.4)', color: 'var(--primary)',
-                      fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                      opacity: isScanningGps ? 0.6 : 1
-                    }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted">Delivery Address</label>
+                    <button type="button" onClick={handleScanGps} disabled={isScanningGps} className="px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-primary border border-orange-500/30 text-[11px] font-bold cursor-pointer flex items-center gap-1 transition-all disabled:opacity-60">
                       {isScanningGps ? <><Loader2 size={12} className="spinning" /> Scanning…</> : <><MapPin size={12} /> Scan GPS</>}
                     </button>
                   </div>
                   <input type="text" autoComplete="street-address" required value={addressDetail}
                     onChange={(e) => setAddressDetail(e.target.value)} placeholder="Street / Landmark (e.g. KG 9 Ave, House 42)"
-                    style={{ width: '100%', background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 16px', fontSize: 14, color: 'var(--text-main)', outline: 'none', boxSizing: 'border-box' }} />
+                    className="w-full bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-text-main outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
                 </div>
 
                 <div>
-                  <label htmlFor="co-notes" style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 6 }}>Kitchen Notes (optional)</label>
+                  <label htmlFor="co-notes" className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted mb-1.5">Kitchen Notes (optional)</label>
                   <textarea id="co-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)}
                     placeholder="e.g. Extra spicy, no coriander…"
-                    style={{ width: '100%', background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 16px', fontSize: 14, color: 'var(--text-main)', outline: 'none', boxSizing: 'border-box', resize: 'none' }} />
+                    className="w-full bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-text-main outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none" />
                 </div>
               </div>
 
-              <button type="submit" disabled={creating} className="btn-primary" style={{
-                width: '100%', padding: '16px 24px', borderRadius: 14, fontSize: 15, fontWeight: 800,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 8px 32px rgba(var(--primary-rgb,255,140,0),0.3)',
-                opacity: creating ? 0.7 : 1, cursor: creating ? 'not-allowed' : 'pointer'
-              }}>
+              <button type="submit" disabled={creating} className="btn-primary w-full py-4 px-6 rounded-2xl text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
                 {creating
                   ? <><Loader2 size={20} className="spinning" /> Creating Order…</>
                   : <><ChevronRight size={20} /> Proceed to Payment — {rwf(grandTotal)} RWF</>}
@@ -298,45 +282,45 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
 
           {/* STEP 2: Payment Instructions */}
           {step === 'payment' && placedOrder && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ padding: 24, borderRadius: 20, background: 'var(--surface-dark)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Smartphone size={22} color="#f59e0b" />
+            <div className="flex flex-col gap-5">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-white/10 flex flex-col gap-5 shadow-sm dark:shadow-xl">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                    <Smartphone size={22} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: 16, fontWeight: 700, color: 'white', margin: 0 }}>MTN Mobile Money Payment</h2>
-                    <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>Order #{placedOrder.id} is reserved and waiting for your payment.</p>
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white m-0">MTN Mobile Money Payment</h2>
+                    <p className="text-xs text-slate-500 dark:text-text-muted mt-1">Order #{placedOrder.id} is reserved and waiting for your payment.</p>
                   </div>
                 </div>
 
                 {/* Payment details */}
-                <div style={{ padding: 16, borderRadius: 14, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#f59e0b', margin: 0 }}>Payment Details</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 m-0">Payment Details</p>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span style={{ fontSize: 11, color: 'var(--text-subdued)', display: 'block' }}>Amount to Send</span>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: '#fcd34d', fontFamily: 'monospace' }}>{rwf(grandTotal)} RWF</span>
+                      <span className="text-[11px] text-slate-500 dark:text-text-subdued block">Amount to Send</span>
+                      <span className="text-xl font-black text-amber-600 dark:text-amber-300 font-mono">{rwf(grandTotal)} RWF</span>
                     </div>
                     <div>
-                      <span style={{ fontSize: 11, color: 'var(--text-subdued)', display: 'block' }}>MoMo Number</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: 'white', fontFamily: 'monospace' }}>{MOMO_NUMBER}</span>
-                        <button type="button" onClick={copyMoMo} style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#34d399' : 'var(--text-muted)', padding: 4, borderRadius: 6 }}>
-                          {copied ? <Check size={14} /> : <Copy size={14} />}
+                      <span className="text-[11px] text-slate-500 dark:text-text-subdued block">MoMo Number</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white font-mono">{MOMO_NUMBER}</span>
+                        <button type="button" onClick={copyMoMo} className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer">
+                          {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                         </button>
                       </div>
                     </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-subdued)', display: 'block' }}>Account Name</span>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>{MOMO_NAME}</span>
+                    <div className="col-span-2">
+                      <span className="text-[11px] text-slate-500 dark:text-text-subdued block">Account Name</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">{MOMO_NAME}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Instructions */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', margin: 0 }}>How to Pay</p>
+                <div className="flex flex-col gap-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-text-muted m-0">How to Pay</p>
                   {[
                     'Dial *182# or open your MTN MoMo app',
                     'Select "Transfer" → "Send Money"',
@@ -345,26 +329,22 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
                     'Enter your PIN to confirm the transfer',
                     'Screenshot the confirmation message',
                   ].map((instruction, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                      <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(var(--primary-rgb,255,140,0),0.18)', color: 'var(--primary)', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{instruction}</span>
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="w-5.5 h-5.5 rounded-full bg-orange-500/15 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                      <span className="text-xs sm:text-sm text-slate-600 dark:text-text-muted">{instruction}</span>
                     </div>
                   ))}
                 </div>
 
-                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  <Info size={16} color="#60a5fa" style={{ flexShrink: 0, marginTop: 1 }} />
-                  <p style={{ fontSize: 12, color: '#93c5fd', margin: 0 }}>
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-start gap-2.5">
+                  <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300 m-0 leading-relaxed">
                     Your order is reserved but <strong>will not be sent to the kitchen</strong> until your payment proof is uploaded and verified. This usually takes under 5 minutes.
                   </p>
                 </div>
               </div>
 
-              <button type="button" onClick={handleProceedToProof} className="btn-primary" style={{
-                width: '100%', padding: '16px 24px', borderRadius: 14, fontSize: 15, fontWeight: 800,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 8px 32px rgba(var(--primary-rgb,255,140,0),0.3)', cursor: 'pointer'
-              }}>
+              <button type="button" onClick={handleProceedToProof} className="btn-primary w-full py-4 px-6 rounded-2xl text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer">
                 <Upload size={20} /> I've Paid — Upload Proof
               </button>
             </div>
@@ -372,73 +352,64 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
 
           {/* STEP 3: Upload Proof */}
           {step === 'proof' && placedOrder && !uploadDone && (
-            <form onSubmit={handleSubmitProof} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ padding: 24, borderRadius: 20, background: 'var(--surface-dark)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(var(--primary-rgb,255,140,0),0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Upload size={22} color="var(--primary)" />
+            <form onSubmit={handleSubmitProof} className="flex flex-col gap-5">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-white/10 flex flex-col gap-5 shadow-sm dark:shadow-xl">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-orange-500/15 text-primary flex items-center justify-center shrink-0">
+                    <Upload size={22} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: 16, fontWeight: 700, color: 'white', margin: 0 }}>Upload Payment Proof</h2>
-                    <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>Upload a screenshot of your MTN MoMo confirmation for Order #{placedOrder.id}.</p>
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white m-0">Upload Payment Proof</h2>
+                    <p className="text-xs text-slate-500 dark:text-text-muted mt-1">Upload a screenshot of your MTN MoMo confirmation for Order #{placedOrder.id}.</p>
                   </div>
                 </div>
 
                 {/* Drop zone */}
-                <label htmlFor="proof-upload" style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  minHeight: 200, borderRadius: 16, border: `2px dashed ${proofPreview ? 'var(--primary)' : 'rgba(255,255,255,0.18)'}`,
-                  background: proofPreview ? 'rgba(var(--primary-rgb,255,140,0),0.04)' : 'var(--surface-card)',
-                  cursor: 'pointer', transition: 'all 0.2s', overflow: 'hidden', position: 'relative'
-                }}>
+                <label htmlFor="proof-upload" className={`flex flex-col items-center justify-center min-h-50 rounded-2xl border-2 border-dashed cursor-pointer transition-all overflow-hidden relative ${
+                  proofPreview ? 'border-primary bg-orange-500/5' : 'border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-surface-card hover:border-primary'
+                }`}>
                   {proofPreview ? (
                     <>
-                      <img src={proofPreview} alt="Payment proof preview" style={{ width: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 12 }} />
-                      <button type="button" onClick={(e) => { e.preventDefault(); setProofFile(null); setProofPreview(null); }} style={{
-                        position: 'absolute', top: 8, right: 8, padding: 6, borderRadius: '50%',
-                        background: 'rgba(220,38,38,0.85)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex'
-                      }}><X size={14} /></button>
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '8px', textAlign: 'center' }}>
-                        <span style={{ fontSize: 12, color: '#34d399', fontWeight: 600 }}>✓ Image selected — click to change</span>
+                      <img src={proofPreview} alt="Payment proof preview" className="w-full max-h-70 object-contain rounded-xl" />
+                      <button type="button" onClick={(e) => { e.preventDefault(); setProofFile(null); setProofPreview(null); }} className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white cursor-pointer shadow-md">
+                        <X size={14} />
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xs p-2 text-center">
+                        <span className="text-xs text-emerald-400 font-semibold">✓ Image selected — click to change</span>
                       </div>
                     </>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 32, textAlign: 'center' }}>
-                      <div style={{ width: 64, height: 64, borderRadius: 18, background: 'rgba(var(--primary-rgb,255,140,0),0.1)', border: '1px solid rgba(var(--primary-rgb,255,140,0),0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ImageIcon size={32} color="rgba(var(--primary-rgb,255,140,0),0.6)" />
+                    <div className="flex flex-col items-center gap-3 p-8 text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/25 flex items-center justify-center text-primary">
+                        <ImageIcon size={32} />
                       </div>
                       <div>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)', margin: '0 0 4px' }}>Click to upload proof</p>
-                        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>JPEG, PNG, GIF or WebP · Max 5 MB</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-text-main m-0 mb-1">Click to upload proof</p>
+                        <p className="text-xs text-slate-500 dark:text-text-muted m-0">JPEG, PNG, GIF or WebP · Max 5 MB</p>
                       </div>
-                      <div style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(var(--primary-rgb,255,140,0),0.18)', border: '1px solid rgba(var(--primary-rgb,255,140,0),0.35)', color: 'var(--primary)', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs font-bold flex items-center gap-1.5">
                         <Upload size={14} /> Browse Files
                       </div>
                     </div>
                   )}
                   <input id="proof-upload" type="file" accept="image/jpeg,image/png,image/gif,image/webp"
-                    onChange={handleFileChange} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+                    onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                 </label>
 
-                <div style={{ padding: 12, borderRadius: 12, background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Shield size={15} color="#34d399" /> Your proof is secure
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-surface-card border border-slate-200 dark:border-white/10 flex flex-col gap-1.5">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white m-0 flex items-center gap-1.5">
+                    <Shield size={15} className="text-emerald-500" /> Your proof is secure
                   </p>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>Only our kitchen staff can view your payment screenshot. It is never shared publicly.</p>
+                  <p className="text-xs text-slate-500 dark:text-text-muted m-0">Only our kitchen staff can view your payment screenshot. It is never shared publicly.</p>
                 </div>
               </div>
 
-              <button type="submit" disabled={uploading || !proofFile} className="btn-primary" style={{
-                width: '100%', padding: '16px 24px', borderRadius: 14, fontSize: 15, fontWeight: 800,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 8px 32px rgba(var(--primary-rgb,255,140,0),0.3)',
-                opacity: uploading || !proofFile ? 0.6 : 1, cursor: uploading || !proofFile ? 'not-allowed' : 'pointer'
-              }}>
+              <button type="submit" disabled={uploading || !proofFile} className="btn-primary w-full py-4 px-6 rounded-2xl text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                 {uploading ? <><Loader2 size={20} className="spinning" /> Submitting…</> : <><CheckCircle2 size={20} /> Submit Payment Proof &amp; Place Order</>}
               </button>
-              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-subdued)' }}>
+              <p className="text-center text-xs text-slate-400 dark:text-text-subdued">
                 Already submitted?{' '}
-                <button type="button" onClick={() => navigate('/hotpotcustomer/tracking')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', fontSize: 12 }}>
+                <button type="button" onClick={() => navigate('/hotpotcustomer/tracking')} className="text-primary font-semibold underline cursor-pointer">
                   Track your order
                 </button>
               </p>
@@ -447,33 +418,27 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
 
           {/* SUCCESS */}
           {step === 'proof' && uploadDone && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ padding: 32, borderRadius: 20, background: 'var(--surface-dark)', border: '1px solid rgba(52,211,153,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center' }}>
-                <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(52,211,153,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CheckCircle2 size={40} color="#34d399" />
+            <div className="flex flex-col gap-5">
+              <div className="p-8 rounded-2xl bg-white dark:bg-[#14171F] border border-emerald-500/30 flex flex-col items-center gap-4 text-center shadow-sm dark:shadow-xl">
+                <div className="w-20 h-20 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                  <CheckCircle2 size={40} className="text-emerald-500" />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: 0 }}>Order Confirmed!</h2>
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>Order #{placedOrder?.id}</p>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white m-0">Order Confirmed!</h2>
+                  <p className="text-xs text-slate-500 dark:text-text-muted mt-1 font-mono">Order #{placedOrder?.id}</p>
                 </div>
-                <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0, maxWidth: 380 }}>
+                <p className="text-sm text-slate-600 dark:text-text-muted leading-relaxed m-0 max-w-sm">
                   Your payment proof has been received. Our kitchen team will verify it shortly and begin preparing your order. You can track the status in real time below.
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                  <Clock size={14} color="#f59e0b" />
-                  <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>Avg verification: ~5 min</span>
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                  <Clock size={14} className="text-amber-500" />
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">Avg verification: ~5 min</span>
                 </div>
               </div>
-              <button type="button" onClick={() => navigate('/hotpotcustomer/tracking')} className="btn-primary" style={{
-                width: '100%', padding: '16px 24px', borderRadius: 14, fontSize: 15, fontWeight: 800,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 8px 32px rgba(var(--primary-rgb,255,140,0),0.3)', cursor: 'pointer'
-              }}>
+              <button type="button" onClick={() => navigate('/hotpotcustomer/tracking')} className="btn-primary w-full py-4 px-6 rounded-2xl text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer">
                 <ChevronRight size={20} /> Track My Order Live
               </button>
-              <button type="button" onClick={() => navigate('/')} className="btn-secondary" style={{
-                width: '100%', padding: '12px 24px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer'
-              }}>
+              <button type="button" onClick={() => navigate('/')} className="btn-secondary w-full py-3 px-6 rounded-xl text-xs sm:text-sm font-bold cursor-pointer">
                 Back to Menu
               </button>
             </div>
@@ -482,54 +447,54 @@ export default function CheckoutPage({ cart, user, onOrderPlaced, onCartClear })
 
         {/* ORDER SUMMARY SIDEBAR */}
         <div style={{ position: 'sticky', top: 80 }}>
-          <div style={{ padding: 20, borderRadius: 20, background: 'var(--surface-dark)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShoppingBag size={16} color="var(--primary)" /> Order Summary
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-white/10 flex flex-col gap-4 shadow-sm dark:shadow-xl">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white m-0 flex items-center gap-2">
+              <ShoppingBag size={16} className="text-primary" /> Order Summary
             </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 280, overflowY: 'auto' }}>
+            <div className="flex flex-col gap-2.5 max-h-70 overflow-y-auto">
               {displayItems.map((item, idx) => {
                 const price = Number(item?.meal?.price) || 0;
                 const qty = Number(item?.quantity) || 1;
                 return (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <div key={idx} className="flex items-start gap-2.5">
                     {item.meal?.image
-                      ? <img src={item.meal.image} alt={item.meal.name} style={{ width: 42, height: 42, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
-                      : <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(0,0,0,0.3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShoppingBag size={16} color="rgba(255,255,255,0.3)" /></div>
+                      ? <img src={item.meal.image} alt={item.meal.name} className="w-10.5 h-10.5 rounded-xl object-cover shrink-0 bg-slate-100 dark:bg-black/30" />
+                      : <div className="w-10.5 h-10.5 rounded-xl bg-slate-100 dark:bg-black/30 shrink-0 flex items-center justify-center text-slate-400"><ShoppingBag size={16} /></div>
                     }
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.meal?.name || 'Item'}</p>
-                      {item.selectedSpice && <p style={{ fontSize: 10, color: '#fb923c', margin: '2px 0 0' }}>🌶 {item.selectedSpice}</p>}
-                      {item.selectedBroth && <p style={{ fontSize: 10, color: '#fbbf24', margin: '2px 0 0' }}>Broth: {item.selectedBroth}</p>}
-                      <p style={{ fontSize: 10, color: 'var(--text-subdued)', margin: '2px 0 0' }}>x{qty} @ {rwf(price)} RWF</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-900 dark:text-text-main m-0 truncate">{item.meal?.name || 'Item'}</p>
+                      {item.selectedSpice && <p className="text-[10px] text-orange-500 m-0 mt-0.5">🌶 {item.selectedSpice}</p>}
+                      {item.selectedBroth && <p className="text-[10px] text-amber-500 m-0 mt-0.5">Broth: {item.selectedBroth}</p>}
+                      <p className="text-[10px] text-slate-500 dark:text-text-subdued m-0 mt-0.5">x{qty} @ {rwf(price)} RWF</p>
                     </div>
-                    <span style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-main)', flexShrink: 0 }}>{rwf(price * qty)}</span>
+                    <span className="text-xs font-mono font-bold text-slate-900 dark:text-text-main shrink-0">{rwf(price * qty)}</span>
                   </div>
                 );
               })}
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
-                <span>Subtotal</span><span style={{ fontFamily: 'monospace' }}>{rwf(subtotal)} RWF</span>
+            <div className="border-t border-slate-200 dark:border-white/10 pt-3 flex flex-col gap-2">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-text-muted">
+                <span>Subtotal</span><span className="font-mono text-slate-900 dark:text-text-main">{rwf(subtotal)} RWF</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
-                <span>Kigali Delivery</span><span style={{ fontFamily: 'monospace' }}>{rwf(DELIVERY_FEE)} RWF</span>
+              <div className="flex justify-between text-xs text-slate-500 dark:text-text-muted">
+                <span>Kigali Delivery</span><span className="font-mono text-slate-900 dark:text-text-main">{rwf(DELIVERY_FEE)} RWF</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 900, color: 'var(--text-main)', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex justify-between text-sm font-black text-slate-900 dark:text-text-main pt-2 border-t border-slate-200 dark:border-white/10">
                 <span>Total</span>
-                <span style={{ fontFamily: 'monospace', color: 'var(--primary)' }}>{rwf(grandTotal)} RWF</span>
+                <span className="font-mono text-primary text-base">{rwf(grandTotal)} RWF</span>
               </div>
             </div>
 
             {placedOrder && (
-              <div style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)', fontSize: 12, color: '#34d399', fontWeight: 600, textAlign: 'center' }}>
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-600 dark:text-emerald-400 font-semibold text-center">
                 ✓ Order #{placedOrder.id} created
               </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: 'var(--text-subdued)' }}>
-              <Shield size={12} color="#34d399" />
+            <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-text-subdued">
+              <Shield size={12} className="text-emerald-500" />
               <span>Secured with TLS · Payment proof encrypted at rest</span>
             </div>
           </div>
