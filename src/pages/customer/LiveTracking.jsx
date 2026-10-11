@@ -490,9 +490,9 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
 
   if (!tracked) {
     return (
-      <div className="max-w-5xl mx-auto p-10 rounded-2xl bg-[#14171F] border border-slate-800 text-center space-y-2">
-        <h2 className="text-lg font-black text-white">No order to track yet</h2>
-        <p className="text-xs text-slate-400">
+      <div className="max-w-5xl mx-auto p-10 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 text-center space-y-2 shadow-sm dark:shadow-xl">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">No order to track yet</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Place an order and it will show up here with live status updates.
         </p>
       </div>
@@ -508,12 +508,12 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       {isCancelled && (
         <div
           role="status"
-          className="p-6 rounded-2xl bg-red-950/80 border border-red-500/50 text-white flex items-center gap-4 animate-fade-in"
+          className="p-6 rounded-2xl bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-500/50 text-red-900 dark:text-white flex items-center gap-4 animate-fade-in shadow-sm"
         >
-          <XCircle className="w-8 h-8 text-red-400 shrink-0" aria-hidden="true" />
+          <XCircle className="w-8 h-8 text-red-500 dark:text-red-400 shrink-0" aria-hidden="true" />
           <div>
-            <h3 className="font-bold text-lg text-red-200">Order {orderRef} Declined</h3>
-            <p className="text-xs text-red-300">
+            <h3 className="font-bold text-lg text-red-700 dark:text-red-200">Order {orderRef} Declined</h3>
+            <p className="text-xs text-red-600 dark:text-red-300">
               This order has been declined by the restaurant. If you already made a payment, please contact our support team for an immediate refund.
             </p>
           </div>
@@ -521,28 +521,28 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       )}
 
       {/* Header banner */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-[#14171F] border border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+      <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-sm dark:shadow-xl">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-md bg-orange-500/15 border border-orange-500/30 text-[11px] font-mono font-bold text-orange-400 uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-md bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/30 text-[11px] font-mono font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
               Order {orderRef}
             </span>
             <span
               className={`px-2.5 py-0.5 rounded-md border text-[11px] font-mono font-bold uppercase tracking-wider ${
                 isDelivered
-                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                   : isCancelled
-                    ? 'bg-red-500/15 border-red-500/30 text-red-400'
-                    : 'bg-slate-500/15 border-slate-500/30 text-slate-300'
+                    ? 'bg-red-500/15 border-red-500/30 text-red-600 dark:text-red-400'
+                    : 'bg-slate-100 dark:bg-slate-500/15 border-slate-300 dark:border-slate-500/30 text-slate-700 dark:text-slate-300'
               }`}
             >
               {isCancelled ? 'Declined' : statusLabel}
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
             {isCancelled ? 'Order Declined' : isDelivered ? 'Order delivered' : 'Order status'}
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {isDelivered
               ? `Handed over at ${dropOff}.`
               : hasEta
@@ -555,18 +555,18 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
           <button
             type="button"
             onClick={handleDownloadReceipt}
-            className="px-3.5 py-2 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shadow-sm"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 transition-all shadow-xs"
           >
-            <Download className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+            <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" />
             <span>Receipt PDF</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowReceipt(true)}
-            className="px-3.5 py-2 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shadow-sm"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 transition-all shadow-xs"
           >
-            <FileText className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+            <FileText className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" aria-hidden="true" />
             <span>View receipt</span>
           </button>
 
@@ -574,9 +574,9 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
             <button
               type="button"
               onClick={() => setShowFeedback(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-xs font-bold text-emerald-300 flex items-center gap-1.5 transition-all shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 border border-emerald-500/30 dark:border-emerald-500/40 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 transition-all shadow-xs"
             >
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 dark:text-amber-400" aria-hidden="true" />
               <span>Rate this order</span>
             </button>
           )}
@@ -593,7 +593,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       {receiptError && (
         <p
           role="alert"
-          className="flex items-center gap-2 text-xs font-bold text-red-300 bg-red-950/60 border border-red-500/40 rounded-xl px-3 py-2"
+          className="flex items-center gap-2 text-xs font-bold text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-500/40 rounded-xl px-3 py-2"
         >
           <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
           {receiptError}
@@ -602,30 +602,30 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
 
       {/* Dedicated Courier Information Banner for Client */}
       {(order?.riderName || order?.assigned_rider_id) && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-[#14171F] via-[#1C2029] to-[#14171F] border border-amber-500/30 shadow-xl flex flex-wrap items-center justify-between gap-4 animate-fade-in">
+        <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 dark:from-[#14171F] dark:via-[#1C2029] dark:to-[#14171F] border border-amber-500/30 shadow-sm dark:shadow-xl flex flex-wrap items-center justify-between gap-4 animate-fade-in">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-black text-lg shrink-0 shadow-lg shadow-orange-500/20">
               🛵
             </div>
             <div className="min-w-0 space-y-0.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm sm:text-base font-black text-white truncate">
+                <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate">
                   {order?.riderName || 'Assigned Courier'}
                 </span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
                   order?.rider_handover_status === 'in_transit' || order?.status === 'delivery'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40'
+                    : 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40'
                 }`}>
                   {order?.rider_handover_status === 'in_transit' || order?.status === 'delivery'
                     ? '🛵 Out for Delivery'
                     : '⏳ Picking Up from Kitchen'}
                 </span>
               </div>
-              <div className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-mono">
+              <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2 flex-wrap font-mono">
                 <span>📱 {tracked?.riderPhone || '+250 788 123 456'}</span>
                 <span>•</span>
-                <span className="text-amber-400 font-bold">
+                <span className="text-amber-600 dark:text-amber-400 font-bold">
                   {tracked?.riderVehicle && tracked?.riderPlate 
                     ? `${tracked.riderVehicle} — ${tracked.riderPlate}`
                     : tracked?.riderPlate || tracked?.riderVehicle || 'Motorcycle'}
@@ -636,15 +636,15 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
 
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             {order?.verification_pin && (
-              <div className="px-3 py-1.5 rounded-xl bg-black/60 border border-amber-500/40 flex items-center gap-1.5 text-xs font-mono">
-                <span className="text-slate-400 text-[10px] uppercase font-bold">Pickup PIN:</span>
-                <span className="text-amber-300 font-black tracking-widest">{order.verification_pin}</span>
+              <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-black/60 border border-amber-500/40 flex items-center gap-1.5 text-xs font-mono">
+                <span className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold">Pickup PIN:</span>
+                <span className="text-amber-600 dark:text-amber-300 font-black tracking-widest">{order.verification_pin}</span>
               </div>
             )}
 
             <a
               href={`tel:${order?.riderPhone || '+250788123456'}`}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+              className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 dark:border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
             >
               <Phone className="w-3.5 h-3.5" />
               <span>Call Courier</span>
@@ -654,7 +654,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
               href={`https://wa.me/${(order?.riderPhone || '250788123456').replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3.5 py-2 rounded-xl bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+              className="px-3.5 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 dark:bg-green-600/20 dark:hover:bg-green-600/30 text-green-700 dark:text-green-300 border border-green-500/30 dark:border-green-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>WhatsApp</span>
@@ -664,7 +664,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
               <button
                 type="button"
                 onClick={() => setShowCourierModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 text-blue-700 dark:text-blue-300 border border-blue-500/30 dark:border-blue-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
               >
                 <User className="w-3.5 h-3.5" />
                 <span>View Details</span>
@@ -677,17 +677,17 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       {/* Customer Delivery Confirmation Card */}
       {!isCancelled && (
         <div
-          className={`p-5 rounded-2xl border transition-all shadow-xl flex flex-wrap items-center justify-between gap-4 ${
+          className={`p-5 rounded-2xl border transition-all shadow-sm dark:shadow-xl flex flex-wrap items-center justify-between gap-4 ${
             isDelivered
-              ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
-              : 'bg-linear-to-r from-[#14171F] via-[#1A1D24] to-[#14171F] border-slate-800'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+              : 'bg-white dark:bg-linear-to-r dark:from-[#14171F] dark:via-[#1A1D24] dark:to-[#14171F] border-slate-200 dark:border-slate-800'
           }`}
         >
           <div className="flex items-center gap-3.5">
             <div
               className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
                 isDelivered
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40'
                   : 'bg-linear-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20'
               }`}
             >
@@ -698,13 +698,13 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
               )}
             </div>
             <div>
-              <div className="text-sm font-black text-white flex items-center gap-2 flex-wrap">
+              <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
                 {isDelivered ? 'Delivery confirmed' : 'Courier handover'}
                 <span
                   className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase ${
                     isDelivered
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40'
+                      : 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40'
                   }`}
                 >
                   {isDelivered ? 'Delivered' : courierName || 'No courier yet'}
@@ -713,14 +713,14 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                   <button
                     type="button"
                     onClick={() => setShowCourierModal(true)}
-                    className="ml-2 px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                    className="ml-2 px-2.5 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 text-blue-700 dark:text-blue-300 border border-blue-500/30 dark:border-blue-500/40 text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
                   >
                     <User className="w-3 h-3" />
                     <span>View Details</span>
                   </button>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5 max-w-xl">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-xl">
                 {isDelivered
                   ? `Marked delivered at ${formatTimestamp(tracked.handedOverAt)}.`
                   : isCourierAssigned
@@ -773,7 +773,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       {deliveryError && (
         <p
           role="alert"
-          className="flex items-center gap-2 text-xs font-bold text-red-300 bg-red-950/60 border border-red-500/40 rounded-xl px-3 py-2"
+          className="flex items-center gap-2 text-xs font-bold text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-500/40 rounded-xl px-3 py-2"
         >
           <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
           {deliveryError}
@@ -782,21 +782,21 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
 
       {/* Cancellation window and order note */}
       {!isCancelled && (
-        <div className="p-4 rounded-2xl bg-[#14171F] border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-amber-400 shrink-0" aria-hidden="true" />
+            <Clock className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0" aria-hidden="true" />
             <div>
-              <div className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
                 Self-service cancellation
                 {canCancel ? (
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 dark:border-amber-500/40 font-bold">
                     {countdown} remaining
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-500 font-normal">(closed)</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">(closed)</span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {canCancel
                   ? 'You can cancel this order yourself until the timer runs out.'
                   : cancelBlockReason}
@@ -808,9 +808,9 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
             <button
               type="button"
               onClick={openNoteEditor}
-              className="px-3 py-1.5 rounded-xl bg-[#1F242D] border border-slate-700 text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 transition-all"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 transition-all"
             >
-              <Edit3 className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+              <Edit3 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" />
               <span>{isEditingNote ? 'Editing note' : 'Edit kitchen note'}</span>
             </button>
 
@@ -818,9 +818,9 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
               type="button"
               onClick={() => setShowCancelModal(true)}
               disabled={!canCancel || isCancelling}
-              className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 text-xs font-bold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <XCircle className="w-3.5 h-3.5 text-red-400" aria-hidden="true" />
+              <XCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400" aria-hidden="true" />
               <span>{isCancelling ? 'Cancelling\u2026' : 'Cancel order'}</span>
             </button>
           </div>
@@ -830,7 +830,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       {cancelError && (
         <p
           role="alert"
-          className="flex items-center gap-2 text-xs font-bold text-red-300 bg-red-950/60 border border-red-500/40 rounded-xl px-3 py-2"
+          className="flex items-center gap-2 text-xs font-bold text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-500/40 rounded-xl px-3 py-2"
         >
           <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
           {cancelError}
@@ -838,10 +838,10 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       )}
 
       {isEditingNote && (
-        <div className="p-4 rounded-xl bg-[#1A1D24] border border-amber-500/40 space-y-3 animate-fade-in">
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#1A1D24] border border-amber-500/40 space-y-3 animate-fade-in">
           <label
             htmlFor="live-tracking-note"
-            className="text-xs font-bold text-amber-300 block"
+            className="text-xs font-bold text-amber-600 dark:text-amber-300 block"
           >
             Kitchen instructions for this order
           </label>
@@ -852,12 +852,12 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
             maxLength={280}
             onChange={(event) => setNoteDraft(event.target.value)}
             placeholder="e.g. Extra hot chili sauce, deliver to the back gate"
-            className="w-full bg-[#14171F] border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+            className="w-full bg-white dark:bg-[#14171F] border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-400"
           />
           {noteError && (
             <p
               role="alert"
-              className="flex items-center gap-2 text-xs font-bold text-red-300"
+              className="flex items-center gap-2 text-xs font-bold text-red-600 dark:text-red-300"
             >
               <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
               {noteError}
@@ -867,7 +867,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
             <button
               type="button"
               onClick={closeNoteEditor}
-              className="px-3 py-1.5 rounded-xl bg-[#1F242D] text-xs font-bold text-slate-300"
+              className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-[#1F242D] text-xs font-bold text-slate-700 dark:text-slate-300"
             >
               Cancel
             </button>
@@ -885,7 +885,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
 
       {/* Map + timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 h-105 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative bg-[#0F1117]">
+        <div className="lg:col-span-2 h-105 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl relative bg-slate-100 dark:bg-[#0F1117]">
           <div
             ref={mapContainerRef}
             role="region"
@@ -894,7 +894,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
           />
 
           {!isMapReady && !mapError && (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+            <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400">
               Loading map…
             </div>
           )}
@@ -902,60 +902,60 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
           {mapError && (
             <div
               role="alert"
-              className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-6 text-xs text-slate-300"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-6 text-xs text-slate-600 dark:text-slate-300"
             >
-              <AlertCircle className="w-6 h-6 text-red-400" aria-hidden="true" />
-              <p className="font-bold">The map could not be loaded.</p>
+              <AlertCircle className="w-6 h-6 text-red-500 dark:text-red-400" aria-hidden="true" />
+              <p className="font-bold text-slate-900 dark:text-white">The map could not be loaded.</p>
               <p className="text-slate-500">{mapError}</p>
             </div>
           )}
 
           {/* Facts panel. Everything here comes from the order record. */}
-          <div className="absolute top-4 left-4 right-4 z-10 bg-[#14171F]/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800 text-xs space-y-2 shadow-2xl max-w-sm pointer-events-auto">
-            <div className="font-bold text-white flex items-center justify-between gap-2">
+          <div className="absolute top-4 left-4 right-4 z-10 bg-white/95 dark:bg-[#14171F]/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs space-y-2 shadow-xl dark:shadow-2xl max-w-sm pointer-events-auto">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5">
-                <Bike className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                <Bike className="w-4 h-4 text-orange-500 dark:text-orange-400" aria-hidden="true" />
                 {courierName || order?.riderName || 'No courier assigned yet'}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-mono font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 font-mono font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-orange-400 animate-pulse" />
                 GPS LIVE
               </span>
             </div>
-            <div className="text-[11px] text-slate-400">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
               {order?.riderPlate ? `${order.riderVehicle || 'Motorcycle'}: ${order.riderPlate}` : 'Motorcycle: Yamaha XTZ 125 • RAC 402B'}
             </div>
 
-            <div className="pt-2 border-t border-slate-800 space-y-1.5 text-[11px]">
-              <div className="flex items-start gap-1.5 text-orange-400">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1.5 text-[11px]">
+              <div className="flex items-start gap-1.5 text-orange-600 dark:text-orange-400">
                 <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
-                  <span className="font-bold">Kitchen:</span>{' '}
-                  <span className="text-slate-300">{CONTACT.address}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">Kitchen:</span>{' '}
+                  <span className="text-slate-600 dark:text-slate-300">{CONTACT.address}</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-1.5 text-emerald-400">
+              <div className="flex items-start gap-1.5 text-emerald-600 dark:text-emerald-400">
                 <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
-                  <span className="font-bold">Drop-off:</span>{' '}
-                  <span className="text-slate-300 break-words">{dropOff}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">Drop-off:</span>{' '}
+                  <span className="text-slate-600 dark:text-slate-300 break-words">{dropOff}</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-[10px] font-mono text-center">
-              <div className="p-1.5 rounded-lg bg-[#1A1D24] border border-slate-800">
-                <span className="text-slate-500 block uppercase text-[9px]">Distance</span>
-                <span className="text-orange-400 font-bold break-words">{distanceKm.value}</span>
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2 text-[10px] font-mono text-center">
+              <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 dark:text-slate-500 block uppercase text-[9px]">Distance</span>
+                <span className="text-orange-600 dark:text-orange-400 font-bold break-words">{distanceKm.value}</span>
               </div>
-              <div className="p-1.5 rounded-lg bg-[#1A1D24] border border-slate-800">
-                <span className="text-slate-500 block uppercase text-[9px]">Estimate</span>
-                <span className="text-amber-400 font-bold">{etaLabel}</span>
+              <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-400 dark:text-slate-500 block uppercase text-[9px]">Estimate</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">{etaLabel}</span>
               </div>
             </div>
 
-            <p className="pt-1 text-[10px] text-slate-500 leading-relaxed">
+            <p className="pt-1 text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
               {isStraightLine
                 ? 'This order has no coordinates, so the drop-off marker is an approximate area pin.'
                 : 'The dashed line is a straight line between the two points, not a driving route.'}
@@ -964,13 +964,13 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
         </div>
 
         {/* Stepper status sidebar */}
-        <div className="p-6 rounded-2xl bg-[#14171F] border border-slate-800 space-y-6 flex flex-col justify-between shadow-xl">
-          <h3 className="text-base font-black text-white flex items-center gap-2">
-            <Clock className="w-4 h-4 text-orange-400" aria-hidden="true" />
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 space-y-6 flex flex-col justify-between shadow-sm dark:shadow-xl">
+          <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <Clock className="w-4 h-4 text-orange-500 dark:text-orange-400" aria-hidden="true" />
             Order timeline
           </h3>
 
-          <ol className="space-y-5 relative before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-800">
+          <ol className="space-y-5 relative before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
             {STEPS.map((step) => {
               const isDone = currentStep >= step.num;
               const isCurrent = currentStep === step.num;
@@ -980,7 +980,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                     className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs relative z-10 transition-all ${
                       isDone
                         ? 'bg-linear-to-br from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/30'
-                        : 'bg-[#1A1D24] text-slate-500 border border-slate-800'
+                        : 'bg-slate-100 dark:bg-[#1A1D24] text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-800'
                     }`}
                   >
                     {isDone ? (
@@ -996,40 +996,40 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                   <div>
                     <h4
                       className={`text-xs font-bold ${
-                        isCurrent ? 'text-orange-400' : isDone ? 'text-white' : 'text-slate-500'
+                        isCurrent ? 'text-orange-600 dark:text-orange-400' : isDone ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'
                       }`}
                     >
                       {step.label}
                     </h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{step.hint}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{step.hint}</p>
                   </div>
                 </li>
               );
             })}
           </ol>
 
-          <div className="p-3.5 rounded-xl bg-[#10131A] border border-slate-800 text-[11px] text-slate-400 space-y-2">
-            <div className="font-bold text-white flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#10131A] border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 space-y-2">
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" aria-hidden="true" />
               Delivery address
             </div>
-            <div className="text-slate-300 break-words">{dropOff}</div>
+            <div className="text-slate-700 dark:text-slate-300 break-words">{dropOff}</div>
 
             {String(tracked.notes ?? '').trim() && (
-              <div className="text-amber-300 font-semibold break-words">
+              <div className="text-amber-600 dark:text-amber-300 font-semibold break-words">
                 <span className="font-bold">Kitchen note:</span> {String(tracked.notes).trim()}
               </div>
             )}
 
-            <div className="pt-2 border-t border-slate-800 space-y-1">
-              <div className="flex items-center gap-1 font-bold text-white">
-                <Navigation className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" />
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1">
+              <div className="flex items-center gap-1 font-bold text-slate-900 dark:text-white">
+                <Navigation className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" aria-hidden="true" />
                 Courier timeline
               </div>
               <div>Placed: {formatTimestamp(tracked.createdAt)}</div>
               <div>Courier assigned: {formatTimestamp(tracked.assignedAt)}</div>
               <div>Handed over: {formatTimestamp(tracked.handedOverAt)}</div>
-              {tracked.riderId && <div className="font-mono text-slate-500">Rider ref: {String(tracked.riderId)}</div>}
+              {tracked.riderId && <div className="font-mono text-slate-400 dark:text-slate-500">Rider ref: {String(tracked.riderId)}</div>}
             </div>
           </div>
         </div>
@@ -1082,25 +1082,25 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
       {/* Courier Details Modal */}
       {showCourierModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowCourierModal(false)}>
-          <div className="bg-[#1A1D24] border border-slate-800 rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 w-full max-w-sm shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border bg-blue-500/15 text-blue-400 border-blue-500/30">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30">
                 <User className="w-6 h-6" />
               </div>
               <div className="space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg font-black text-white leading-snug">Courier Details</h3>
-                <div className="text-sm text-slate-300 space-y-3 mt-4">
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug">Courier Details</h3>
+                <div className="text-sm text-slate-600 dark:text-slate-300 space-y-3 mt-4">
                   <div>
-                    <strong className="text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Name</strong>
-                    <span className="font-bold text-white text-base">{tracked?.riderName || 'Assigned Courier'}</span>
+                    <strong className="text-slate-400 dark:text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Name</strong>
+                    <span className="font-bold text-slate-900 dark:text-white text-base">{tracked?.riderName || 'Assigned Courier'}</span>
                   </div>
                   <div>
-                    <strong className="text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Phone Number</strong>
-                    <span className="font-bold text-amber-400 text-base">{tracked?.riderPhone || '+250 788 123 456'}</span>
+                    <strong className="text-slate-400 dark:text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Phone Number</strong>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 text-base">{tracked?.riderPhone || '+250 788 123 456'}</span>
                   </div>
                   <div>
-                    <strong className="text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Vehicle & Plate No.</strong>
-                    <span className="font-bold text-white text-base">
+                    <strong className="text-slate-400 dark:text-slate-500 font-mono text-[10px] uppercase tracking-widest block mb-0.5">Vehicle & Plate No.</strong>
+                    <span className="font-bold text-slate-900 dark:text-white text-base">
                       {tracked?.riderVehicle && tracked?.riderPlate 
                         ? `${tracked.riderVehicle} — ${tracked.riderPlate}`
                         : tracked?.riderPlate || tracked?.riderVehicle || 'Motorcycle'}
@@ -1109,7 +1109,7 @@ export default function LiveTracking({ order, onUpdateStatus, onCancelOrder, onS
                 </div>
               </div>
             </div>
-            <button onClick={() => setShowCourierModal(false)} className="w-full py-3.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 font-bold transition-all mt-4">
+            <button onClick={() => setShowCourierModal(false)} className="w-full py-3.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/25 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 text-blue-700 dark:text-blue-300 border border-blue-500/30 dark:border-blue-500/40 font-bold transition-all mt-4 cursor-pointer">
               Close Details
             </button>
           </div>

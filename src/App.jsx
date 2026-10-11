@@ -157,7 +157,23 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [lang, setLang] = useState('EN');
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('hotpot_theme') || 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  // Keep dark and light-theme classes synchronized on <html>
+  useEffect(() => {
+    const isDark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('light-theme', !isDark);
+    try {
+      localStorage.setItem('hotpot_theme', theme);
+    } catch {}
+  }, [theme]);
 
   // --- Modals & Overlays --------------------------------------------------
   const [selectedMeal, setSelectedMeal] = useState(null);
@@ -186,11 +202,7 @@ function AppContent() {
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      document.documentElement.classList.toggle('light-theme', next === 'light');
-      return next;
-    });
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
   // Session validation
@@ -772,7 +784,9 @@ function AppContent() {
         className={
           isDedicatedPortal
             ? 'w-full flex-1 p-0 m-0 min-h-screen relative'
-            : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex-1 w-full relative'
+            : view === 'dashboard' || view === 'orders' || view === 'tracking'
+            ? 'w-full flex-1 p-0 m-0 pt-16 relative overflow-hidden flex flex-col min-h-[calc(100vh-4rem)]'
+            : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex-1 w-full relative min-h-screen'
         }
       >
         <Routes>

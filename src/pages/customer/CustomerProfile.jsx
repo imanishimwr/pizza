@@ -108,61 +108,61 @@ export default function CustomerProfile({ user, onUpdateUser }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-          <Settings className="w-5 h-5 text-orange-400" />
+        <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <Settings className="w-5 h-5 text-orange-500" />
           Profile &amp; Address Book
         </h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Manage your client profile, saved Kigali delivery addresses, and payment preferences.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Edit Form */}
-        <div className="lg:col-span-2 bg-[#1A1D24] border border-slate-800 rounded-2xl p-5 sm:p-7 space-y-6 shadow-xl">
-          <h3 className="font-bold text-white text-sm flex items-center gap-2 pb-3 border-b border-slate-800">
-            <User className="w-4 h-4 text-orange-400" /> Personal Account Details
+        <div className="lg:col-span-2 bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-7 space-y-6 shadow-xs dark:shadow-xl">
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <User className="w-4 h-4 text-orange-500" /> Personal Account Details
           </h3>
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Full Name</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Full Name</label>
                 <input
                   type="text"
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
-                  className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-11"
+                  className="w-full bg-slate-50 dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 min-h-11"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Phone Number</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Phone Number</label>
                 <input
                   type="tel"
                   value={profilePhone}
                   onChange={(e) => setProfilePhone(e.target.value)}
-                  className="w-full bg-[#14171F] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 min-h-11"
+                  className="w-full bg-slate-50 dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 min-h-11"
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Email Address</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email Address</label>
                 <input
                   type="email"
                   value={profileEmail}
                   disabled
-                  className="w-full bg-[#0F1117] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 min-h-11 cursor-not-allowed"
+                  className="w-full bg-slate-100 dark:bg-[#0F1117] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-500 dark:text-slate-400 min-h-11 cursor-not-allowed"
                 />
               </div>
             </div>
 
             <div className="space-y-2.5 pt-2">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Preferred Default Payment Method</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Preferred Default Payment Method</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {[
-                  { id: 'momo', label: 'MTN MoMo', icon: Smartphone, color: 'text-amber-400' },
-                  { id: 'airtel', label: 'Airtel Money', icon: Smartphone, color: 'text-red-400' },
-                  { id: 'card', label: 'Visa / MC', icon: CreditCard, color: 'text-blue-400' },
-                  { id: 'cash', label: 'Cash on Delivery', icon: DollarSign, color: 'text-emerald-400' }
+                  { id: 'momo', label: 'MTN MoMo', icon: Smartphone, color: 'text-amber-500 dark:text-amber-400' },
+                  { id: 'airtel', label: 'Airtel Money', icon: Smartphone, color: 'text-red-500 dark:text-red-400' },
+                  { id: 'card', label: 'Visa / MC', icon: CreditCard, color: 'text-blue-500 dark:text-blue-400' },
+                  { id: 'cash', label: 'Cash on Delivery', icon: DollarSign, color: 'text-emerald-500 dark:text-emerald-400' }
                 ].map((p) => {
                   const Icon = p.icon;
                   const isSelected = preferredPayment === p.id;
@@ -172,7 +172,9 @@ export default function CustomerProfile({ user, onUpdateUser }) {
                       type="button"
                       onClick={() => setPreferredPayment(p.id)}
                       className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2 min-h-11 ${
-                        isSelected ? 'bg-orange-500/20 border-orange-500 text-white font-bold' : 'bg-[#14171F] border-slate-800 text-slate-400 hover:border-slate-700'
+                        isSelected
+                          ? 'bg-orange-500/10 border-orange-500 text-orange-600 dark:text-white font-bold'
+                          : 'bg-slate-50 dark:bg-[#14171F] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
                     >
                       <Icon className={`w-4 h-4 ${p.color} shrink-0`} />
@@ -183,13 +185,13 @@ export default function CustomerProfile({ user, onUpdateUser }) {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
-                <div className={`w-10 h-5 rounded-full p-0.5 transition-colors ${smsAlerts ? 'bg-orange-500' : 'bg-slate-700'}`}>
+                <div className={`w-10 h-5 rounded-full p-0.5 transition-colors ${smsAlerts ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white transition-transform ${smsAlerts ? 'translate-x-5' : 'translate-x-0'}`} />
                 </div>
                 <input type="checkbox" className="sr-only" checked={smsAlerts} onChange={(e) => setSmsAlerts(e.target.checked)} />
-                <span className="text-xs font-bold text-slate-300">Receive SMS Delivery Alerts</span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Receive SMS Delivery Alerts</span>
               </label>
               <button type="submit" className="min-h-11 px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs">
                 Save Changes
@@ -200,35 +202,35 @@ export default function CustomerProfile({ user, onUpdateUser }) {
 
         {/* Address Book */}
         <div className="space-y-4">
-          <div className="bg-[#1A1D24] border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-            <h3 className="font-bold text-white text-sm flex items-center gap-2 pb-3 border-b border-slate-800">
-              <MapPin className="w-4 h-4 text-orange-400" /> Saved Addresses
+          <div className="bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs dark:shadow-lg space-y-4">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <MapPin className="w-4 h-4 text-orange-500" /> Saved Addresses
             </h3>
 
             {savedAddresses.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">No saved addresses. Add one below.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-4">No saved addresses. Add one below.</p>
             ) : (
               <div className="space-y-3">
                 {savedAddresses.map((addr) => (
-                  <div key={addr.id} className="p-3.5 rounded-xl bg-[#14171F] border border-slate-800 group relative">
+                  <div key={addr.id} className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#14171F] border border-slate-200 dark:border-slate-800 group relative">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 pr-8">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">{addr.label}</span>
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">{addr.label}</span>
                           {addr.isDefault && (
-                            <span className="text-[9px] bg-orange-500/20 text-orange-400 px-1 rounded font-mono">DEFAULT</span>
+                            <span className="text-[9px] bg-orange-500/20 text-orange-600 dark:text-orange-400 px-1 rounded font-mono font-bold">DEFAULT</span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 mt-1 line-clamp-2">{addr.address}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{addr.address}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-800/50">
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/50">
                       {!addr.isDefault && (
-                        <button type="button" onClick={() => setDefaultAddress(addr.id)} className="text-[10px] text-emerald-400 font-bold hover:underline">
+                        <button type="button" onClick={() => setDefaultAddress(addr.id)} className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline">
                           Set Default
                         </button>
                       )}
-                      <button type="button" onClick={() => removeAddress(addr.id)} className="text-[10px] text-red-400 font-bold hover:underline ml-auto flex items-center gap-1">
+                      <button type="button" onClick={() => removeAddress(addr.id)} className="text-[10px] text-red-500 dark:text-red-400 font-bold hover:underline ml-auto flex items-center gap-1">
                         <Trash2 className="w-3 h-3" /> Remove
                       </button>
                     </div>
@@ -238,16 +240,16 @@ export default function CustomerProfile({ user, onUpdateUser }) {
             )}
 
             {!isAddingAddr ? (
-              <button type="button" onClick={() => setIsAddingAddr(true)} className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold text-xs transition-all">
+              <button type="button" onClick={() => setIsAddingAddr(true)} className="w-full min-h-11 flex items-center justify-center gap-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 font-bold text-xs transition-all">
                 <Plus className="w-4 h-4" /> Add New Address
               </button>
             ) : (
-              <form onSubmit={handleAddAddress} className="space-y-3 p-3.5 rounded-xl bg-[#14171F] border border-slate-700 mt-4">
-                <input type="text" value={newAddrLabel} onChange={(e) => setNewAddrLabel(e.target.value)} placeholder="Label (e.g. Home, Office)" className="w-full bg-[#0F1117] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white" />
-                <textarea value={newAddrText} onChange={(e) => setNewAddrText(e.target.value)} placeholder="Full delivery instructions & landmarks..." rows={3} className="w-full bg-[#0F1117] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white resize-none" />
+              <form onSubmit={handleAddAddress} className="space-y-3 p-3.5 rounded-xl bg-slate-50 dark:bg-[#14171F] border border-slate-300 dark:border-slate-700 mt-4">
+                <input type="text" value={newAddrLabel} onChange={(e) => setNewAddrLabel(e.target.value)} placeholder="Label (e.g. Home, Office)" className="w-full bg-white dark:bg-[#0F1117] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500" />
+                <textarea value={newAddrText} onChange={(e) => setNewAddrText(e.target.value)} placeholder="Full delivery instructions & landmarks..." rows={3} className="w-full bg-white dark:bg-[#0F1117] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 resize-none" />
                 <div className="flex items-center gap-2">
-                  <button type="submit" disabled={!newAddrText.trim()} className="flex-1 min-h-9 py-2 rounded-lg bg-orange-500 text-white font-bold text-xs disabled:opacity-50">Save</button>
-                  <button type="button" onClick={() => setIsAddingAddr(false)} className="flex-1 min-h-9 py-2 rounded-lg bg-[#1A1D24] border border-slate-700 text-slate-300 font-bold text-xs">Cancel</button>
+                  <button type="submit" disabled={!newAddrText.trim()} className="flex-1 min-h-9 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs disabled:opacity-50">Save</button>
+                  <button type="button" onClick={() => setIsAddingAddr(false)} className="flex-1 min-h-9 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 border border-slate-300 text-slate-700 dark:bg-[#1A1D24] dark:border-slate-700 dark:text-slate-300 font-bold text-xs">Cancel</button>
                 </div>
               </form>
             )}

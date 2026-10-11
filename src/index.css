@@ -2,6 +2,8 @@
    not requested a second time here. */
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
@@ -24,14 +26,14 @@
 }
 
 /* Global Dark/Light Theme Switching */
-html.light-theme {
-  --color-bg-dark: #F8F9FC;
+html.light-theme, html:not(.dark) {
+  --color-bg-dark: #F8FAFC;
   --color-surface-dark: #FFFFFF;
-  --color-surface-card: #EEF0F6;
-  --color-surface-card-hover: #E2E5F0;
-  --color-text-main: #0F0F12;
-  --color-text-muted: #555566;
-  --color-text-subdued: #888899;
+  --color-surface-card: #FFFFFF;
+  --color-surface-card-hover: #F1F5F9;
+  --color-text-main: #0F172A;
+  --color-text-muted: #64748B;
+  --color-text-subdued: #94A3B8;
 }
 
 html, body {

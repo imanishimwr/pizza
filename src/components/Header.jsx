@@ -140,11 +140,13 @@ export default function Header({
 
   const navButtonClass = (isActive) =>
     `px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-      isActive ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:text-white'
+      isActive
+        ? 'bg-primary text-white shadow-sm'
+        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-text-muted dark:hover:text-white dark:hover:bg-white/5'
     }`;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-surface-dark/95 backdrop-blur-md border-b border-white/10 shadow-lg">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-md border-b border-slate-200 dark:border-white/10 shadow-xs dark:shadow-lg transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         <button
           type="button"
@@ -152,15 +154,15 @@ export default function Header({
           aria-label="HotPot Delights home"
           className="flex items-center gap-2.5 cursor-pointer group shrink-0 text-left"
         >
-          <span className="w-10 h-10 rounded-xl bg-black border border-white/20 overflow-hidden flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform p-0.5">
+          <span className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-black border border-slate-200 dark:border-white/20 overflow-hidden flex items-center justify-center shadow-md group-hover:scale-105 transition-transform p-0.5">
             <img src="/assets/1152x1152_S7.png" alt="" className="w-full h-full object-contain" />
           </span>
           <span>
-            <span className="block text-base sm:text-xl font-extrabold tracking-tight bg-linear-to-r from-white via-orange-100 to-primary bg-clip-text text-transparent">
+            <span className="block text-base sm:text-xl font-extrabold tracking-tight text-slate-900 dark:bg-linear-to-r dark:from-white dark:via-orange-100 dark:to-primary dark:bg-clip-text dark:text-transparent">
               Hot Pot
             </span>
-            <span className="text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" aria-hidden="true" />
+            <span className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping inline-block" aria-hidden="true" />
               24/7 Delivery in Kigali
             </span>
           </span>
@@ -170,7 +172,7 @@ export default function Header({
         {typeof setSearchQuery === 'function' && (
           <div className="hidden md:flex flex-1 max-w-md relative">
             <Search
-              className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+              className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-muted pointer-events-none"
               aria-hidden="true"
               focusable="false"
             />
@@ -193,7 +195,7 @@ export default function Header({
                 if (event.key === 'Escape') setShowSearchSuggestions(false);
               }}
               placeholder={lang === 'RW' ? 'Shakisha hotpot, pizza...' : 'Search hotpot combos, pizza...'}
-              className="w-full bg-surface-card border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm text-text-main placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              className="w-full bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-full pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-text-main placeholder-slate-400 dark:placeholder-text-subdued focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             />
 
             {showSearchSuggestions && searchSuggestions.length > 0 && (
@@ -201,9 +203,9 @@ export default function Header({
                 id="header-search-suggestions"
                 role="listbox"
                 aria-label="Menu suggestions"
-                className="absolute top-full left-0 right-0 mt-2 bg-surface-dark border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 transition-opacity duration-200"
+                className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 transition-opacity duration-200"
               >
-                <li className="p-2 text-[10px] uppercase font-bold text-text-subdued border-b border-white/10">
+                <li className="p-2 text-[10px] uppercase font-bold text-slate-400 dark:text-text-subdued border-b border-slate-100 dark:border-white/10">
                   {lang === 'RW' ? 'Ibisubizo by vuba' : 'Quick Suggestions'}
                 </li>
                 {searchSuggestions.map((meal) => (
@@ -214,13 +216,13 @@ export default function Header({
                       // list out from under the click.
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => pickMeal(meal)}
-                      className="w-full p-3 hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2 border-b border-white/5 transition-colors text-left"
+                      className="w-full p-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2 border-b border-slate-100 dark:border-white/5 transition-colors text-left"
                     >
                       <span className="flex items-center gap-3 min-w-0">
                         <img src={meal.image || meal.fallbackImage} alt="" className="w-8 h-8 rounded-lg object-cover" />
                         <span className="min-w-0">
-                          <span className="block text-xs font-bold text-white truncate">{meal.name}</span>
-                          <span className="block text-[10px] text-text-muted capitalize truncate">{meal.category}</span>
+                          <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">{meal.name}</span>
+                          <span className="block text-[10px] text-slate-500 dark:text-text-muted capitalize truncate">{meal.category}</span>
                         </span>
                       </span>
                       <span className="text-xs font-mono font-bold text-primary whitespace-nowrap">
@@ -234,7 +236,7 @@ export default function Header({
           </div>
         )}
 
-        <nav aria-label="Main" className="hidden md:flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-white/10">
+        <nav aria-label="Main" className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-black/30 p-1 rounded-xl border border-slate-200 dark:border-white/10">
           <button
             type="button"
             onClick={() => navigate('menu')}
@@ -253,7 +255,7 @@ export default function Header({
                 aria-current={activeView === 'admin' ? 'page' : undefined}
                 className={navButtonClass(activeView === 'admin')}
               >
-                <Shield className="w-3.5 h-3.5 text-red-400" aria-hidden="true" focusable="false" />
+                <Shield className="w-3.5 h-3.5 text-red-500 dark:text-red-400" aria-hidden="true" focusable="false" />
                 <span>Admin</span>
               </button>
               <button
@@ -262,7 +264,7 @@ export default function Header({
                 aria-current={activeView === 'kitchen' ? 'page' : undefined}
                 className={navButtonClass(activeView === 'kitchen')}
               >
-                <ChefHat className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" focusable="false" />
+                <ChefHat className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" focusable="false" />
                 <span>Kitchen</span>
               </button>
               <button
@@ -271,7 +273,7 @@ export default function Header({
                 aria-current={activeView === 'delivery' ? 'page' : undefined}
                 className={navButtonClass(activeView === 'delivery')}
               >
-                <Bike className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" focusable="false" />
+                <Bike className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" aria-hidden="true" focusable="false" />
                 <span>Dispatch</span>
               </button>
             </>
@@ -284,7 +286,7 @@ export default function Header({
               aria-current={activeView === 'kitchen' ? 'page' : undefined}
               className={navButtonClass(activeView === 'kitchen')}
             >
-              <ChefHat className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" focusable="false" />
+              <ChefHat className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" focusable="false" />
               <span>Kitchen Board</span>
             </button>
           )}
@@ -296,7 +298,7 @@ export default function Header({
               aria-current={activeView === 'delivery' ? 'page' : undefined}
               className={navButtonClass(activeView === 'delivery')}
             >
-              <Bike className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" focusable="false" />
+              <Bike className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" aria-hidden="true" focusable="false" />
               <span>Deliveries</span>
             </button>
           )}
@@ -342,7 +344,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => setLang && setLang(lang === 'EN' ? 'RW' : 'EN')}
-            className="px-2.5 py-1 rounded-xl bg-surface-card border border-white/10 text-xs font-bold text-text-main hover:border-primary flex items-center gap-1.5 transition-all"
+            className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-700 dark:text-text-main hover:border-primary flex items-center gap-1.5 transition-all"
             aria-label={lang === 'EN' ? 'Switch language to Kinyarwanda' : 'Switch language to English'}
           >
             <Globe className="w-3.5 h-3.5 text-primary" aria-hidden="true" focusable="false" />
@@ -352,14 +354,14 @@ export default function Header({
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-2 rounded-xl bg-surface-card border border-white/10 text-text-main hover:border-amber-400 transition-all"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 text-slate-700 dark:text-text-main hover:border-amber-400 transition-all"
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             aria-pressed={theme === 'light'}
           >
             {theme === 'dark' ? (
               <Sun className="w-4 h-4 text-amber-400" aria-hidden="true" focusable="false" />
             ) : (
-              <Moon className="w-4 h-4 text-blue-400" aria-hidden="true" focusable="false" />
+              <Moon className="w-4 h-4 text-blue-500" aria-hidden="true" focusable="false" />
             )}
           </button>
 
@@ -367,7 +369,7 @@ export default function Header({
             <button
               type="button"
               onClick={onOpenHelp}
-              className="p-2 text-text-muted hover:text-white transition-colors rounded-lg hover:bg-white/5"
+              className="p-2 text-slate-500 hover:text-slate-900 dark:text-text-muted dark:hover:text-white transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-white/5"
               aria-label="Help and support"
             >
               <HelpCircle className="w-5 h-5" aria-hidden="true" focusable="false" />
@@ -376,11 +378,11 @@ export default function Header({
 
           {saved > 0 && (
             <div
-              className="relative p-2 text-red-400"
+              className="relative p-2 text-red-500 dark:text-red-400"
               title={`${saved} saved in wishlist`}
               aria-label={`${saved} item${saved === 1 ? '' : 's'} in your wishlist`}
             >
-              <Heart className="w-5 h-5 fill-red-500/20 text-red-400" aria-hidden="true" focusable="false" />
+              <Heart className="w-5 h-5 fill-red-500/20 text-red-500 dark:text-red-400" aria-hidden="true" focusable="false" />
               <span
                 aria-hidden="true"
                 className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md"
@@ -394,7 +396,7 @@ export default function Header({
             <button
               type="button"
               onClick={onOpenCart}
-              className="relative p-2.5 rounded-xl bg-surface-card border border-white/10 text-text-main hover:border-primary transition-all group"
+              className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 text-slate-700 dark:text-text-main hover:border-primary transition-all group"
               aria-label={items > 0 ? `Open cart, ${items} item${items === 1 ? '' : 's'}` : 'Open cart, empty'}
             >
               <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" aria-hidden="true" focusable="false" />
@@ -410,11 +412,11 @@ export default function Header({
           )}
 
           {user ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-white/10">
               <button
                 type="button"
                 onClick={onOpenProfile}
-                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-surface-card border border-white/10 hover:border-primary transition-all group"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 hover:border-primary transition-all group"
                 aria-label="View and edit account profile"
               >
                 <span
@@ -423,7 +425,7 @@ export default function Header({
                 >
                   {user.name ? user.name[0].toUpperCase() : 'U'}
                 </span>
-                <span className="text-xs font-bold text-white max-w-25 truncate hidden sm:inline-block">
+                <span className="text-xs font-bold text-slate-800 dark:text-white max-w-25 truncate hidden sm:inline-block">
                   {user.name || 'Account'}
                 </span>
               </button>
@@ -431,7 +433,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={onLogout}
-                className="p-2 rounded-xl bg-red-950/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-xs font-bold flex items-center justify-center transition-all shadow-sm"
+                className="p-2 rounded-xl bg-red-50 hover:bg-red-500 dark:bg-red-950/40 dark:hover:bg-red-600 text-red-600 hover:text-white dark:text-red-400 border border-red-200 dark:border-red-500/30 text-xs font-bold flex items-center justify-center transition-all shadow-sm"
                 aria-label="Log out"
               >
                 <LogOut className="w-3.5 h-3.5" aria-hidden="true" focusable="false" />
@@ -466,7 +468,7 @@ export default function Header({
             <button
               type="button"
               onClick={onOpenCart}
-              className="relative p-2 rounded-xl bg-surface-card border border-white/10 text-text-main"
+              className="relative p-2 rounded-xl bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 text-slate-700 dark:text-text-main"
               aria-label={items > 0 ? `Open cart, ${items} item${items === 1 ? '' : 's'}` : 'Open cart, empty'}
             >
               <ShoppingBag className="w-5 h-5" aria-hidden="true" focusable="false" />
@@ -484,7 +486,7 @@ export default function Header({
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen((open) => !open)}
-            className="p-2 text-white bg-surface-card border border-white/10 rounded-xl"
+            className="p-2 text-slate-700 dark:text-white bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-xl"
             aria-label="Toggle navigation menu"
             aria-expanded={isMobileMenuOpen}
             aria-controls="header-mobile-menu"
@@ -501,12 +503,12 @@ export default function Header({
       {isMobileMenuOpen && (
         <div
           id="header-mobile-menu"
-          className="md:hidden border-t border-white/10 bg-surface-dark px-4 py-4 space-y-4 transition-opacity duration-200"
+          className="md:hidden border-t border-slate-200 dark:border-white/10 bg-white dark:bg-surface-dark px-4 py-4 space-y-4 transition-opacity duration-200"
         >
           {typeof setSearchQuery === 'function' && (
             <div className="relative">
               <Search
-                className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-text-muted pointer-events-none"
                 aria-hidden="true"
                 focusable="false"
               />
@@ -520,7 +522,7 @@ export default function Header({
                 value={searchQuery}
                 onChange={updateSearch}
                 placeholder="Search hotpot, pizza..."
-                className="w-full bg-surface-card border border-white/10 rounded-full pl-10 pr-4 py-2 text-xs text-text-main"
+                className="w-full bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-full pl-10 pr-4 py-2 text-xs text-slate-900 dark:text-text-main placeholder-slate-400 dark:placeholder-text-subdued"
               />
             </div>
           )}
@@ -531,7 +533,7 @@ export default function Header({
               onClick={() => navigate('menu')}
               aria-current={activeView === 'menu' ? 'page' : undefined}
               className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                activeView === 'menu' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                activeView === 'menu' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Flame className="w-4 h-4" aria-hidden="true" focusable="false" />
@@ -545,10 +547,10 @@ export default function Header({
                   onClick={() => navigate('admin')}
                   aria-current={activeView === 'admin' ? 'page' : undefined}
                   className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                    activeView === 'admin' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                    activeView === 'admin' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Shield className="w-4 h-4 text-red-400" aria-hidden="true" focusable="false" />
+                  <Shield className="w-4 h-4 text-red-500 dark:text-red-400" aria-hidden="true" focusable="false" />
                   Admin
                 </button>
                 <button
@@ -556,10 +558,10 @@ export default function Header({
                   onClick={() => navigate('kitchen')}
                   aria-current={activeView === 'kitchen' ? 'page' : undefined}
                   className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                    activeView === 'kitchen' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                    activeView === 'kitchen' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <ChefHat className="w-4 h-4 text-amber-400" aria-hidden="true" focusable="false" />
+                  <ChefHat className="w-4 h-4 text-amber-500 dark:text-amber-400" aria-hidden="true" focusable="false" />
                   Kitchen
                 </button>
                 <button
@@ -567,10 +569,10 @@ export default function Header({
                   onClick={() => navigate('delivery')}
                   aria-current={activeView === 'delivery' ? 'page' : undefined}
                   className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                    activeView === 'delivery' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                    activeView === 'delivery' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Bike className="w-4 h-4 text-blue-400" aria-hidden="true" focusable="false" />
+                  <Bike className="w-4 h-4 text-blue-500 dark:text-blue-400" aria-hidden="true" focusable="false" />
                   Dispatch
                 </button>
               </>
@@ -582,10 +584,10 @@ export default function Header({
                 onClick={() => navigate('kitchen')}
                 aria-current={activeView === 'kitchen' ? 'page' : undefined}
                 className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                  activeView === 'kitchen' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  activeView === 'kitchen' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <ChefHat className="w-4 h-4 text-amber-400" aria-hidden="true" focusable="false" />
+                <ChefHat className="w-4 h-4 text-amber-500 dark:text-amber-400" aria-hidden="true" focusable="false" />
                 Kitchen
               </button>
             )}
@@ -596,10 +598,10 @@ export default function Header({
                 onClick={() => navigate('delivery')}
                 aria-current={activeView === 'delivery' ? 'page' : undefined}
                 className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                  activeView === 'delivery' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  activeView === 'delivery' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <Bike className="w-4 h-4 text-blue-400" aria-hidden="true" focusable="false" />
+                <Bike className="w-4 h-4 text-blue-500 dark:text-blue-400" aria-hidden="true" focusable="false" />
                 Deliveries
               </button>
             )}
@@ -610,7 +612,7 @@ export default function Header({
                 onClick={() => navigate('dashboard')}
                 aria-current={activeView === 'dashboard' ? 'page' : undefined}
                 className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                  activeView === 'dashboard' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  activeView === 'dashboard' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <User className="w-4 h-4" aria-hidden="true" focusable="false" />
@@ -624,7 +626,7 @@ export default function Header({
                 onClick={() => navigate('orders')}
                 aria-current={activeView === 'orders' ? 'page' : undefined}
                 className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                  activeView === 'orders' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  activeView === 'orders' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <History className="w-4 h-4" aria-hidden="true" focusable="false" />
@@ -638,7 +640,7 @@ export default function Header({
                 onClick={() => navigate('tracking')}
                 aria-current={activeView === 'tracking' ? 'page' : undefined}
                 className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center gap-1 ${
-                  activeView === 'tracking' ? 'bg-primary text-white' : 'bg-surface-card text-text-muted'
+                  activeView === 'tracking' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-surface-card text-slate-700 dark:text-text-muted hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <MapPin className="w-4 h-4" aria-hidden="true" focusable="false" />
@@ -647,7 +649,7 @@ export default function Header({
             )}
           </div>
 
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+          <div className="pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between gap-2">
             {user ? (
               <>
                 <button
@@ -656,7 +658,7 @@ export default function Header({
                     setIsMobileMenuOpen(false);
                     if (onOpenProfile) onOpenProfile();
                   }}
-                  className="flex-1 p-2 rounded-xl bg-surface-card border border-white/10 text-xs font-bold text-white flex items-center justify-center gap-2"
+                  className="flex-1 p-2 rounded-xl bg-slate-100 dark:bg-surface-card border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-900 dark:text-white flex items-center justify-center gap-2"
                 >
                   <User className="w-4 h-4 text-primary" aria-hidden="true" focusable="false" />
                   <span>{user.name || 'My Profile'}</span>
@@ -667,7 +669,7 @@ export default function Header({
                     setIsMobileMenuOpen(false);
                     if (onLogout) onLogout();
                   }}
-                  className="p-2 rounded-xl bg-red-950/40 border border-red-500/30 text-red-400 hover:text-white text-xs font-bold flex items-center gap-1.5"
+                  className="p-2 rounded-xl bg-red-50 hover:bg-red-500 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 text-red-600 hover:text-white dark:text-red-400 text-xs font-bold flex items-center gap-1.5"
                 >
                   <LogOut className="w-4 h-4" aria-hidden="true" focusable="false" />
                   <span>Log out</span>
