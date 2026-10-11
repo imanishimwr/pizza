@@ -287,6 +287,11 @@ async function migrate() {
         DROP CONSTRAINT IF EXISTS orders_payment_status_check;
     `);
     await sql.query(`
+      UPDATE orders
+      SET payment_status = LOWER(payment_status)
+      WHERE payment_status IS NOT NULL;
+    `);
+    await sql.query(`
       ALTER TABLE orders
         ADD CONSTRAINT orders_payment_status_check
         CHECK (payment_status IN ('pending','payment_review','paid','failed','refunded'));

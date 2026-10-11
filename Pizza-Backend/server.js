@@ -83,20 +83,21 @@ cloudinary.config({
   secure: true
 });
 
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'payment-proofs',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    public_id: (_req, file) => {
-      const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.jpg';
-      return `proof-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    }
+const UPLOADS_DIR = path.join(__dirname, 'uploads', 'payment-proofs');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const diskStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.jpg';
+    cb(null, `proof-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
   }
 });
 
 const upload = multer({
-  storage: cloudinaryStorage,
+  storage: diskStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -511,19 +512,34 @@ app.post('/api/orders/:id/payment-proof', requireAuth, upload.single('proof'), w
   // Ownership check: only the order's owner may upload a proof.
   const existing = await neonClient.getOrderById(req.params.id);
   if (!existing) {
-    // Clean up Cloudinary upload on error
-    if (req.file.public_id) await cloudinary.uploader.destroy(req.file.public_id).catch(() => {});
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
     return res.status(404).json({ error: 'Order not found.' });
   }
   if (req.user.role === 'customer' && String(existing.userId) !== String(req.user.id)) {
-    if (req.file.public_id) await cloudinary.uploader.destroy(req.file.public_id).catch(() => {});
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
     return res.status(403).json({ error: 'You can only upload proof for your own orders.' });
   }
 
-  // Save the Cloudinary URL directly to the database
-  const cloudinaryUrl = req.file.path; // multer-storage-cloudinary sets path = secure_url
+  let finalProofUrl = req.file.filename;
+
+  // Attempt Cloudinary upload if configured
+  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+    try {
+      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'payment-proofs',
+        public_id: path.basename(req.file.filename, path.extname(req.file.filename))
+      });
+      if (uploadRes?.secure_url) {
+        finalProofUrl = uploadRes.secure_url;
+        await fs.promises.unlink(req.file.path).catch(() => {});
+      }
+    } catch (uploadErr) {
+      console.warn('[upload] Cloudinary upload failed, falling back to local file storage:', uploadErr.message);
+    }
+  }
+
   const proofUrl = `/api/orders/${req.params.id}/payment-proof/file`;
-  const order = await neonClient.setPaymentProof(req.params.id, cloudinaryUrl);
+  const order = await neonClient.setPaymentProof(req.params.id, finalProofUrl);
 
   // Notify kitchen in real-time
   io.to('role_admin').to('role_kitchen').emit('order_status_updated', order);
@@ -531,7 +547,7 @@ app.post('/api/orders/:id/payment-proof', requireAuth, upload.single('proof'), w
   io.to(`order_${order.id}`).emit('live_order_status', safeOrder);
   io.to(`order_${order.id}`).emit('order_status_updated', safeOrder);
 
-  return res.status(201).json({ success: true, proofUrl, cloudinaryUrl, order });
+  return res.status(201).json({ success: true, proofUrl, paymentProofUrl: finalProofUrl, order });
 }));
 
 /**
@@ -943,7 +959,7 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, _next) => {
-  const status = err.statusCode || err.status || 500;
+  const status = err.statusCode || err.status || err.http_code || 500;
   if (status >= 500) console.error('[api]', req.method, req.originalUrl, err);
   res.status(status).json({
     // 5xx messages are deliberately generic; 4xx messages are written for the
