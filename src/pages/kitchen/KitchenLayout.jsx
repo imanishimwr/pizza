@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   ChefHat, Clock, AlertCircle, CheckCircle2, ArrowRight, Bell, Sparkles,
   Volume2, VolumeX, Search, Filter, RefreshCw, Flame, UtensilsCrossed,
   ShoppingBag, Eye, Phone, MapPin, Check, Timer, Layers, BookOpen,
   AlertTriangle, ShieldCheck, ChevronRight, ChevronLeft, X, Bike,
-  Home, Menu, UserPlus, Plus, Edit3, UserCheck, Hash, CreditCard, Navigation
+  Home, Menu, UserPlus, Plus, Edit3, UserCheck, Hash, CreditCard, Navigation,
+  Sun, Moon
 } from 'lucide-react';
 import { KitchenProvider, useKitchen } from '../../context/KitchenContext';
 import { session } from '../../services/apiService';
@@ -50,8 +51,35 @@ function KitchenShell() {
     isRefreshing,
     handleManualRefresh,
     setMobileColumn,
-    onUpdateStatus
+    onUpdateStatus,
+    theme: ctxTheme,
+    toggleTheme: ctxToggleTheme
   } = useKitchen();
+
+  const [isDark, setIsDark] = useState(() => {
+    if (ctxTheme) return ctxTheme === 'dark';
+    return document.documentElement.classList.contains('dark');
+  });
+
+  useEffect(() => {
+    if (ctxTheme) {
+      setIsDark(ctxTheme === 'dark');
+    }
+  }, [ctxTheme]);
+
+  const handleToggleTheme = () => {
+    if (ctxToggleTheme) {
+      ctxToggleTheme();
+    } else {
+      const nextIsDark = !isDark;
+      setIsDark(nextIsDark);
+      document.documentElement.classList.toggle('dark', nextIsDark);
+      document.documentElement.classList.toggle('light-theme', !nextIsDark);
+      try {
+        localStorage.setItem('hotpot_theme', nextIsDark ? 'dark' : 'light');
+      } catch {}
+    }
+  };
 
   // Sidebar Collapse state (desktop expanded w-64 vs collapsed w-16)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -381,14 +409,14 @@ function KitchenShell() {
       {/* ═══════════════════════════════════════════════════════════ */}
       <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden relative">
         {/* STREAMLINED TOP HEADER BAR */}
-        <header className="h-14 border-b border-slate-200 dark:border-white/10 px-3 sm:px-4 flex items-center justify-between bg-white/95 dark:bg-[#14171F]/95 backdrop-blur-md shrink-0 gap-2 sm:gap-3 z-20">
+        <header className="h-14 border-b border-slate-200 dark:border-white/10 px-2 sm:px-4 flex items-center justify-between bg-white/95 dark:bg-[#14171F]/95 backdrop-blur-md shrink-0 gap-1.5 sm:gap-2.5 z-20">
           {/* Left: Mobile Drawer Trigger, Home & Station Identifier */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
             {/* Mobile Hamburger Drawer Toggle (screens < 768px) */}
             <button
               type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-surface-card dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-amber-600 dark:text-amber-400 transition-all min-h-11 min-w-11 flex items-center justify-center shrink-0 shadow-sm active:scale-95"
+              className="md:hidden p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-surface-card dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-amber-600 dark:text-amber-400 transition-all min-h-10 min-w-10 sm:min-h-11 sm:min-w-11 flex items-center justify-center shrink-0 shadow-sm active:scale-95"
               title="Open Navigation Menu"
               aria-label="Toggle Navigation Drawer"
             >
@@ -399,42 +427,42 @@ function KitchenShell() {
             <button
               type="button"
               onClick={handleReturnHome}
-              className="md:hidden p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-white border border-amber-500/30 dark:border-amber-500/40 min-h-11 min-w-11 flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
+              className="md:hidden p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-white border border-amber-500/30 dark:border-amber-500/40 min-h-10 min-w-10 sm:min-h-11 sm:min-w-11 flex items-center justify-center shrink-0 transition-all active:scale-95 shadow-sm"
               title="Return to Customer Store Menu"
               aria-label="Home"
             >
               <Home className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 tracking-wide shrink-0 whitespace-nowrap">
                 HotPot KDS
               </span>
-              <span className="hidden lg:inline-block text-slate-300 dark:text-white/30">•</span>
-              <span className="hidden lg:inline-flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-500/20 shrink-0 whitespace-nowrap shadow-sm">
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                <span>HotPot — Nyarutarama Station</span>
-              </span>
               <span className="hidden xl:inline-block text-slate-300 dark:text-white/30">•</span>
-              <span className="hidden xl:inline-block text-xs font-mono text-slate-600 dark:text-text-muted shrink-0 whitespace-nowrap capitalize">
-                {activeStation === 'all' ? 'All Kitchen Stations' : `${activeStation} station`}
+              <span className="hidden xl:inline-flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-500/20 shrink-0 whitespace-nowrap shadow-sm">
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span>Nyarutarama Station</span>
+              </span>
+              <span className="hidden 2xl:inline-block text-slate-300 dark:text-white/30">•</span>
+              <span className="hidden 2xl:inline-block text-xs font-mono text-slate-600 dark:text-text-muted shrink-0 whitespace-nowrap capitalize">
+                {activeStation === 'all' ? 'All Stations' : `${activeStation}`}
               </span>
             </div>
           </div>
 
           {/* Center: Active Order Counters (Desktop md+; Mobile uses sticky tab bar) */}
-          <div className="hidden md:flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Counter 1: Incoming */}
             <div
               onClick={() => {
                 navigate('/hotpotkitchen/live');
                 setMobileColumn('pending');
               }}
-              className="px-2.5 sm:px-3 py-1 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-500/25 transition-all shadow-sm"
+              className="px-2 sm:px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-500/25 transition-all shadow-sm"
               title="New Incoming Orders"
             >
-              <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="hidden sm:inline">New:</span>
+              <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>New:</span>
               <span className="font-mono font-black text-slate-800 dark:text-slate-100">{pendingOrders.length}</span>
             </div>
 
@@ -444,11 +472,11 @@ function KitchenShell() {
                 navigate('/hotpotkitchen/live');
                 setMobileColumn('preparing');
               }}
-              className="px-2.5 sm:px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/25 transition-all shadow-sm"
+              className="px-2 sm:px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-500/25 transition-all shadow-sm"
               title="Orders Currently Cooking"
             >
-              <Flame className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span className="hidden sm:inline">Cooking:</span>
+              <Flame className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span>Cooking:</span>
               <span className="font-mono font-black text-slate-800 dark:text-slate-100">{preparingOrders.length}</span>
             </div>
 
@@ -458,19 +486,19 @@ function KitchenShell() {
                 navigate('/hotpotkitchen/live');
                 setMobileColumn('ready');
               }}
-              className="px-2.5 sm:px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-500/25 transition-all shadow-sm"
+              className="px-2 sm:px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-500/25 transition-all shadow-sm"
               title="Cooker Ready for Pickup"
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline">Ready:</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>Ready:</span>
               <span className="font-mono font-black text-slate-800 dark:text-slate-100">{readyOrders.length}</span>
             </div>
           </div>
 
-          {/* Right: Search, Walk-In Order & Quick Refresh */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Right: Search, Walk-In Order, Theme Toggle & Quick Refresh */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
             {/* Quick Search */}
-            <div className="relative hidden xl:block w-48">
+            <div className="relative hidden 2xl:block w-40">
               <Search className="w-3.5 h-3.5 text-slate-400 dark:text-text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -494,18 +522,39 @@ function KitchenShell() {
             <button
               type="button"
               onClick={() => setIsWalkInOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 border border-amber-400/40 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm min-h-11 sm:min-h-0"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 border border-amber-400/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm min-h-10 min-w-10 sm:min-h-0 sm:min-w-0"
               title="Create Walk-In / Counter Order"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
               <span className="hidden sm:inline">New Order</span>
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={handleToggleTheme}
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-surface-card dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all min-h-10 min-w-10 sm:min-h-0 sm:min-w-0 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+              title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+                  <span className="hidden xl:inline text-xs font-bold">Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-blue-500 shrink-0" aria-hidden="true" />
+                  <span className="hidden xl:inline text-xs font-bold">Dark</span>
+                </>
+              )}
             </button>
 
             {/* Sync Trigger Button */}
             <button
               type="button"
               onClick={handleManualRefresh}
-              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-surface-card dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-100 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 shrink-0"
+              className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-surface-card dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-100 text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm min-h-10 min-w-10 sm:min-h-0 sm:min-w-0 shrink-0"
               title="Quick Sync with Neon PostgreSQL"
               aria-label="Sync Database"
             >

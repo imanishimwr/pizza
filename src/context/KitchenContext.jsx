@@ -20,7 +20,9 @@ export function KitchenProvider({
   onCancelOrder,
   onDeleteOrder,
   onSetNotes,
-  onGoHome
+  onGoHome,
+  theme,
+  toggleTheme
 }) {
   // Sound effects enabled
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -533,7 +535,9 @@ export function KitchenProvider({
     mobileColumn,
     setMobileColumn,
     getUrgency,
-    handleDeclineOrder
+    handleDeclineOrder,
+    theme,
+    toggleTheme
   };
 
   return (

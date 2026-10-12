@@ -1045,6 +1045,8 @@ function AppContent() {
                     user={user}
                     {...orderActions}
                     onGoHome={() => navigate(ROUTES.home)}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
                   />
                 </FullBleed>
               </ProtectedRoute>

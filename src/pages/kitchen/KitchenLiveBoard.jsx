@@ -82,14 +82,15 @@ export default function KitchenLiveBoard() {
         </button>
       </div>
 
-      {/* 3-Column Kanban Board Layout filling 100% of height */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 p-2 sm:p-4 overflow-hidden">
-        {/* ────────────────────────────────────────────────────────── */}
-        {/* COLUMN 1: NEW INCOMING ORDERS (PENDING)                    */}
-        {/* ────────────────────────────────────────────────────────── */}
-        <div className={`flex-col h-full bg-white dark:bg-surface-dark/70 rounded-2xl border border-slate-200 dark:border-white/10 border-t-4 border-t-amber-500 overflow-hidden shadow-sm dark:shadow-xl w-full ${
-          mobileColumn === 'pending' ? 'flex' : 'hidden md:flex'
-        }`}>
+      {/* 3-Column Kanban Board Layout filling 100% of height with smooth horizontal overflow protection for tablets/smaller screens */}
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden p-2 sm:p-3 md:p-4 no-scrollbar">
+        <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 min-w-full md:min-w-[860px] xl:min-w-0">
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* COLUMN 1: NEW INCOMING ORDERS (PENDING)                    */}
+          {/* ────────────────────────────────────────────────────────── */}
+          <div className={`flex-col h-full bg-white dark:bg-surface-dark/70 rounded-2xl border border-slate-200 dark:border-white/10 border-t-4 border-t-amber-500 overflow-hidden shadow-sm dark:shadow-xl w-full ${
+            mobileColumn === 'pending' ? 'flex' : 'hidden md:flex'
+          }`}>
           {/* Sticky Column Header */}
           <div className="p-3 sm:p-3.5 border-b border-slate-200 dark:border-amber-500/30 bg-slate-50 dark:bg-surface-card/90 backdrop-blur-md flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
@@ -104,7 +105,7 @@ export default function KitchenLiveBoard() {
           </div>
 
           {/* Independent Scrollable Order Cards List */}
-          <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-140px)] no-scrollbar p-2.5 sm:p-3 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2.5 sm:p-3 space-y-3 pb-8 sm:pb-6">
             {pendingOrders.length === 0 ? (
               <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-slate-400 dark:text-text-subdued space-y-2">
                 <ChefHat className="w-8 h-8 text-slate-400 dark:text-text-subdued opacity-30" />
@@ -286,7 +287,7 @@ export default function KitchenLiveBoard() {
           </div>
 
           {/* Independent Scrollable Order Cards List */}
-          <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-140px)] no-scrollbar p-2.5 sm:p-3 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2.5 sm:p-3 space-y-3 pb-8 sm:pb-6">
             {preparingOrders.length === 0 ? (
               <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-slate-400 dark:text-text-subdued space-y-2">
                 <Flame className="w-8 h-8 text-slate-400 dark:text-text-subdued opacity-30" />
@@ -438,7 +439,7 @@ export default function KitchenLiveBoard() {
           </div>
 
           {/* Independent Scrollable Order Cards List */}
-          <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-140px)] no-scrollbar p-2.5 sm:p-3 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2.5 sm:p-3 space-y-3 pb-8 sm:pb-6">
             {readyOrders.length === 0 ? (
               <div className="h-48 flex flex-col items-center justify-center text-center p-6 text-xs text-slate-400 dark:text-text-subdued space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-slate-400 dark:text-text-subdued opacity-30" />
@@ -473,40 +474,40 @@ export default function KitchenLiveBoard() {
                     }`}
                   >
                     {/* Card Header */}
-                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">#{order.id}</span>
-                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate max-w-35">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2.5 gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm shrink-0">#{order.id}</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">
                           {order.customerName || 'Customer'}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center justify-end gap-1 shrink-0">
                         {isAssigned ? (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 flex items-center gap-1 whitespace-nowrap">
                             <Bike className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                             Rider Set
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1 whitespace-nowrap">
                             <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                            Waiting for Rider
+                            Waiting Rider
                           </span>
                         )}
                         {order.paymentStatus === 'payment_review' && (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-500/40 animate-pulse">
-                            Check Payment
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-500/40 animate-pulse whitespace-nowrap">
+                            Check Pay
                           </span>
                         )}
                         {order.paymentStatus === 'pending' && (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40">
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40 whitespace-nowrap">
                             Unpaid
                           </span>
                         )}
                         <button
                           type="button"
                           onClick={() => setSelectedOrder(order)}
-                          className="p-1.5 rounded-lg bg-slate-200/60 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-text-muted dark:hover:text-white transition-colors min-h-9 min-w-9 flex items-center justify-center"
+                          className="p-1.5 rounded-lg bg-slate-200/60 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 hover:text-slate-900 dark:text-text-muted dark:hover:text-white transition-colors min-h-8 min-w-8 sm:min-h-9 sm:min-w-9 flex items-center justify-center shrink-0"
                           title="View Details"
                           aria-label="View Details"
                         >
@@ -612,21 +613,21 @@ export default function KitchenLiveBoard() {
                     ) : (
                       <div className="space-y-2 bg-slate-100 dark:bg-[#1A1D24] p-3 rounded-xl border border-amber-300 dark:border-amber-500/40">
                         {/* Assigned Courier Badge with Reassign trigger */}
-                        <div className="flex items-center justify-between text-xs">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
                               🛵
                             </div>
                             <div className="min-w-0">
-                              <div className="font-bold text-slate-900 dark:text-white text-xs truncate">{assignedRider.name}</div>
+                              <div className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[130px] sm:max-w-none">{assignedRider.name}</div>
                               <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">{assignedRider.phone || assignedRider.plateNumber}</div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0 ml-auto">
                             <button
                               type="button"
                               onClick={() => openManualRiderModal(order)}
-                              className="p-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/15 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-slate-300 dark:border-white/10 flex items-center gap-1 transition-all"
+                              className="px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-white/5 dark:hover:bg-white/15 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-slate-300 dark:border-white/10 flex items-center gap-1 transition-all"
                               title="Edit or Reassign Courier Info"
                             >
                               <Edit3 className="w-3 h-3" />
@@ -635,7 +636,7 @@ export default function KitchenLiveBoard() {
                             <button
                               type="button"
                               onClick={() => alert(`COURIER DETAILS\n\nName: ${assignedRider.name}\nPhone: ${assignedRider.phone || 'N/A'}\nVehicle: ${assignedRider.plateNumber || 'N/A'}`)}
-                              className="p-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 text-[10px] font-bold border border-blue-300 dark:border-blue-500/40 flex items-center gap-1 transition-all"
+                              className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-800 dark:text-blue-300 text-[10px] font-bold border border-blue-300 dark:border-blue-500/40 flex items-center gap-1 transition-all"
                               title="View Courier Details"
                             >
                               <User className="w-3 h-3" />
@@ -693,5 +694,6 @@ export default function KitchenLiveBoard() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

@@ -89,12 +89,22 @@ export default function KitchenTracking() {
   const [selectedRiderId, setSelectedRiderId] = useState('all');
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'delivery' | 'ready'
-
+  const [mobileTrackingTab, setMobileTrackingTab] = useState('orders'); // 'orders' | 'map'
 
   // Map references
   const mapContainerRef = useRef(null);
   const leafletMapRef = useRef(null);
   const markersLayerRef = useRef(null);
+
+  // Invalidate map size when switching to map tab on mobile/tablets
+  useEffect(() => {
+    if (mobileTrackingTab === 'map' && leafletMapRef.current) {
+      const timer = setTimeout(() => {
+        leafletMapRef.current?.invalidateSize();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [mobileTrackingTab]);
 
   // Active trackable orders (out for delivery or ready with rider assigned)
   const activeDeliveries = useMemo(() => {
@@ -198,6 +208,7 @@ export default function KitchenTracking() {
         setSelectedOrderId(riderOrder.id);
       }
     }
+    setMobileTrackingTab('map');
   };
 
   // Handle choosing a customer delivery
@@ -206,6 +217,7 @@ export default function KitchenTracking() {
     if (order.assigned_rider_id) {
       setSelectedRiderId(String(order.assigned_rider_id));
     }
+    setMobileTrackingTab('map');
   };
 
   // ---------------------------------------------------------------------------
@@ -336,27 +348,27 @@ export default function KitchenTracking() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* 1. TOP DISPATCH & TRACKING HEADER                           */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <div className="p-3 sm:p-4 bg-surface-card border-b border-white/10 shrink-0 space-y-3 shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-2.5 sm:p-4 bg-surface-card border-b border-white/10 shrink-0 space-y-2.5 sm:space-y-3 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
           <div>
-            <h1 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-              <Navigation className="w-5 h-5 text-amber-400 animate-pulse" />
-              Delivery Tracking
+            <h1 className="text-sm sm:text-lg font-black text-white flex items-center gap-2">
+              <Navigation className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 animate-pulse shrink-0" />
+              <span>Delivery Tracking</span>
             </h1>
-            <p className="text-xs text-text-muted mt-0.5">
+            <p className="text-[11px] sm:text-xs text-text-muted mt-0.5">
               Live radar for every delivery in Kigali. Track by working rider or customer name.
             </p>
           </div>
 
           {/* Quick Counter Pills */}
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span className="px-2.5 sm:px-3 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[11px] sm:text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
-              <span>{activeDeliveries.length} Active Deliveries</span>
+              <span>{activeDeliveries.length} Deliveries</span>
             </span>
-            <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm">
-              <Bike className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{workingRiders.length} Riders at Work</span>
+            <span className="px-2.5 sm:px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] sm:text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm">
+              <Bike className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>{workingRiders.length} Riders</span>
             </span>
           </div>
         </div>
@@ -424,9 +436,39 @@ export default function KitchenTracking() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* 2. SPLIT LAYOUT: MAP + CUSTOMER DELIVERIES PANEL            */}
       {/* ═══════════════════════════════════════════════════════════ */}
+      {/* Mobile / Tablet Segmented Tab Switcher (< 1024px / lg:hidden) */}
+      <div className="lg:hidden flex items-center gap-1.5 p-2 bg-[#12141A] border-b border-white/10 shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileTrackingTab('orders')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-11 border ${
+            mobileTrackingTab === 'orders'
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm font-black'
+              : 'bg-white/5 text-text-muted border-white/5 hover:text-white'
+          }`}
+        >
+          <Clock className="w-4 h-4 text-amber-400" />
+          <span>Deliveries List ({filteredDeliveries.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTrackingTab('map')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-11 border ${
+            mobileTrackingTab === 'map'
+              ? 'bg-blue-600/30 text-blue-200 border-blue-500/60 shadow-sm font-black'
+              : 'bg-white/5 text-text-muted border-white/5 hover:text-white'
+          }`}
+        >
+          <Navigation className="w-4 h-4 text-blue-400" />
+          <span>Live Radar Map</span>
+        </button>
+      </div>
+
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden relative">
         {/* LEFT / SIDEBAR: CUSTOMER NAME SEARCH & ACTIVE ORDERS */}
-        <div className="w-full lg:w-96 bg-surface-dark border-r border-white/10 flex flex-col shrink-0 overflow-hidden shadow-lg">
+        <div className={`w-full lg:w-80 xl:w-96 bg-surface-dark border-r border-white/10 flex flex-col shrink-0 overflow-hidden shadow-lg h-full ${
+          mobileTrackingTab === 'orders' ? 'flex' : 'hidden lg:flex'
+        }`}>
           {/* Customer Search Bar */}
           <div className="p-3 border-b border-white/10 bg-surface-card/60 space-y-2 shrink-0">
             <div className="relative">
@@ -561,7 +603,9 @@ export default function KitchenTracking() {
         </div>
 
         {/* RIGHT / MAIN: LEAFLET MAP + LIVE INSPECTOR CARD */}
-        <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden">
+        <div className={`flex-1 min-h-0 flex flex-col relative overflow-hidden h-full ${
+          mobileTrackingTab === 'map' ? 'flex' : 'hidden lg:flex'
+        }`}>
           {/* LEAFLET MAP CONTAINER */}
           <div className="flex-1 w-full h-full relative">
             <div ref={mapContainerRef} className="w-full h-full" />
@@ -591,7 +635,7 @@ export default function KitchenTracking() {
 
           {/* BOTTOM FLOATING INSPECTOR CARD */}
           {activeOrder && (
-            <div className="p-3 sm:p-4 bg-surface-card/95 backdrop-blur-md border-t border-white/10 shrink-0 shadow-2xl">
+            <div className="p-3 sm:p-4 bg-surface-card/95 backdrop-blur-md border-t border-white/10 shrink-0 shadow-2xl max-h-[48vh] overflow-y-auto no-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
                 {/* 1. Customer Dropoff Information */}
                 <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
@@ -599,7 +643,18 @@ export default function KitchenTracking() {
                     <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider">
                       Customer Dropoff
                     </span>
-                    <span className="font-mono text-amber-400 font-black text-xs">#{activeOrder.id}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-amber-400 font-black text-xs">#{activeOrder.id}</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrderId(null)}
+                        className="p-1 rounded-md bg-white/10 hover:bg-white/20 text-text-muted hover:text-white text-xs transition-colors"
+                        title="Close details"
+                        aria-label="Close details"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                   <div className="font-bold text-white text-sm truncate">{activeOrder.customerName || 'Customer'}</div>
                   <div className="flex items-center justify-between text-xs pt-0.5">
