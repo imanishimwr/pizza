@@ -12,29 +12,26 @@ import AuthHeroPanel from '../auth/AuthHeroPanel';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const MIN_PASSWORD = 8;
 
-/* â”€â”€ Style tokens â”€â”€ */
+/* ── Style tokens ── */
 const fieldClass =
-  'w-full bg-white/70 dark:bg-black/30 border border-slate-200 dark:border-white/10 ' +
-  'rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white ' +
+  'w-full input-3d-well pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white ' +
   'placeholder-slate-400 dark:placeholder-white/30 ' +
-  'focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 ' +
-  'transition-all duration-200 backdrop-blur-sm';
+  'focus:outline-none transition-all duration-200';
 const toggleFieldClass = `${fieldClass} pr-10`;
 const labelClass = 'text-[11px] font-bold text-slate-500 dark:text-white/50 uppercase tracking-widest block mb-1';
 
-/* â”€â”€ Shimmer primary button â”€â”€ */
+/* ── 3D primary button ── */
 function PrimaryBtn({ children, disabled, ...rest }) {
   return (
     <button
       {...rest}
       disabled={disabled}
       className={
-        'btn-primary-interactive group relative w-full overflow-hidden ' +
+        'btn-3d-primary group relative w-full ' +
         'text-white text-sm py-3.5 font-black rounded-xl ' +
         'flex items-center justify-center gap-2 cursor-pointer mt-2'
       }
     >
-      <span className="btn-shimmer" />
       {children}
     </button>
   );
@@ -348,7 +345,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                 >
                   {[
                     { id: 'signin',   icon: LogIn,    label: 'Sign In' },
-                    { id: 'register', icon: Sparkles, label: 'Register' },
+                    { id: 'register', icon: Sparkles, label: 'Create Account' },
                   ].map(({ id, icon: Icon, label }) => (
                     <button
                       key={id}
@@ -406,7 +403,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                   </div>
                   <p className="text-xs text-slate-600 dark:text-white/50 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-3 leading-relaxed">
                     <KeyRound className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5 text-orange-500" />
-                    Self-service reset is not available here. Email{' '}
+                    Self-service reset is not available on this deployment. Email{' '}
                     <a className="text-orange-500 font-semibold hover:underline" href="mailto:hello@hotpot.rw">hello@hotpot.rw</a>
                     {' '}or call <span className="font-semibold">+250 788 000 001</span>.
                   </p>

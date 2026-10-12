@@ -522,84 +522,638 @@ a:focus:not(:focus-visible) {
 }
 
 /* ==========================================================================
-   Auth & Hero Keyframe Animations
+   Auth & Hero 3D Motorcycle Simulation Keyframes
    ========================================================================== */
-@keyframes authScooterEntrance {
+
+/* Realistic motorcycle travel from left to right, 3D U-turn, return right to left, and loop */
+@keyframes realMotoTravel {
+  /* PHASE 1: Accelerate from left towards right (0% - 44%) */
+  0% {
+    left: 4%;
+    transform: translateY(0px) rotateY(0deg) rotateZ(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1);
+  }
+  3% {
+    left: 7%;
+    transform: translateY(-2px) rotateY(0deg) rotateZ(-3deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  18% {
+    left: 40%;
+    transform: translateY(1.5px) rotateY(0deg) rotateZ(0.5deg) scale(1);
+  }
+  26% {
+    left: 58%;
+    transform: translateY(-1px) rotateY(0deg) rotateZ(-0.5deg) scale(1);
+  }
+  36% {
+    left: 78%;
+    transform: translateY(0.5px) rotateY(0deg) rotateZ(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* Braking before right turnaround (nose dips forward) */
+  42% {
+    left: 84%;
+    transform: translateY(2px) rotateY(0deg) rotateZ(3deg) scale(0.98);
+  }
+
+  /* PHASE 2: 3D Banking U-turn at right edge (44% - 50%) */
+  45% {
+    left: 87%;
+    transform: translateY(-3px) rotateY(65deg) rotateZ(-6deg) scale(0.9);
+  }
+  48% {
+    left: 86%;
+    transform: translateY(0px) rotateY(140deg) rotateZ(-2deg) scale(0.95);
+  }
+  50% {
+    left: 84%;
+    transform: translateY(0px) rotateY(180deg) rotateZ(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1);
+  }
+
+  /* PHASE 3: Accelerate from right towards left (50% - 94%) */
+  53% {
+    left: 81%;
+    transform: translateY(-2px) rotateY(180deg) rotateZ(-3deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  68% {
+    left: 48%;
+    transform: translateY(1.5px) rotateY(180deg) rotateZ(0.5deg) scale(1);
+  }
+  76% {
+    left: 32%;
+    transform: translateY(-1px) rotateY(180deg) rotateZ(-0.5deg) scale(1);
+  }
+  86% {
+    left: 14%;
+    transform: translateY(0.5px) rotateY(180deg) rotateZ(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* Braking before left turnaround (nose dips) */
+  92% {
+    left: 8%;
+    transform: translateY(2px) rotateY(180deg) rotateZ(3deg) scale(0.98);
+  }
+
+  /* PHASE 4: 3D Banking U-turn at left edge (94% - 100%) */
+  95% {
+    left: 5%;
+    transform: translateY(-3px) rotateY(245deg) rotateZ(-6deg) scale(0.9);
+  }
+  98% {
+    left: 4%;
+    transform: translateY(0px) rotateY(320deg) rotateZ(-2deg) scale(0.95);
+  }
+  100% {
+    left: 4%;
+    transform: translateY(0px) rotateY(360deg) rotateZ(0deg) scale(1);
+  }
+}
+
+/* Road center dashed line continuous streaming */
+@keyframes roadDashesMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 60px 0;
+  }
+}
+
+/* Headlight cone pulse and beam projection */
+@keyframes headlightBeamPulse {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scaleX(1) scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.06) scaleY(1.04);
+  }
+}
+
+/* Exhaust smoke and spark puff */
+@keyframes exhaustPuff {
+  0% {
+    opacity: 0.8;
+    transform: translate(0, 0) scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-24px, -12px) scale(1.6);
+  }
+}
+
+/* Horn sound wave shockwave ring */
+@keyframes hornShockwave {
+  0% {
+    opacity: 1;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+/* 3D Road Neon Curb Glow */
+@keyframes neonCurbPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 87, 34, 0.5), inset 0 0 6px rgba(255, 87, 34, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 87, 34, 0.85), inset 0 0 10px rgba(255, 87, 34, 0.7);
+  }
+}
+
+/* Tail light braking flare */
+@keyframes brakeTailFlare {
+  0%, 40%, 52%, 90%, 100% {
+    opacity: 0.3;
+    filter: drop-shadow(0 0 4px rgba(255, 20, 20, 0.4));
+  }
+  42%, 50%, 92%, 98% {
+    opacity: 1;
+    filter: drop-shadow(0 0 18px rgba(255, 30, 30, 0.95));
+  }
+}
+
+/* ==========================================================================
+   Continuous 3D Circuit Around Login Page (Never Turns Back Directly)
+   ========================================================================== */
+
+@keyframes dashStreamRight {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 72px 0;
+  }
+}
+
+@keyframes dashStreamLeft {
+  0% {
+    background-position: 80px 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.road-dashes-top {
+  animation: dashStreamRight 1.5s linear infinite;
+}
+
+.road-dashes-bottom {
+  animation: dashStreamLeft 1.4s linear infinite;
+}
+
+/* ==========================================================================
+   Animated Pizza with Green <-> Red Glowing Transition (Left Side Showcase)
+   ========================================================================== */
+
+/* Animated Pizza Dynamic Color Shift (Green <-> Red) */
+@keyframes pizzaColorShift {
+  0%, 100% {
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.8);
+    background-color: rgba(6, 78, 59, 0.3);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.6), inset 0 0 12px rgba(34, 197, 94, 0.25);
+    filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.8));
+    transform: rotate(-2deg) scale(1.02);
+  }
+  50% {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.8);
+    background-color: rgba(127, 29, 29, 0.3);
+    box-shadow: 0 0 26px rgba(239, 68, 68, 0.65), inset 0 0 12px rgba(239, 68, 68, 0.25);
+    filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.85));
+    transform: rotate(2deg) scale(1.06);
+  }
+}
+
+.pizza-color-shift {
+  animation: pizzaColorShift 3s ease-in-out infinite;
+}
+
+@keyframes pizzaFloatShift {
+  0%, 100% {
+    transform: translateY(0px) rotate(-8deg) scale(1.15);
+    filter: drop-shadow(0 0 16px rgba(34, 197, 94, 1)) drop-shadow(0 0 28px rgba(34, 197, 94, 0.6));
+  }
+  50% {
+    transform: translateY(-10px) rotate(8deg) scale(1.3);
+    filter: drop-shadow(0 0 18px rgba(239, 68, 68, 1)) drop-shadow(0 0 30px rgba(239, 68, 68, 0.65));
+  }
+}
+
+.pizza-float-shift {
+  animation: pizzaFloatShift 3s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Motorcycle Cycle: Starts at Left -> Disappears When Reaching Login Side
+   -> Available at Bottom -> Disappears at Left -> Back to Top
+   ========================================================================== */
+
+@keyframes motoCircuitAroundCard {
+  /* PHASE 1: Top Hero Track — Emerging past HotPot Logo & Driving East toward Login Side (0% - 48%) */
   0% {
     opacity: 0;
-    transform: translateX(100px) scale(0.92);
+    left: -4%;
+    top: -16px;
+    transform: translateY(0px) rotateY(0deg) scale(0.92);
+    animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
   }
-  60% {
+  4% {
     opacity: 1;
-    transform: translateX(-10px) scale(1.02);
+    left: 2%;
+    top: -16px;
+    transform: translateY(-0.5px) rotateY(0deg) scale(0.92);
   }
-  100% {
+  20% {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    left: 16%;
+    top: -16px;
+    transform: translateY(0.5px) rotateY(0deg) scale(0.92);
   }
-}
-
-@keyframes motoDriveRightToLeft {
-  0% {
+  36% {
+    opacity: 0.95;
+    left: 26%;
+    top: -16px;
+    transform: translateY(-0.5px) rotateY(0deg) scale(0.92);
+  }
+  43% {
+    opacity: 0.5;
+    left: 31%;
+    top: -16px;
+    transform: translateY(0px) rotateY(0deg) scale(0.92);
+  }
+  /* DISAPPEARS right as front reaches login side divider (not where card ends!) */
+  48% {
     opacity: 0;
-    transform: translateX(120px) scale(0.9);
+    left: 34%;
+    top: -16px;
+    transform: translateY(0px) rotateY(0deg) scale(0.92);
   }
-  30% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
+
+  /* PHASE 2: Invisible Relocation to Bottom of Hero Side (48.01% - 49.99%) */
+  49% {
+    opacity: 0;
+    left: 34%;
+    top: calc(100% - 108px);
+    transform: translateY(0px) rotateY(180deg) scale(1.04);
   }
-  65% {
+
+  /* PHASE 3: Available at Bottom of Hero Side — Emerging at Divider & Driving West (50% - 96%) */
+  50% {
+    opacity: 0;
+    left: 34%;
+    top: calc(100% - 108px);
+    transform: translateY(0px) rotateY(180deg) scale(1.04);
+    animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  54% {
     opacity: 1;
-    transform: translateX(-6px) translateY(-6px) scale(1);
+    left: 30%;
+    top: calc(100% - 108px);
+    transform: translateY(-0.5px) rotateY(180deg) scale(1.04);
+  }
+  70% {
+    opacity: 1;
+    left: 18%;
+    top: calc(100% - 108px);
+    transform: translateY(0.5px) rotateY(180deg) scale(1.04);
+  }
+  86% {
+    opacity: 1;
+    left: 6%;
+    top: calc(100% - 108px);
+    transform: translateY(-0.5px) rotateY(180deg) scale(1.04);
+  }
+  92% {
+    opacity: 0.8;
+    left: 0%;
+    top: calc(100% - 108px);
+    transform: translateY(0px) rotateY(180deg) scale(1.04);
+  }
+  /* DISAPPEARS when reaching left edge */
+  96% {
+    opacity: 0;
+    left: -8%;
+    top: calc(100% - 108px);
+    transform: translateY(0px) rotateY(180deg) scale(1.04);
+  }
+
+  /* PHASE 4: Invisible Relocation Back to Top (96.01% - 100%) */
+  98% {
+    opacity: 0;
+    left: -4%;
+    top: -16px;
+    transform: translateY(0px) rotateY(0deg) scale(0.92);
   }
   100% {
-    opacity: 1;
-    transform: translateX(0) translateY(0) scale(1);
+    opacity: 0;
+    left: -4%;
+    top: -16px;
+    transform: translateY(0px) rotateY(0deg) scale(0.92);
   }
 }
 
-@keyframes authScooterFloat {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(-1.5deg);
+@media (max-width: 768px) {
+  @keyframes motoCircuitAroundCard {
+    /* Top Hero Track Mobile */
+    0% {
+      opacity: 0;
+      left: -4%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
+    4% {
+      opacity: 1;
+      left: 2%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
+    22% {
+      opacity: 1;
+      left: 24%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
+    38% {
+      opacity: 1;
+      left: 42%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
+    44% {
+      opacity: 0.6;
+      left: 50%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
+    48% {
+      opacity: 0;
+      left: 56%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
+
+    /* Relocation to Bottom of Hero Section on Mobile */
+    49% {
+      opacity: 0;
+      left: 56%;
+      top: 130px;
+      transform: translateY(0px) rotateY(180deg) scale(0.85);
+    }
+
+    /* Bottom Hero Track Mobile */
+    50% {
+      opacity: 0;
+      left: 54%;
+      top: 130px;
+      transform: translateY(0px) rotateY(180deg) scale(0.85);
+    }
+    54% {
+      opacity: 1;
+      left: 48%;
+      top: 130px;
+      transform: translateY(0px) rotateY(180deg) scale(0.85);
+    }
+    70% {
+      opacity: 1;
+      left: 28%;
+      top: 130px;
+      transform: translateY(0px) rotateY(180deg) scale(0.85);
+    }
+    88% {
+      opacity: 1;
+      left: 6%;
+      top: 130px;
+      transform: translateY(0px) rotateY(180deg) scale(0.85);
+    }
+    93% {
+      opacity: 0.7;
+      left: 0%;
+      top: 130px;
+      transform: translateY(0px) rotateY(180deg) scale(0.85);
+    }
+    96% {
+      opacity: 0;
+      left: -8%;
+      top: 130px;
+      transform: translateY(0px) rotateY(180deg) scale(0.85);
+    }
+
+    /* Relocation Back to Top */
+    98% {
+      opacity: 0;
+      left: -4%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
+    100% {
+      opacity: 0;
+      left: -4%;
+      top: -14px;
+      transform: translateY(0px) rotateY(0deg) scale(0.85);
+    }
   }
 }
 
-@keyframes logoPulseAura {
-  0%, 100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 16px rgba(255, 87, 34, 0.45));
-  }
-  50% {
-    transform: scale(1.05);
-    filter: drop-shadow(0 0 28px rgba(255, 87, 34, 0.8));
-  }
+.auth-moto-circuit {
+  mix-blend-mode: screen;
+  animation: motoCircuitAroundCard 8s linear infinite;
 }
 
-.auth-moto-drive-rtl {
-  animation: motoDriveRightToLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-             authScooterFloat 3s ease-in-out infinite 0.9s;
+.auth-moto-circuit.turbo-speed {
+  mix-blend-mode: screen;
+  animation: motoCircuitAroundCard 4.5s linear infinite;
 }
 
-.auth-logo-showcase {
-  animation: logoPulseAura 3s ease-in-out infinite;
+/* 3D Demo Button Pill Styling */
+.btn-3d-demo {
+  position: relative;
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform: translateY(0);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.btn-3d-demo:hover:not(:disabled) {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4.5px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  filter: brightness(1.12);
+}
+.btn-3d-demo:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35), inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-@keyframes authPulseRing {
-  0% {
-    transform: scale(0.92);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.08);
-    opacity: 0.15;
-  }
-  100% {
-    transform: scale(0.92);
-    opacity: 0.5;
-  }
+/* ==========================================================================
+   Tactile 3D Button & Control Design System (Make All Buttons 3D)
+   ========================================================================== */
+
+/* 3D Primary Button: High-Depth Beveled Push Button */
+.btn-3d-primary {
+  position: relative;
+  overflow: hidden;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(180deg, #ff6a3d 0%, #ea580c 55%, #c2410c 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  border-bottom: 4px solid #7c2d12 !important;
+  border-radius: 1rem;
+  box-shadow: 
+    0 6px 0 #7c2d12,
+    0 14px 28px rgba(234, 88, 12, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform: translateY(0);
+  cursor: pointer;
+}
+
+.btn-3d-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 
+    0 8px 0 #7c2d12,
+    0 18px 32px rgba(234, 88, 12, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.btn-3d-primary:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 
+    0 2px 0 #7c2d12,
+    0 6px 12px rgba(234, 88, 12, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.btn-3d-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: 0 2px 0 #7c2d12;
+}
+
+/* 3D Secondary Button: Beveled Embossed Finish */
+.btn-3d-secondary {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.6);
+  border-radius: 0.85rem;
+  box-shadow: 
+    0 4px 0 rgba(0, 0, 0, 0.5),
+    0 6px 14px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.12s ease;
+  cursor: pointer;
+}
+
+.btn-3d-secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(255, 87, 34, 0.5);
+  box-shadow: 
+    0 5px 0 rgba(255, 87, 34, 0.4),
+    0 8px 18px rgba(255, 87, 34, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.btn-3d-secondary:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 3D Inset Input Well */
+.input-3d-well {
+  background: rgba(14, 10, 18, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 2px solid rgba(0, 0, 0, 0.7) !important;
+  box-shadow: 
+    inset 0 3px 6px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: 0.85rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.input-3d-well:focus {
+  border-color: #ff5722 !important;
+  background: rgba(18, 12, 24, 0.85) !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 0 0 3px rgba(255, 87, 34, 0.25),
+    0 0 20px rgba(255, 87, 34, 0.35) !important;
+}
+
+/* 3D Round Bevel Button (for password eye toggle, etc.) */
+.btn-3d-round {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    0 2px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  border-radius: 0.75rem;
+  transition: all 0.12s ease;
+  cursor: pointer;
+}
+
+.btn-3d-round:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+}
+
+.btn-3d-round:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 transparent;
+}
+
+/* 3D Demo Quick-Login Button */
+.btn-3d-demo {
+  border-bottom-width: 3px !important;
+  border-bottom-color: rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 
+    0 3px 0 rgba(0, 0, 0, 0.45),
+    0 6px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-3d-demo:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 
+    0 5px 0 rgba(0, 0, 0, 0.5),
+    0 8px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.btn-3d-demo:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 
+    0 1px 0 rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 3D Card Floating Stage with Bevel and Specular Edge */
+.card-3d-stage {
+  box-shadow: 
+    0 32px 80px rgba(0, 0, 0, 0.85),
+    0 0 45px rgba(255, 87, 34, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 @keyframes authFadeUp {
@@ -631,11 +1185,6 @@ a:focus:not(:focus-visible) {
   50% {
     filter: drop-shadow(0 0 20px rgba(255, 87, 34, 0.8));
   }
-}
-
-.auth-scooter-entrance {
-  animation: authScooterEntrance 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-             authScooterFloat 3.5s ease-in-out infinite 0.9s;
 }
 
 .auth-pulse-ring-1 {

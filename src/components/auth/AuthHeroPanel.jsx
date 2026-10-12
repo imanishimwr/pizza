@@ -1,180 +1,199 @@
-import React, { useState, useEffect } from 'react';
-import { Zap, Pizza, MapPin } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Pizza } from 'lucide-react';
 
-export default function AuthHeroPanel() {
-  // Auto-switch between HotPot Delivery Moto and Official Logo every 3.5 seconds
-  const [activeGraphic, setActiveGraphic] = useState('moto'); // 'moto' | 'logo'
+export default function AuthHeroPanel({ isCompact = false }) {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const containerRef = useRef(null);
 
+  // Auto-rotate hero showcase every 4.5 seconds like on the Home page
   useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveGraphic((prev) => (prev === 'moto' ? 'logo' : 'moto'));
-    }, 3500);
-    return () => clearInterval(timer);
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % 2);
+    }, 4500);
+    return () => clearInterval(interval);
   }, []);
 
-  const perks = [
-    {
-      icon: Zap,
-      title: 'Lightning-Fast Delivery',
-      desc: 'Hot gourmet meals delivered across Kigali in under 30 minutes.',
-      color: 'text-amber-400',
-      bgColor: 'bg-amber-500/20',
-      borderColor: 'border-amber-500/30',
-    },
-    {
-      icon: Pizza,
-      title: 'Authentic Quality',
-      desc: 'Freshly prepared hotpot recipes, wood-fired pizzas, and local favorites.',
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/20',
-      borderColor: 'border-orange-500/30',
-    },
-    {
-      icon: MapPin,
-      title: 'Live Order Telemetry',
-      desc: 'Track your delivery rider in real time from kitchen to doorstep.',
-      color: 'text-emerald-400',
-      bgColor: 'bg-emerald-500/20',
-      borderColor: 'border-emerald-500/30',
-    },
-  ];
+  // Mouse Parallax 3D tilt tracking for desktop
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ x: x * 10, y: -y * 8 });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+  };
+
+  const isGreenTheme = activeSlide % 2 !== 0;
 
   return (
-    <div className="hidden md:flex flex-col relative w-full md:w-[48%] lg:w-[50%] min-h-full overflow-hidden bg-gradient-to-br from-[#1b0800] via-[#2c1000] to-[#0d0400] p-6 sm:p-8 lg:p-10 justify-between select-none">
-      {/* Ambient glowing radial blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-orange-600/25 blur-[90px] animate-soft-glow" />
-        <div
-          className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-red-600/20 blur-[85px] animate-soft-glow"
-          style={{ animationDelay: '2s' }}
-        />
-
-        {/* Pulse rings behind delivery hub pin */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full border border-orange-500/15 auth-pulse-ring-1" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border border-orange-500/10 auth-pulse-ring-2" />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] rounded-full border border-orange-500/5 auth-pulse-ring-1"
-          style={{ animationDelay: '1.5s' }}
-        />
-      </div>
-
-      {/* Speed-line diagonal pattern overlay */}
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className={`relative w-full overflow-hidden select-none border-b md:border-b-0 md:border-r border-orange-500/20 transition-all duration-700 ${
+        isGreenTheme
+          ? 'bg-gradient-to-br from-[#04160c] via-[#0b2416] to-[#020e07]'
+          : 'bg-gradient-to-br from-[#140602] via-[#240b04] to-[#0c0402]'
+      } ${
+        isCompact
+          ? 'h-44 sm:h-52 p-3 sm:p-4'
+          : 'flex flex-col justify-between md:w-[48%] lg:w-[50%] p-4 sm:p-6 lg:p-7'
+      }`}
+      style={{
+        perspective: '1200px',
+      }}
+    >
+      {/* 3D Parallax Root Stage */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.05]"
+        className="relative z-10 w-full h-full flex flex-col justify-between transition-transform duration-200 ease-out preserve-3d"
         style={{
-          backgroundImage:
-            'repeating-linear-gradient(-35deg, #FF5722 0, #FF5722 1.5px, transparent 0, transparent 36px)',
-          backgroundSize: '36px 36px',
+          transform: `rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
         }}
-      />
-
-      {/* Top Brand Header with Official HotPot Logo */}
-      <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      >
+        {/* Ambient Radial Lights (Dynamic Green <-> Orange/Red based on slide) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden transition-all duration-700">
           <div
-            className="w-11 h-11 rounded-2xl bg-black/60 border border-white/20 p-1 flex items-center justify-center shadow-xl shadow-orange-500/20 transition-transform duration-300 hover:scale-105"
-            style={{ filter: 'drop-shadow(0 0 12px rgba(255,87,34,0.5))' }}
-          >
-            <img
-              src="/hotpot-logo.png"
-              alt="HotPot Official Logo"
-              className="w-full h-full object-contain rounded-xl"
-            />
-          </div>
-          <div>
-            <span className="text-white font-black text-xl tracking-tight block">
-              HotPot
-            </span>
-            <span className="text-white/50 text-[11px] font-semibold uppercase tracking-wider block">
-              Kigali Delivery Hub
-            </span>
-          </div>
+            className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] transition-all duration-700 ${
+              isGreenTheme ? 'bg-emerald-600/25' : 'bg-orange-600/20'
+            }`}
+          />
+          <div
+            className={`absolute -bottom-10 -left-10 w-64 h-64 rounded-full blur-[75px] transition-all duration-700 ${
+              isGreenTheme ? 'bg-teal-600/20' : 'bg-red-600/20'
+            }`}
+          />
         </div>
 
-        {/* Pill Badge */}
-        <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-950/60 border border-orange-500/30 text-[10px] font-extrabold text-orange-300 uppercase tracking-wider shadow-sm">
-          <span>🚀</span>
-          <span>KIGALI EXPRESS • 24/7 HOT DELIVERY</span>
-        </div>
-      </div>
-
-      {/* Hero Title & Subtitle Copywriting */}
-      <div className="relative z-10 mt-6 space-y-2">
-        <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight">
-          Hot &amp; Fresh, Delivered to Your Doorstep
-        </h2>
-        <p className="text-xs sm:text-sm text-white/70 font-medium leading-relaxed max-w-md">
-          Experience Kigali&apos;s finest hotpot, wood-fired pizzas, and gourmet dishes with real-time GPS tracking.
-        </p>
-      </div>
-
-      {/* Auto-Switching Hero Showcase: HotPot Delivery Moto <-> Official Logo */}
-      <div className="relative z-10 my-auto py-4 min-h-[260px] flex items-center justify-center">
-        {/* State 1: HotPot Delivery Moto Graphic (Right to Left entrance & motion) */}
-        <div
-          className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${
-            activeGraphic === 'moto'
-              ? 'opacity-100 scale-100 pointer-events-auto'
-              : 'opacity-0 scale-95 pointer-events-none'
-          }`}
-        >
-          <div className="relative w-full max-w-[320px] flex items-center justify-center">
-            {/* Speed flare behind moto */}
-            <div className="absolute inset-x-6 bottom-3 h-10 bg-orange-500/25 blur-xl rounded-full" />
-            <img
-              src="/assets/delivery_rider_hotpot.png"
-              alt="HotPot Kigali delivery moto"
-              className="w-full max-h-[250px] object-contain drop-shadow-[0_20px_40px_rgba(255,87,34,0.45)] auth-moto-drive-rtl"
-            />
-          </div>
-          <div className="mt-2 text-[11px] font-bold text-orange-300/90 tracking-wide uppercase flex items-center gap-1.5 bg-black/40 border border-orange-500/20 px-3.5 py-1 rounded-full backdrop-blur-xs">
-            <span>🛵</span>
-            <span>Live Dispatch • Moto En Route</span>
-          </div>
-        </div>
-
-        {/* State 2: HotPot Official Logo Showcase with Flame Glow Aura */}
-        <div
-          className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${
-            activeGraphic === 'logo'
-              ? 'opacity-100 scale-100 pointer-events-auto'
-              : 'opacity-0 scale-95 pointer-events-none'
-          }`}
-        >
-          <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-black/80 border-2 border-orange-500/40 p-3 flex items-center justify-center shadow-2xl auth-logo-showcase">
-            <img
-              src="/hotpot-logo.png"
-              alt="HotPot Official Logo"
-              className="w-full h-full object-contain rounded-2xl"
-            />
-          </div>
-          <div className="mt-4 text-center">
-            <div className="text-sm font-black text-white tracking-tight">HotPot Rwanda</div>
-            <div className="text-[11px] text-orange-400 font-semibold uppercase tracking-wider">
-              The Home of Authentic Pizza &amp; Hotpot
+        {/* TOP BAR: Clean Minimal Brand Header */}
+        <div className="relative z-20 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/80 border border-orange-500/30 p-1 flex items-center justify-center shadow-lg shadow-orange-500/25 shrink-0 ring-1 ring-orange-500/40">
+              <img
+                src="/hotpot-logo.png"
+                alt="HotPot Logo"
+                className="w-full h-full object-contain rounded-lg"
+              />
+            </div>
+            <div>
+              <span className="text-white font-black text-base sm:text-lg tracking-tight block leading-none">
+                HotPot
+              </span>
+              <span className="text-orange-400/90 text-[10px] font-extrabold uppercase tracking-wider block mt-0.5">
+                Kigali Express
+              </span>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Feature Highlights (3 Bullet Badges) */}
-      <div className="relative z-10 space-y-2.5 pt-3 border-t border-white/10">
-        {perks.map(({ icon: Icon, title, desc, color, bgColor, borderColor }) => (
-          <div
-            key={title}
-            className="flex items-start gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors"
-          >
+        {/* CENTER 3D SHOWCASE: ROTATES AS ON HOME PAGE BETWEEN (HOTPOT LOGO PIZZA & COURIER) */}
+        <div className="relative z-10 my-auto py-3 sm:py-4 flex-1 flex flex-col justify-center items-center text-center">
+          <div className="relative min-h-[240px] sm:min-h-[270px] w-full flex items-center justify-center">
+
+            {/* SLIDE 0: HotPot Logo & Welcome to Home of Pizza (With Green <-> Red Dynamic Glow) */}
             <div
-              className={`w-7 h-7 rounded-xl ${bgColor} border ${borderColor} flex items-center justify-center shrink-0 mt-0.5`}
+              className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 transform ${
+                !isGreenTheme
+                  ? 'opacity-100 scale-100 rotate-0'
+                  : 'opacity-0 scale-95 -rotate-6 pointer-events-none'
+              }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${color}`} />
+              <div className="relative group flex flex-col items-center">
+                {/* Glowing radial aura ring */}
+                <div className="absolute -inset-4 bg-gradient-to-r from-primary via-orange-500 to-amber-400 rounded-3xl blur-2xl opacity-60 animate-pulse" />
+
+                {/* Beveled dark glass card like on Home page */}
+                <div className="relative p-5 sm:p-6 rounded-3xl bg-black/85 border-2 border-amber-500/50 shadow-2xl flex flex-col items-center text-center space-y-2.5 backdrop-blur-md">
+                  <div className="relative">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-black border border-white/20 p-1 flex items-center justify-center shadow-2xl shadow-primary/50 overflow-hidden group-hover:scale-105 transition-transform">
+                      <img
+                        src="/hotpot-logo.png"
+                        alt="HotPot Logo"
+                        className="w-full h-full object-contain rounded-xl"
+                      />
+                    </div>
+                    {/* Animated Pizza floating slice changing color to green & red */}
+                    <div
+                      className="absolute -top-3 -right-3 text-2xl pizza-float-shift cursor-pointer select-none"
+                      title="Fresh Artisanal Pizza"
+                    >
+                      🍕
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-white via-orange-200 to-amber-400 bg-clip-text text-transparent">
+                      HotPot
+                    </h3>
+                    <p className="text-[11px] font-bold text-amber-300 uppercase tracking-widest mt-0.5">
+                      Welcome to the home of pizza 🍕
+                    </p>
+                  </div>
+
+                  {/* Animated Pizza Badge with Glowing Green <-> Red Dynamic Color Shift */}
+                  <div className="pizza-color-shift inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/85 border transition-all duration-700 shadow-md">
+                    <Pizza className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-black tracking-wide uppercase">Wood-Fired Pizza</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <span className="text-xs font-bold text-white block leading-snug">{title}</span>
-              <span className="text-[11px] text-white/60 leading-tight block">{desc}</span>
+
+            {/* SLIDE 1: Kigali Moto Express Courier (animate-float-moto as on Home page) */}
+            <div
+              className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 transform ${
+                isGreenTheme
+                  ? 'opacity-100 scale-100 translate-x-0'
+                  : 'opacity-0 scale-95 translate-x-8 pointer-events-none'
+              }`}
+            >
+              <div className="relative max-w-[260px] sm:max-w-[280px] w-full flex flex-col items-center">
+                {/* Emerald ambient glow */}
+                <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 rounded-3xl blur-2xl opacity-40 animate-pulse" />
+
+                {/* Floating moto courier with animate-float-moto like on Home page */}
+                <div className="relative w-full animate-float-moto flex flex-col items-center">
+                  <img
+                    src="/assets/delivery_rider_hotpot.png"
+                    alt="HotPot motorbike delivery courier"
+                    className="w-full max-h-[140px] sm:max-h-[155px] object-cover rounded-2xl shadow-xl border border-white/10 drop-shadow-[0_15px_25px_rgba(0,0,0,0.5)]"
+                  />
+                  <div className="mt-2 p-3 sm:p-3.5 w-full rounded-2xl bg-black/75 border border-emerald-500/40 text-center space-y-1 backdrop-blur-md shadow-xl">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-base animate-bounce">
+                      🛵
+                    </div>
+                    <div className="font-extrabold text-xs sm:text-sm text-white">Kigali Moto Express</div>
+                    <div className="text-[10px] text-emerald-300/80 font-medium">Live courier tracking on every order</div>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
-        ))}
+
+          {/* Slide Indicator Dots (Matches Home Page Banner Dots) */}
+          <div className="relative z-20 flex justify-center items-center gap-1.5 mt-2">
+            <button
+              type="button"
+              onClick={() => setActiveSlide(0)}
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                !isGreenTheme ? 'w-6 bg-orange-400' : 'w-2 bg-white/30 hover:bg-white/50'
+              }`}
+              aria-label="Home of Pizza Showcase"
+            />
+            <button
+              type="button"
+              onClick={() => setActiveSlide(1)}
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                isGreenTheme ? 'w-6 bg-emerald-400' : 'w-2 bg-white/30 hover:bg-white/50'
+              }`}
+              aria-label="Kigali Delivery Courier Showcase"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

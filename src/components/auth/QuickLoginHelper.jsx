@@ -42,16 +42,16 @@ const DEMO_CREDENTIALS = [
 
 export default function QuickLoginHelper({ onSelect, onInstantLogin, disabled = false }) {
   return (
-    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-text-muted flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-          Demo Quick-Login
+    <div className="mt-2.5 p-2 rounded-2xl bg-black/20 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 shadow-sm">
+      <div className="flex items-center justify-between mb-1.5 px-0.5">
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center gap-1">
+          <Zap className="w-3 h-3 text-amber-500" />
+          Quick Demo
         </span>
-        <span className="text-[10px] text-slate-400 dark:text-text-subdued">1-click test access</span>
+        <span className="text-[9px] text-slate-400 dark:text-white/40">1-click login</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
         {DEMO_CREDENTIALS.map((demo) => {
           const Icon = demo.icon;
           return (
@@ -66,16 +66,11 @@ export default function QuickLoginHelper({ onSelect, onInstantLogin, disabled = 
                   onSelect(demo.email, demo.password);
                 }
               }}
-              title={`Click to test as ${demo.name} (${demo.description})`}
-              className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${demo.badgeColor}`}
+              title={`1-click login as ${demo.name}: ${demo.description}`}
+              className={`btn-3d-demo py-1.5 px-2 rounded-xl border text-center flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${demo.badgeColor}`}
             >
-              <div className="w-7 h-7 rounded-lg bg-white/70 dark:bg-black/40 flex items-center justify-center shrink-0">
-                <Icon className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold leading-tight truncate">{demo.name}</div>
-                <div className="text-[10px] opacity-75 truncate">{demo.email}</div>
-              </div>
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-[11px] font-black tracking-tight whitespace-nowrap">{demo.name}</span>
             </button>
           );
         })}
