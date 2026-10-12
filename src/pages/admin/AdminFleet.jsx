@@ -179,24 +179,24 @@ export default function AdminFleet() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#1A1D24] p-4 sm:px-6 rounded-2xl border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-[#1A1D24] p-4 sm:px-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl">
         <div>
-          <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2.5">
-            <Bike className="w-5 h-5 text-orange-400" aria-hidden="true" />
+          <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Bike className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
             Rider fleet
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">Duty status, earnings and emergency reassignment.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Duty status, earnings and emergency reassignment.</p>
         </div>
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => loadSnapshot()}
             disabled={isRefreshing}
-            className="p-2.5 rounded-xl bg-[#1F242D] border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center disabled:opacity-60"
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center disabled:opacity-60"
             title="Refresh the courier fleet"
             aria-label="Refresh the courier fleet"
           >
-            <RefreshCw className={`w-4 h-4 text-orange-400 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <RefreshCw className={`w-4 h-4 text-orange-600 dark:text-orange-400 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -210,13 +210,13 @@ export default function AdminFleet() {
       </div>
 
       {ridersError ? (
-        <div role="alert" className="p-5 rounded-2xl bg-[#1A1D24] border border-red-500/50 space-y-2">
-          <p className="text-sm font-bold text-red-200 flex items-center gap-2">
+        <div role="alert" className="p-5 rounded-2xl bg-red-50 dark:bg-[#1A1D24] border border-red-200 dark:border-red-500/50 space-y-2">
+          <p className="text-sm font-bold text-red-700 dark:text-red-200 flex items-center gap-2">
             <AlertCircle className="w-4 h-4" aria-hidden="true" />
             The courier fleet could not be loaded
           </p>
-          <p className="text-xs text-slate-300">{ridersError}</p>
-          <p className="text-xs text-slate-400">Sign in with a staff account to manage couriers. No fleet data is shown until the server answers.</p>
+          <p className="text-xs text-slate-700 dark:text-slate-300">{ridersError}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Sign in with a staff account to manage couriers. No fleet data is shown until the server answers.</p>
         </div>
       ) : (
         <>
@@ -262,7 +262,7 @@ export default function AdminFleet() {
           )}
 
           {/* Search, Filter & List */}
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-2xl space-y-4">
+          <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-md">
                 <label htmlFor="rider-search" className="sr-only">
@@ -275,7 +275,7 @@ export default function AdminFleet() {
                   value={riderSearch}
                   onChange={(e) => setRiderSearch(e.target.value)}
                   placeholder="Search by name, phone, plate or vehicle"
-                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#12141A] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-[#12141A] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -287,7 +287,7 @@ export default function AdminFleet() {
                   id="rider-filter"
                   value={riderStatusFilter}
                   onChange={(e) => setRiderStatusFilter(e.target.value)}
-                  className="bg-[#12141A] border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500"
+                  className="bg-slate-50 dark:bg-[#12141A] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 >
                   <option value="all">All statuses</option>
                   <option value="available">On duty and free</option>
@@ -304,7 +304,7 @@ export default function AdminFleet() {
                 ))}
               </div>
             ) : filteredRiders.length === 0 ? (
-              <p className="py-12 text-center text-slate-400 text-xs">
+              <p className="py-12 text-center text-slate-500 dark:text-slate-400 text-xs">
                 {riders.length === 0 ? 'No couriers are registered yet.' : 'No couriers matched your search.'}
               </p>
             ) : (
@@ -317,19 +317,19 @@ export default function AdminFleet() {
                   return (
                     <article
                       key={rider.id}
-                      className={`p-4 sm:p-5 rounded-2xl bg-[#12141A] border transition-all shadow-lg flex flex-col justify-between space-y-4 ${
-                        busy ? 'border-blue-500/40' : free ? 'border-emerald-500/40' : 'border-slate-800'
+                      className={`p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-[#12141A] border transition-all shadow-sm flex flex-col justify-between space-y-4 ${
+                        busy ? 'border-blue-400 dark:border-blue-500/40' : free ? 'border-emerald-400 dark:border-emerald-500/40' : 'border-slate-200 dark:border-slate-800'
                       }`}
                     >
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center font-bold text-base shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 flex items-center justify-center font-bold text-base shrink-0">
                               {rider.name ? rider.name.charAt(0).toUpperCase() : '?'}
                             </div>
                             <div className="min-w-0">
-                              <h4 className="text-sm font-black text-white truncate">{rider.name}</h4>
-                              <span className="font-mono text-xs font-bold text-amber-400">
+                              <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">{rider.name}</h4>
+                              <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400">
                                 {rider.plateNumber || 'No plate on file'}
                               </span>
                             </div>
@@ -337,10 +337,10 @@ export default function AdminFleet() {
                           <span
                             className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-black border shrink-0 ${
                               busy
-                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/50'
+                                ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-500/50'
                                 : free
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/50'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                             }`}
                           >
                             {busy
@@ -351,28 +351,28 @@ export default function AdminFleet() {
                           </span>
                         </div>
 
-                        <div className="space-y-1.5 text-xs bg-[#1A1D24] p-3 rounded-xl border border-slate-800">
+                        <div className="space-y-1.5 text-xs bg-white dark:bg-[#1A1D24] p-3 rounded-xl border border-slate-200 dark:border-slate-800">
                           <Row label="Vehicle" value={rider.vehicleType || 'not recorded'} />
                           <Row label="Shift" value={rider.shift || 'not recorded'} />
-                          <div className="flex items-center justify-between text-slate-300">
-                            <span className="text-slate-400">Phone</span>
+                          <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                            <span className="text-slate-500 dark:text-slate-400">Phone</span>
                             {rider.phone ? (
-                              <a href={`tel:${rider.phone}`} className="font-mono text-emerald-400 hover:underline">
+                              <a href={`tel:${rider.phone}`} className="font-mono text-emerald-600 dark:text-emerald-400 hover:underline">
                                 {rider.phone}
                               </a>
                             ) : (
-                              <span className="font-mono text-slate-500">not recorded</span>
+                              <span className="font-mono text-slate-400 dark:text-slate-500">not recorded</span>
                             )}
                           </div>
-                          <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
-                            <span className="text-slate-400">Today</span>
-                            <span className="font-mono text-white font-bold">
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800/80">
+                            <span className="text-slate-500 dark:text-slate-400">Today</span>
+                            <span className="font-mono text-slate-900 dark:text-white font-bold">
                               {rwf(rider.completed_today)} trips &middot; {formatRwf(rider.earnings_today)} RWF
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-slate-400">Current deliveries</span>
-                            <span className={`font-mono font-bold ${activeCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                            <span className="text-slate-500 dark:text-slate-400">Current deliveries</span>
+                            <span className={`font-mono font-bold ${activeCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                               {activeCount === 0 ? 'Free (0 active)' : `${activeCount} active ${activeCount === 1 ? 'delivery' : 'deliveries'}`}
                             </span>
                           </div>
@@ -381,24 +381,24 @@ export default function AdminFleet() {
                         {/* Assigned Orders List */}
                         {assignedOrders.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                               Assigned Deliveries ({assignedOrders.length})
                             </p>
                             <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                               {assignedOrders.map((ord) => (
                                 <div
                                   key={ord.id}
-                                  className="p-2 rounded-xl bg-[#181B22] border border-slate-700/60 flex items-center justify-between gap-2 text-xs"
+                                  className="p-2 rounded-xl bg-slate-100 dark:bg-[#181B22] border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2 text-xs"
                                 >
                                   <div className="min-w-0">
-                                    <p className="text-white font-bold truncate">#{ord.id} &middot; {ord.customerName}</p>
-                                    <p className="text-[10px] text-slate-400 truncate">{ord.address}</p>
+                                    <p className="text-slate-900 dark:text-white font-bold truncate">#{ord.id} &middot; {ord.customerName}</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{ord.address}</p>
                                   </div>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
                                       type="button"
                                       onClick={() => setReassignTarget({ orderId: ord.id, fromRiderId: rider.id })}
-                                      className="px-2 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold hover:bg-amber-500/30"
+                                      className="px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold hover:bg-amber-500/25"
                                       title="Reassign order"
                                     >
                                       Reassign
@@ -406,7 +406,7 @@ export default function AdminFleet() {
                                     <button
                                       type="button"
                                       onClick={() => handleReassignRider({ orderId: ord.id, newRiderId: null })}
-                                      className="px-2 py-1 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-[10px] font-bold hover:bg-red-500/30"
+                                      className="px-2 py-1 rounded-lg bg-red-500/15 border border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-300 text-[10px] font-bold hover:bg-red-500/25"
                                       title="Release courier"
                                     >
                                       Release
@@ -419,13 +419,13 @@ export default function AdminFleet() {
                         )}
                       </div>
 
-                      <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
                         <button
                           type="button"
                           onClick={() => handleOpenEditRider(rider)}
-                          className="px-3 py-1.5 rounded-xl bg-[#1F242D] border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
                         >
-                          <Edit className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+                          <Edit className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                           <span>Edit info</span>
                         </button>
                         <button
@@ -435,12 +435,12 @@ export default function AdminFleet() {
                           title={busy ? 'This courier is mid-delivery and cannot change duty' : 'Toggle duty status'}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border min-h-9 disabled:opacity-50 ${
                             rider.is_available
-                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                              : 'bg-slate-800 border-slate-700 text-slate-400'
+                              ? 'bg-emerald-500/15 border-emerald-300 dark:border-emerald-500/50 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           <span
-                            className={`w-2 h-2 rounded-full ${rider.is_available ? 'bg-emerald-400' : 'bg-slate-500'}`}
+                            className={`w-2 h-2 rounded-full ${rider.is_available ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-400 dark:bg-slate-500'}`}
                             aria-hidden="true"
                           />
                           <span>{togglingRiderId === rider.id ? 'Saving...' : rider.is_available ? 'Set off duty' : 'Set on duty'}</span>
@@ -459,7 +459,7 @@ export default function AdminFleet() {
       {showAddRiderModal && (
         <ModalShell
           title="Register a new courier"
-          icon={<Bike className="w-5 h-5 text-orange-400" aria-hidden="true" />}
+          icon={<Bike className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />}
           onClose={() => setShowAddRiderModal(false)}
           label="Close the register courier dialog"
         >
@@ -472,7 +472,7 @@ export default function AdminFleet() {
                 placeholder="Eric Mugisha"
                 value={newRiderForm.name}
                 onChange={(e) => setNewRiderForm((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500"
               />
             </Field>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -483,7 +483,7 @@ export default function AdminFleet() {
                   placeholder="eric@hotpot.rw"
                   value={newRiderForm.email}
                   onChange={(e) => setNewRiderForm((prev) => ({ ...prev, email: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500"
                 />
               </Field>
               <Field label="Password" id="rider-password">
@@ -493,7 +493,7 @@ export default function AdminFleet() {
                   placeholder="••••••••"
                   value={newRiderForm.password}
                   onChange={(e) => setNewRiderForm((prev) => ({ ...prev, password: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500"
                 />
               </Field>
             </div>
@@ -506,7 +506,7 @@ export default function AdminFleet() {
                   placeholder="+250 788 000 000"
                   value={newRiderForm.phone}
                   onChange={(e) => setNewRiderForm((prev) => ({ ...prev, phone: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500"
                 />
               </Field>
               <Field label="Plate number" id="rider-plate">
@@ -516,7 +516,7 @@ export default function AdminFleet() {
                   placeholder="RAC 123 B"
                   value={newRiderForm.plateNumber}
                   onChange={(e) => setNewRiderForm((prev) => ({ ...prev, plateNumber: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono uppercase text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono uppercase text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500"
                 />
               </Field>
             </div>
@@ -528,7 +528,7 @@ export default function AdminFleet() {
                   placeholder="TVS Apache 160"
                   value={newRiderForm.vehicleType}
                   onChange={(e) => setNewRiderForm((prev) => ({ ...prev, vehicleType: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500"
                 />
               </Field>
               <Field label="Shift schedule" id="rider-shift">
@@ -536,7 +536,7 @@ export default function AdminFleet() {
                   id="rider-shift"
                   value={newRiderForm.shift}
                   onChange={(e) => setNewRiderForm((prev) => ({ ...prev, shift: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 >
                   <option value="Day Shift (08:00 - 16:00)">Day Shift (08:00 - 16:00)</option>
                   <option value="Evening Shift (16:00 - 00:00)">Evening Shift (16:00 - 00:00)</option>
@@ -544,11 +544,11 @@ export default function AdminFleet() {
                 </select>
               </Field>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowAddRiderModal(false)}
-                className="px-4 py-2.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 font-bold text-xs transition-all"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 font-bold text-xs transition-all"
               >
                 Cancel
               </button>
@@ -568,14 +568,14 @@ export default function AdminFleet() {
       {reassignTarget && (
         <ModalShell
           title={`Reassign order #${reassignTarget.orderId}`}
-          icon={<AlertCircle className="w-5 h-5 text-amber-400" aria-hidden="true" />}
+          icon={<AlertCircle className="w-5 h-5 text-amber-500 dark:text-amber-400" aria-hidden="true" />}
           onClose={() => {
             setReassignTarget(null);
             setReassignSelectedRider('');
           }}
           label="Close the reassign dialog"
         >
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-slate-600 dark:text-slate-300">
             Move this delivery to another courier, or release it back to unassigned.
           </p>
           <div className="space-y-4">
@@ -584,7 +584,7 @@ export default function AdminFleet() {
                 id="reassign-rider"
                 value={reassignSelectedRider}
                 onChange={(e) => setReassignSelectedRider(e.target.value)}
-                className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
               >
                 <option value="">-- Choose a courier --</option>
                 {riders
@@ -607,7 +607,7 @@ export default function AdminFleet() {
                   setReassignTarget(null);
                   setReassignSelectedRider('');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 font-bold text-xs"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 font-bold text-xs"
               >
                 Cancel
               </button>
@@ -644,7 +644,7 @@ export default function AdminFleet() {
       {editingRider && (
         <ModalShell
           title={`Edit ${editingRider.name}`}
-          icon={<Edit className="w-5 h-5 text-orange-400" aria-hidden="true" />}
+          icon={<Edit className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />}
           onClose={() => setEditingRider(null)}
           label="Close edit courier dialog"
         >
@@ -657,7 +657,7 @@ export default function AdminFleet() {
                   required
                   value={editRiderForm.name}
                   onChange={(e) => setEditRiderForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 />
               </Field>
               <Field label="Phone number" id="edit-rider-phone">
@@ -667,7 +667,7 @@ export default function AdminFleet() {
                   required
                   value={editRiderForm.phone}
                   onChange={(e) => setEditRiderForm((prev) => ({ ...prev, phone: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 />
               </Field>
             </div>
@@ -678,7 +678,7 @@ export default function AdminFleet() {
                   type="text"
                   value={editRiderForm.plateNumber}
                   onChange={(e) => setEditRiderForm((prev) => ({ ...prev, plateNumber: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 />
               </Field>
               <Field label="Vehicle type" id="edit-rider-vehicle">
@@ -687,7 +687,7 @@ export default function AdminFleet() {
                   type="text"
                   value={editRiderForm.vehicleType}
                   onChange={(e) => setEditRiderForm((prev) => ({ ...prev, vehicleType: e.target.value }))}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 />
               </Field>
             </div>
@@ -696,18 +696,18 @@ export default function AdminFleet() {
                 id="edit-rider-shift"
                 value={editRiderForm.shift}
                 onChange={(e) => setEditRiderForm((prev) => ({ ...prev, shift: e.target.value }))}
-                className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
               >
                 <option value="Day Shift (08:00 - 16:00)">Day Shift (08:00 - 16:00)</option>
                 <option value="Evening Shift (16:00 - 00:00)">Evening Shift (16:00 - 00:00)</option>
                 <option value="Night Shift (18:00 - 02:00)">Night Shift (18:00 - 02:00)</option>
               </select>
             </Field>
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setEditingRider(null)}
-                className="px-4 py-2.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 font-bold text-xs"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 font-bold text-xs"
               >
                 Cancel
               </button>

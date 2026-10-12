@@ -278,7 +278,7 @@ export default function AddFoodItemModal({
         aria-labelledby="food-item-modal-title"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-xl rounded-3xl flex flex-col overflow-hidden bg-[#1A1D24] border border-slate-800 shadow-2xl transition-transform duration-200"
+        className="relative w-full max-w-xl rounded-3xl flex flex-col overflow-hidden bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-2xl transition-transform duration-200"
         style={{ maxHeight: '92vh' }}
       >
         {/* Ambient gold glow */}
@@ -289,16 +289,16 @@ export default function AddFoodItemModal({
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-slate-800">
+        <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-linear-to-br from-orange-500 to-amber-500 shadow-lg shadow-orange-500/25">
               <UtensilsCrossed className="w-5 h-5 text-white" aria-hidden="true" focusable="false" />
             </div>
             <div>
-              <h2 id="food-item-modal-title" className="text-base font-extrabold text-white tracking-tight">
+              <h2 id="food-item-modal-title" className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
                 {isEditing ? 'Edit Food Item' : 'Add New Food Item'}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {isEditing ? 'Update this dish on the live Kigali menu' : 'Publish to the live Kigali menu'}
               </p>
             </div>
@@ -307,7 +307,7 @@ export default function AddFoodItemModal({
             type="button"
             onClick={onClose}
             aria-label="Close food item form"
-            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-[#1F242D] border border-slate-700/50 text-slate-400 hover:text-white"
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           >
             <X className="w-4 h-4" aria-hidden="true" focusable="false" />
           </button>
@@ -317,8 +317,8 @@ export default function AddFoodItemModal({
         <form id="add-food-form" onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="food-name" className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
-                Dish Name <span className="text-red-400">*</span>
+              <label htmlFor="food-name" className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-500 dark:text-slate-400">
+                Dish Name <span className="text-red-500">*</span>
               </label>
               <input
                 id="food-name"
@@ -330,12 +330,12 @@ export default function AddFoodItemModal({
                 required
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Spicy Beef Hotpot"
-                className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
+                className="w-full rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
               />
             </div>
             <div>
-              <label htmlFor="food-price" className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
-                Price (RWF) <span className="text-red-400">*</span>
+              <label htmlFor="food-price" className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-500 dark:text-slate-400">
+                Price (RWF) <span className="text-red-500">*</span>
               </label>
               <input
                 id="food-price"
@@ -348,14 +348,14 @@ export default function AddFoodItemModal({
                 required
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="16000"
-                className="w-full rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-slate-500 bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
+                className="w-full rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
               />
             </div>
           </div>
 
           <fieldset>
-            <legend className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
-              <Tag className="w-3 h-3 text-orange-400" aria-hidden="true" focusable="false" /> Category
+            <legend className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-500 dark:text-slate-400">
+              <Tag className="w-3 h-3 text-orange-500 dark:text-orange-400" aria-hidden="true" focusable="false" /> Category
             </legend>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {CATEGORIES.map((cat) => (
@@ -366,8 +366,8 @@ export default function AddFoodItemModal({
                   aria-pressed={category === cat.value}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left ${
                     category === cat.value
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-sm ring-1 ring-amber-500/30'
-                      : 'bg-[#1F242D] text-slate-300 hover:text-white border-slate-700/50 hover:border-slate-500'
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/60 shadow-xs ring-1 ring-amber-500/30'
+                      : 'bg-slate-50 dark:bg-[#1F242D] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-slate-700/50 hover:border-slate-400 dark:hover:border-slate-500'
                   }`}
                 >
                   {cat.label}
@@ -377,7 +377,7 @@ export default function AddFoodItemModal({
           </fieldset>
 
           <div>
-            <label htmlFor="food-description" className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
+            <label htmlFor="food-description" className="block text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-500 dark:text-slate-400">
               Description
             </label>
             <textarea
@@ -387,13 +387,13 @@ export default function AddFoodItemModal({
               rows={2}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="e.g. Authentic simmering broth packed with fresh meat and aromatic herbs..."
-              className="w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 resize-none bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
+              className="w-full rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 resize-none bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
             />
           </div>
 
           <div>
-            <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-400">
-              <ImageIcon className="w-3 h-3 text-orange-400" aria-hidden="true" focusable="false" /> Food Photo
+            <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest mb-2 text-slate-500 dark:text-slate-400">
+              <ImageIcon className="w-3 h-3 text-orange-500 dark:text-orange-400" aria-hidden="true" focusable="false" /> Food Photo
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Drop Zone */}
@@ -417,15 +417,15 @@ export default function AddFoodItemModal({
                 className={`cursor-pointer rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 py-6 transition-all ${
                   dragOver
                     ? 'border-amber-500 bg-amber-500/10'
-                    : 'border-slate-700/60 hover:border-slate-500 bg-[#12141A]'
+                    : 'border-slate-200 dark:border-slate-700/60 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-[#12141A]'
                 }`}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-500/20 text-orange-400">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-500/15 text-orange-600 dark:text-orange-400">
                   <Upload className="w-4 h-4" aria-hidden="true" focusable="false" />
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-semibold text-white">Click or drag &amp; drop</p>
-                  <p className="text-[10px] mt-0.5 text-slate-500">PNG, JPG, WEBP</p>
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white">Click or drag &amp; drop</p>
+                  <p className="text-[10px] mt-0.5 text-slate-400 dark:text-slate-500">PNG, JPG, WEBP</p>
                 </div>
               </div>
               <input
@@ -442,7 +442,7 @@ export default function AddFoodItemModal({
 
               {/* Preview */}
               <div
-                className="rounded-2xl overflow-hidden flex items-center justify-center bg-[#12141A] border border-slate-800"
+                className="rounded-2xl overflow-hidden flex items-center justify-center bg-slate-50 dark:bg-[#12141A] border border-slate-200 dark:border-slate-800"
                 style={{ minHeight: '120px' }}
               >
                 {previewUrl ? (
@@ -466,7 +466,7 @@ export default function AddFoodItemModal({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-1 text-slate-600">
+                  <div className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-600">
                     <ImageIcon className="w-7 h-7 opacity-40" aria-hidden="true" focusable="false" />
                     <span className="text-[10px]">No image</span>
                   </div>
@@ -475,7 +475,7 @@ export default function AddFoodItemModal({
             </div>
 
             <div className="mt-2">
-              <label htmlFor="food-image-url" className="block text-[10px] font-bold uppercase tracking-widest mb-1.5 text-slate-400">
+              <label htmlFor="food-image-url" className="block text-[10px] font-bold uppercase tracking-widest mb-1.5 text-slate-500 dark:text-slate-400">
                 Or paste image URL
               </label>
               <input
@@ -486,7 +486,7 @@ export default function AddFoodItemModal({
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://images.unsplash.com/..."
-                className="w-full rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 bg-[#1F242D] border border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
+                className="w-full rounded-xl px-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 focus:border-amber-500/70 focus:ring-1 focus:ring-amber-500/40 transition-all outline-none"
               />
             </div>
           </div>
@@ -498,13 +498,13 @@ export default function AddFoodItemModal({
             aria-checked={isSpicy}
             onClick={() => setIsSpicy((prev) => !prev)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border select-none transition-all text-left ${
-              isSpicy ? 'bg-red-500/10 border-red-500/40' : 'bg-[#1F242D] border-slate-700/50'
+              isSpicy ? 'bg-red-500/10 border-red-500/40' : 'bg-slate-50 dark:bg-[#1F242D] border-slate-200 dark:border-slate-700/50'
             }`}
           >
             <span
               aria-hidden="true"
               className={`relative w-10 h-5 rounded-full transition-all shrink-0 ${
-                isSpicy ? 'bg-red-500' : 'bg-slate-700'
+                isSpicy ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-700'
               }`}
             >
               <span
@@ -514,11 +514,11 @@ export default function AddFoodItemModal({
               />
             </span>
             <Flame
-              className={`w-4 h-4 transition-colors ${isSpicy ? 'text-red-400' : 'text-slate-500'}`}
+              className={`w-4 h-4 transition-colors ${isSpicy ? 'text-red-500 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}
               aria-hidden="true"
               focusable="false"
             />
-            <span className={`text-sm font-semibold transition-colors ${isSpicy ? 'text-red-300' : 'text-slate-400'}`}>
+            <span className={`text-sm font-semibold transition-colors ${isSpicy ? 'text-red-600 dark:text-red-300' : 'text-slate-600 dark:text-slate-400'}`}>
               Mark as Spicy Recipe
             </span>
           </button>
@@ -528,15 +528,15 @@ export default function AddFoodItemModal({
         {errorMsg && (
           <div
             role="alert"
-            className="mx-6 px-4 py-2.5 rounded-xl text-xs font-medium bg-red-500/15 border border-red-500/30 text-red-300 flex items-start gap-2"
+            className="mx-6 px-4 py-2.5 rounded-xl text-xs font-medium bg-red-500/15 border border-red-500/30 text-red-600 dark:text-red-300 flex items-start gap-2"
           >
             <TriangleAlert className="w-4 h-4 shrink-0" aria-hidden="true" focusable="false" />
             <span>{errorMsg}</span>
           </div>
         )}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-800 bg-[#12141A]">
-          <p className="text-xs text-slate-400">
-            Fields marked <span className="text-red-400">*</span> are required
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#12141A]">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Fields marked <span className="text-red-500">*</span> are required
           </p>
           <div className="flex items-center gap-2">
             {isEditing && onDeleted && (
@@ -544,7 +544,7 @@ export default function AddFoodItemModal({
                 type="button"
                 onClick={handleDelete}
                 disabled={saving}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-red-500/40 text-red-300 hover:bg-red-500/20 flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-red-500/40 text-red-600 dark:text-red-300 hover:bg-red-500/10 dark:hover:bg-red-500/20 flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-4 h-4" aria-hidden="true" focusable="false" />
                 Delete
@@ -553,7 +553,7 @@ export default function AddFoodItemModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold border border-slate-700/50 text-slate-300 hover:text-white bg-[#1F242D] hover:bg-slate-700/50 transition-all"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 transition-all"
             >
               Cancel
             </button>

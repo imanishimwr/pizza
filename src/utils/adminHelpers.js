@@ -28,13 +28,13 @@ export const normalizeOrderStatus = (status) => {
 };
 
 export const STATUS_BADGE = {
-  ongoing:   'bg-blue-500/20 text-blue-300 border-blue-500/50 font-semibold',
-  ready:     'bg-emerald-500/25 text-emerald-300 border-emerald-500/70 font-bold shadow-sm shadow-emerald-500/20',
-  delivered: 'bg-teal-500/20 text-teal-300 border-teal-500/50 font-semibold',
-  cancelled: 'bg-red-500/20 text-red-300 border-red-500/50 font-semibold',
-  pending:   'bg-blue-500/20 text-blue-300 border-blue-500/50 font-semibold',
-  preparing: 'bg-blue-500/20 text-blue-300 border-blue-500/50 font-semibold',
-  delivery:  'bg-blue-500/20 text-blue-300 border-blue-500/50 font-semibold'
+  ongoing:   'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 dark:border-blue-500/50 font-semibold',
+  ready:     'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 dark:border-emerald-500/70 font-bold shadow-sm shadow-emerald-500/10 dark:shadow-emerald-500/20',
+  delivered: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30 dark:border-teal-500/50 font-semibold',
+  cancelled: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30 dark:border-red-500/50 font-semibold',
+  pending:   'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 dark:border-blue-500/50 font-semibold',
+  preparing: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 dark:border-blue-500/50 font-semibold',
+  delivery:  'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 dark:border-blue-500/50 font-semibold'
 };
 
 export const statusLabel = (status) => {
@@ -44,7 +44,7 @@ export const statusLabel = (status) => {
 
 export const statusBadge = (status) => {
   const norm = normalizeOrderStatus(status);
-  return STATUS_BADGE[norm] || STATUS_BADGE[status] || 'bg-slate-700/40 text-slate-300 border-slate-600/50 font-semibold';
+  return STATUS_BADGE[norm] || STATUS_BADGE[status] || 'bg-slate-100 dark:bg-slate-700/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600/50 font-semibold';
 };
 
 export const isLiveStatus = (status) => {

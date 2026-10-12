@@ -4,7 +4,7 @@ import {
   Shield, TrendingUp, ShoppingBag, Bike, DollarSign, Star,
   UtensilsCrossed, ChevronLeft, ChevronRight, Home, X,
   Layers, Volume2, VolumeX, RefreshCw, Plus, Download, Clock,
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, Sun, Moon
 } from 'lucide-react';
 import AddFoodItemModal from '../../components/admin/AddFoodItemModal';
 import { AdminProvider, useAdmin } from '../../context/AdminContext';
@@ -29,7 +29,34 @@ function AdminShell() {
     soundEnabled, setSoundEnabled,
     banner, announce,
     user, onGoHome, error, onRetry,
+    theme: ctxTheme,
+    toggleTheme: ctxToggleTheme
   } = useAdmin();
+
+  const [isDark, setIsDark] = useState(() => {
+    if (ctxTheme) return ctxTheme === 'dark';
+    return document.documentElement.classList.contains('dark');
+  });
+
+  useEffect(() => {
+    if (ctxTheme) {
+      setIsDark(ctxTheme === 'dark');
+    }
+  }, [ctxTheme]);
+
+  const handleToggleTheme = () => {
+    if (ctxToggleTheme) {
+      ctxToggleTheme();
+    } else {
+      const nextIsDark = !isDark;
+      setIsDark(nextIsDark);
+      document.documentElement.classList.toggle('dark', nextIsDark);
+      document.documentElement.classList.toggle('light-theme', !nextIsDark);
+      try {
+        localStorage.setItem('hotpot_theme', nextIsDark ? 'dark' : 'light');
+      } catch {}
+    }
+  };
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -67,7 +94,7 @@ function AdminShell() {
   };
 
   return (
-    <div className="fixed inset-0 z-30 flex bg-[#0F1117] text-white overflow-hidden font-sans select-auto">
+    <div className="fixed inset-0 z-30 flex bg-slate-50 dark:bg-[#0F1117] text-slate-900 dark:text-white overflow-hidden font-sans select-auto">
       {/* Announcements */}
       <div aria-live="polite" className="sr-only">
         {banner?.tone === 'success' ? banner.text : ''}
@@ -100,33 +127,33 @@ function AdminShell() {
 
       {/* ════════════════ SIDEBAR ════════════════ */}
       <aside
-        className={`flex flex-col bg-[#12141A] border-r border-slate-800 transition-all duration-300 fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shadow-2xl ${
+        className={`flex flex-col bg-white dark:bg-[#12141A] border-r border-slate-200 dark:border-slate-800 transition-all duration-300 fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shadow-2xl ${
           isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 md:static md:z-30 md:shadow-none ${isSidebarCollapsed ? 'md:w-16' : 'md:w-64'}`}
       >
         {/* Sidebar header */}
-        <div className="h-14 border-b border-slate-800 flex items-center justify-between px-3 shrink-0">
+        <div className="h-14 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 shrink-0">
           {!isSidebarCollapsed ? (
             <div className="flex items-center gap-2.5 min-w-0">
               <button
                 type="button"
                 onClick={() => { setIsMobileDrawerOpen(false); onGoHome?.(); }}
-                className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 flex items-center justify-center shrink-0 transition-all"
+                className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-white border border-orange-500/40 flex items-center justify-center shrink-0 transition-all"
                 title="Return to the store menu"
                 aria-label="Return to the store menu"
               >
                 <Home className="w-4 h-4" aria-hidden="true" />
               </button>
               <div className="min-w-0">
-                <span className="text-xs font-black tracking-wider text-white uppercase block truncate">HotPot Admin</span>
-                <span className="text-[10px] text-orange-400 font-bold block truncate">Operations console</span>
+                <span className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase block truncate">HotPot Admin</span>
+                <span className="text-[10px] text-orange-500 dark:text-orange-400 font-bold block truncate">Operations console</span>
               </div>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => { setIsMobileDrawerOpen(false); onGoHome?.(); }}
-              className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 hover:text-white border border-orange-500/40 flex items-center justify-center mx-auto transition-all"
+              className="w-8 h-8 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-white border border-orange-500/40 flex items-center justify-center mx-auto transition-all"
               title="Return to the store menu"
               aria-label="Return to the store menu"
             >
@@ -137,7 +164,7 @@ function AdminShell() {
           <button
             type="button"
             onClick={() => setIsMobileDrawerOpen(false)}
-            className="md:hidden p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center shrink-0 ml-auto"
+            className="md:hidden p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all min-h-11 min-w-11 flex items-center justify-center shrink-0 ml-auto"
             aria-label="Close navigation"
           >
             <X className="w-5 h-5 text-orange-400" aria-hidden="true" />
@@ -146,7 +173,7 @@ function AdminShell() {
           <button
             type="button"
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-            className={`hidden md:flex p-1.5 rounded-lg bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-400 hover:text-white transition-all ${isSidebarCollapsed ? 'mx-auto' : ''}`}
+            className={`hidden md:flex p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-white/10 border border-slate-200 dark:border-slate-700/50 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all ${isSidebarCollapsed ? 'mx-auto' : ''}`}
             title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
@@ -160,7 +187,7 @@ function AdminShell() {
         <div className="flex-1 overflow-y-auto p-2.5 space-y-3.5">
           <div className="space-y-1">
             {!isSidebarCollapsed && (
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 mb-1.5 block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2.5 mb-1.5 block">
                 Management views
               </span>
             )}
@@ -176,7 +203,7 @@ function AdminShell() {
                     `w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all min-h-11 focus:outline-none focus:ring-1 focus:ring-orange-400/40 ${
                       isActive
                         ? 'bg-linear-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5'
                     } ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`
                   }
                   title={nav.label}
@@ -184,7 +211,7 @@ function AdminShell() {
                   <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                   <span className={`flex-1 text-left truncate ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{nav.label}</span>
                   {badge !== undefined && (
-                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] bg-black/40 font-mono font-bold shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
+                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] bg-slate-200 text-slate-700 dark:bg-black/40 dark:text-slate-300 font-mono font-bold shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
                       {badge}
                     </span>
                   )}
@@ -194,40 +221,40 @@ function AdminShell() {
           </div>
 
           {/* Quick actions */}
-          <div className="space-y-2 pt-2 border-t border-slate-800">
+          <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
             {!isSidebarCollapsed && (
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2.5 block">Quick actions</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2.5 block">Quick actions</span>
             )}
             <button
               type="button"
               onClick={() => { setShowAddMeal(true); setIsMobileDrawerOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-bold transition-all min-h-11 ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-600 dark:text-orange-300 text-xs font-bold transition-all min-h-11 ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
               title="Add a new dish"
             >
-              <Plus className="w-4 h-4 text-orange-400 shrink-0" aria-hidden="true" />
+              <Plus className="w-4 h-4 text-orange-500 dark:text-orange-400 shrink-0" aria-hidden="true" />
               <span className={`${isSidebarCollapsed ? 'md:hidden' : ''}`}>Add new dish</span>
             </button>
             <button
               type="button"
               onClick={handleExportOrdersCsv}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-11 ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-white/10 border border-slate-200 dark:border-slate-700/50 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white text-xs font-bold transition-all min-h-11 ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
               title="Export all orders as CSV"
             >
-              <Download className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+              <Download className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" aria-hidden="true" />
               <span className={`${isSidebarCollapsed ? 'md:hidden' : ''}`}>Export orders CSV</span>
             </button>
           </div>
         </div>
 
         {/* Sidebar footer */}
-        <div className="p-2.5 border-t border-slate-800 bg-black/40 space-y-2 shrink-0 mt-auto">
-          <div className={`flex items-center gap-2 p-2 rounded-xl bg-[#12141A] border border-slate-800 ${isSidebarCollapsed ? 'md:justify-center md:p-1.5' : ''}`}>
+        <div className="p-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black/40 space-y-2 shrink-0 mt-auto">
+          <div className={`flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-[#12141A] border border-slate-200 dark:border-slate-800 ${isSidebarCollapsed ? 'md:justify-center md:p-1.5' : ''}`}>
             <div className="w-7 h-7 rounded-lg bg-orange-500/20 border border-orange-500/40 flex items-center justify-center shrink-0">
-              <Shield className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+              <Shield className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" aria-hidden="true" />
             </div>
             <div className={`min-w-0 flex-1 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-              <div className="text-[11px] font-bold text-white truncate">{user?.name || 'Administrator'}</div>
-              <div className="text-[10px] text-slate-400 font-mono truncate">{user?.email || ''}</div>
+              <div className="text-[11px] font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Administrator'}</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">{user?.email || ''}</div>
             </div>
           </div>
 
@@ -236,13 +263,13 @@ function AdminShell() {
             onClick={() => { const next = !soundEnabled; setSoundEnabled(next); }}
             className={`w-full flex items-center gap-2 p-2.5 rounded-xl text-xs font-bold border transition-all min-h-11 ${
               soundEnabled
-                ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300 hover:bg-emerald-950'
-                : 'bg-[#1F242D] border-slate-700/50 text-slate-400 hover:text-white'
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             } ${isSidebarCollapsed ? 'md:justify-center md:p-2' : ''}`}
             aria-pressed={soundEnabled}
           >
             {soundEnabled
-              ? <Volume2 className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" />
+              ? <Volume2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" aria-hidden="true" />
               : <VolumeX className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />}
             <span className={`flex-1 text-left text-[11px] ${isSidebarCollapsed ? 'md:hidden' : ''}`}>Audio alerts</span>
             <span className={`font-mono text-[10px] uppercase ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
@@ -250,8 +277,8 @@ function AdminShell() {
             </span>
           </button>
 
-          <div className={`flex items-center gap-2 px-2.5 py-2 rounded-xl bg-[#1A1D24] border border-slate-800 text-[11px] ${error || analyticsError ? 'text-red-300' : 'text-emerald-400'} font-mono ${isSidebarCollapsed ? 'md:justify-center md:px-1' : ''}`}>
-            <span className={`w-2 h-2 rounded-full shrink-0 ${error || analyticsError ? 'bg-red-400' : 'bg-emerald-400'}`} aria-hidden="true" />
+          <div className={`flex items-center gap-2 px-2.5 py-2 rounded-xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 text-[11px] ${error || analyticsError ? 'text-red-500 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-400'} font-mono ${isSidebarCollapsed ? 'md:justify-center md:px-1' : ''}`}>
+            <span className={`w-2 h-2 rounded-full shrink-0 ${error || analyticsError ? 'bg-red-500 dark:bg-red-400' : 'bg-emerald-500 dark:bg-emerald-400'}`} aria-hidden="true" />
             <span className={`font-bold truncate text-[10px] ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
               {error ? 'Server offline' : analyticsError ? 'Analytics unavailable' : 'Server connected'}
             </span>
@@ -260,9 +287,9 @@ function AdminShell() {
           <button
             type="button"
             onClick={() => { setIsMobileDrawerOpen(false); onGoHome?.(); }}
-            className={`w-full py-2.5 px-3 rounded-xl bg-[#1F242D] hover:bg-orange-500/10 border border-slate-700/50 text-slate-300 hover:text-orange-300 text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-11 ${isSidebarCollapsed ? 'md:p-2' : ''}`}
+            className={`w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-orange-50 dark:bg-[#1F242D] dark:hover:bg-orange-500/10 border border-slate-200 dark:border-slate-700/50 text-slate-700 hover:text-orange-600 dark:text-slate-300 dark:hover:text-orange-300 text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-11 ${isSidebarCollapsed ? 'md:p-2' : ''}`}
           >
-            <Home className="w-4 h-4 text-orange-400 shrink-0" aria-hidden="true" />
+            <Home className="w-4 h-4 text-orange-500 dark:text-orange-400 shrink-0" aria-hidden="true" />
             <span className={`${isSidebarCollapsed ? 'md:hidden' : ''}`}>Return to store menu</span>
           </button>
         </div>
@@ -270,12 +297,12 @@ function AdminShell() {
 
       {/* ════════════════ MAIN ════════════════ */}
       <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden relative">
-        <header className="h-14 border-b border-slate-800 px-3 sm:px-4 flex items-center justify-between bg-[#12141A]/95 backdrop-blur-md shrink-0 gap-2 sm:gap-3 z-20">
+        <header className="h-14 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 flex items-center justify-between bg-white/95 dark:bg-[#12141A]/95 backdrop-blur-md shrink-0 gap-2 sm:gap-3 z-20">
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
             <button
               type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden p-2 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-orange-400 min-h-11 min-w-11 flex items-center justify-center shrink-0"
+              className="md:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-white/10 border border-slate-200 dark:border-slate-700/50 text-orange-500 dark:text-orange-400 min-h-11 min-w-11 flex items-center justify-center shrink-0"
               aria-label="Open navigation"
               aria-expanded={isMobileDrawerOpen}
             >
@@ -283,9 +310,9 @@ function AdminShell() {
             </button>
             <div className="flex items-center gap-2 shrink-0">
               <div className="w-7 h-7 rounded-lg bg-orange-500/20 border border-orange-500/40 hidden sm:flex items-center justify-center shrink-0">
-                <Shield className="w-4 h-4 text-orange-400" aria-hidden="true" />
+                <Shield className="w-4 h-4 text-orange-500 dark:text-orange-400" aria-hidden="true" />
               </div>
-              <h1 className="text-xs sm:text-sm font-black text-white tracking-wide shrink-0 whitespace-nowrap">
+              <h1 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-wide shrink-0 whitespace-nowrap">
                 Restaurant operations
               </h1>
             </div>
@@ -295,15 +322,15 @@ function AdminShell() {
             <button
               type="button"
               onClick={handleExportOrdersCsv}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F242D] hover:bg-white/10 border border-slate-700/50 text-slate-300 hover:text-white text-xs font-bold transition-all min-h-11"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-white/10 border border-slate-200 dark:border-slate-700/50 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white text-xs font-bold transition-all min-h-11"
               title="Export all orders as CSV"
             >
-              <Download className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-hidden="true" />
+              <Download className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" aria-hidden="true" />
               <span className="hidden md:inline">Export CSV</span>
             </button>
 
-            <div className="px-2.5 py-1.5 rounded-xl bg-black/60 border border-slate-800 text-xs font-mono font-black text-amber-300 flex items-center gap-1.5 shrink-0 min-h-11">
-              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-hidden="true" />
+            <div className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-black/60 border border-amber-200 dark:border-slate-800 text-xs font-mono font-black text-amber-700 dark:text-amber-300 flex items-center gap-1.5 shrink-0 min-h-11">
+              <Clock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" aria-hidden="true" />
               <span>{new Date(now).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali' })}</span>
             </div>
 
@@ -311,11 +338,32 @@ function AdminShell() {
               type="button"
               onClick={() => loadSnapshot()}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#1A1D24] hover:bg-[#252932] border border-slate-800 text-[11px] text-emerald-400 font-mono transition-all min-h-11 shrink-0 disabled:opacity-60"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1A1D24] dark:hover:bg-[#252932] border border-slate-200 dark:border-slate-800 text-[11px] text-emerald-700 dark:text-emerald-400 font-mono transition-all min-h-11 shrink-0 disabled:opacity-60"
               title="Refresh analytics, riders and reviews"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
               <span className="hidden sm:inline font-bold">Refresh</span>
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={handleToggleTheme}
+              className="p-2 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-white/10 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all min-h-11 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+              title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+                  <span className="hidden sm:inline text-xs font-bold">Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-blue-500 shrink-0" aria-hidden="true" />
+                  <span className="hidden sm:inline text-xs font-bold">Dark</span>
+                </>
+              )}
             </button>
 
             <button

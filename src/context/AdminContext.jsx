@@ -32,7 +32,9 @@ export function AdminProvider({
   onGoHome,
   loading,
   error,
-  onRetry
+  onRetry,
+  theme,
+  toggleTheme
 }) {
   // Hydrate immediately from synchronous local storage cache for instant 1st paint
   const [analytics, setAnalytics] = useState(() => getSyncLocalCache('analytics'));
@@ -165,6 +167,7 @@ export function AdminProvider({
       hasLoadedInitial,
       soundEnabled, setSoundEnabled,
       announce, banner,
+      theme, toggleTheme,
     }),
     [
       analytics, analyticsError,
@@ -174,7 +177,8 @@ export function AdminProvider({
       orders, meals, onMealsChange, onDeleteMeal,
       onUpdateStatus, onCancelOrder, onDeleteOrder, onSetNotes,
       user, onGoHome, loading, error, onRetry,
-      hasLoadedInitial, soundEnabled, banner, announce
+      hasLoadedInitial, soundEnabled, banner, announce,
+      theme, toggleTheme
     ]
   );
 

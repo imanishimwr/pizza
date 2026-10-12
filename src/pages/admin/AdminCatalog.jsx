@@ -160,7 +160,7 @@ export default function AdminCatalog() {
               setMealPage(1);
             }}
             placeholder="Search dish name or description"
-            className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/70"
+            className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/70"
           />
           {mealSearch && (
             <button
@@ -169,7 +169,7 @@ export default function AdminCatalog() {
                 setMealSearch('');
                 setMealPage(1);
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-white"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white"
               aria-label="Clear dish search"
             >
               <X className="w-4 h-4" aria-hidden="true" />
@@ -187,10 +187,10 @@ export default function AdminCatalog() {
                 setMealPage(1);
               }}
               aria-pressed={mealCategoryFilter === cat.id}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 mealCategoryFilter === cat.id
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60'
-                  : 'bg-[#1F242D] text-slate-300 hover:text-white border border-slate-700/50'
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/40 dark:border-amber-500/60'
+                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white border border-slate-200 dark:border-slate-700/50'
               }`}
             >
               {cat.label}
@@ -201,7 +201,7 @@ export default function AdminCatalog() {
         <button
           type="button"
           onClick={() => setShowAddMeal(true)}
-          className="px-4 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 active:scale-95 transition-all"
+          className="px-4 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
           <span>Add dish</span>
@@ -215,7 +215,7 @@ export default function AdminCatalog() {
           ))}
         </div>
       ) : filteredMeals.length === 0 ? (
-        <div className="py-16 text-center text-slate-400 text-sm bg-[#1A1D24] rounded-2xl border border-slate-800">
+        <div className="py-16 text-center text-slate-500 dark:text-slate-400 text-sm bg-white dark:bg-[#1A1D24] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl">
           No menu items matched your search.
         </div>
       ) : (
@@ -223,9 +223,9 @@ export default function AdminCatalog() {
           {paginatedMeals.map((meal) => (
             <div
               key={meal.id}
-              className="bg-[#1A1D24] border border-slate-800 rounded-2xl overflow-hidden shadow-xl hover:border-orange-500/40 transition-all flex flex-col group"
+              className="bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl hover:border-orange-500/40 transition-all flex flex-col group"
             >
-              <div className="relative h-44 w-full overflow-hidden bg-black">
+              <div className="relative h-44 w-full overflow-hidden bg-slate-900">
                 <img
                   src={meal.image || meal.fallbackImage || FALLBACK_DISH_IMAGE}
                   alt={meal.name ? `${meal.name} dish photo` : 'Dish photo unavailable'}
@@ -252,7 +252,7 @@ export default function AdminCatalog() {
                   type="button"
                   onClick={() => handleToggleStock(meal)}
                   disabled={busyMealId === meal.id}
-                  className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all disabled:opacity-60 ${
+                  className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all disabled:opacity-60 cursor-pointer ${
                     meal.outOfStock
                       ? 'bg-red-500/20 text-red-300 border-red-500/40'
                       : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -265,28 +265,28 @@ export default function AdminCatalog() {
 
               <div className="p-4 space-y-2 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-bold text-white text-sm line-clamp-1">{meal.name}</h4>
-                  <span className="font-mono font-bold text-orange-400 text-sm whitespace-nowrap">
+                  <h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{meal.name}</h4>
+                  <span className="font-mono font-bold text-orange-600 dark:text-orange-400 text-sm whitespace-nowrap">
                     {formatRwf(meal.price)} RWF
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 line-clamp-2">{meal.description || 'No description on file.'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{meal.description || 'No description on file.'}</p>
               </div>
 
-              <div className="p-4 pt-0 border-t border-slate-800/80 flex items-center justify-between gap-2">
+              <div className="p-4 pt-0 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => openEditMeal(meal)}
-                  className="flex-1 py-2 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all"
+                  className="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 text-slate-700 hover:text-slate-900 dark:text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700/50 transition-all cursor-pointer"
                 >
-                  <Edit className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+                  <Edit className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" aria-hidden="true" />
                   <span>Edit</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteMeal(meal)}
                   disabled={busyMealId === meal.id}
-                  className="p-2 rounded-xl bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 transition-all disabled:opacity-60"
+                  className="p-2 rounded-xl bg-red-50 hover:bg-red-600 dark:bg-red-500/10 dark:hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white border border-red-200 dark:border-red-500/30 transition-all disabled:opacity-60 cursor-pointer"
                   title={`Delete ${meal.name}`}
                   aria-label={`Delete ${meal.name}`}
                 >
@@ -318,7 +318,7 @@ export default function AdminCatalog() {
                 required
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/70"
+                className="w-full bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500/70"
               />
             </Field>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -330,7 +330,7 @@ export default function AdminCatalog() {
                   required
                   value={editPrice}
                   onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2 text-sm font-mono font-bold text-white focus:outline-none focus:border-amber-500/70"
+                  className="w-full bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3 py-2 text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-amber-500/70"
                 />
               </Field>
               <Field label="Category" id="edit-category">
@@ -338,7 +338,7 @@ export default function AdminCatalog() {
                   id="edit-category"
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
-                  className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/70"
+                  className="w-full bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500/70"
                 >
                   {MEAL_CATEGORIES.filter((c) => c.id !== 'all').map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -354,21 +354,21 @@ export default function AdminCatalog() {
                 rows={3}
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/70 resize-none"
+                className="w-full bg-slate-50 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500/70 resize-none"
               />
             </Field>
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setEditingMeal(null)}
-                className="px-4 py-2 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 font-bold text-xs border border-slate-700/50 transition-all"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700/50 transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSavingEdit}
-                className="px-5 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold text-xs transition-all disabled:opacity-60"
+                className="px-5 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold text-xs transition-all disabled:opacity-60 cursor-pointer"
               >
                 {isSavingEdit ? 'Saving...' : 'Save changes'}
               </button>

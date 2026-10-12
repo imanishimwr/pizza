@@ -212,8 +212,8 @@ export default function AdminOrders() {
   };
 
   const toneClass = {
-    blue: 'bg-blue-500/20 text-blue-300 border-blue-500/40 hover:bg-blue-600 hover:text-white',
-    emerald: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-600 hover:text-white'
+    blue: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40 hover:bg-blue-600 hover:text-white',
+    emerald: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-600 hover:text-white'
   };
 
   const handleUpdateStatus = async (order, to) => {
@@ -448,7 +448,7 @@ export default function AdminOrders() {
               setOrderPage(1);
             }}
             placeholder="Search by id, customer, phone or address"
-            className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/70"
+            className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500/70"
           />
           {orderSearch && (
             <button
@@ -457,7 +457,7 @@ export default function AdminOrders() {
                 setOrderSearch('');
                 setOrderPage(1);
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-white"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
               aria-label="Clear order search"
             >
               <X className="w-4 h-4" aria-hidden="true" />
@@ -479,10 +479,10 @@ export default function AdminOrders() {
                     setOrderPage(1);
                   }}
                   aria-pressed={orderStatusFilter === st.id}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                     orderStatusFilter === st.id
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60'
-                      : 'bg-[#1F242D] text-slate-300 hover:text-white border border-slate-700/50'
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/40 dark:border-amber-500/60'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white border border-slate-200 dark:border-slate-700/50'
                   }`}
                 >
                   {st.label} ({count})
@@ -500,7 +500,7 @@ export default function AdminOrders() {
           ))}
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="py-16 text-center text-slate-400 text-sm bg-[#1A1D24] rounded-2xl border border-slate-800">
+        <div className="py-16 text-center text-slate-500 dark:text-slate-400 text-sm bg-white dark:bg-[#1A1D24] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl">
           No orders matched your search or status filter.
         </div>
       ) : (
@@ -514,26 +514,26 @@ export default function AdminOrders() {
             return (
               <article
                 key={order.id}
-                className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl space-y-4 hover:border-orange-500/40 transition-all flex flex-col justify-between"
+                className="p-5 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl space-y-4 hover:border-orange-500/40 transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-3">
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-200 dark:border-slate-800/80 pb-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-white text-sm">#{order.id}</span>
+                        <span className="font-mono font-black text-slate-900 dark:text-white text-sm">#{order.id}</span>
                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${statusBadge(order.status)}`}>
                           {statusLabel(order.status)}
                         </span>
                       </div>
-                      <div className="text-xs font-bold text-white mt-1 truncate">{order.customerName || 'Customer'}</div>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white mt-1 truncate">{order.customerName || 'Customer'}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
                         <span>{order.phone || 'No phone on file'}</span>
                         <span aria-hidden="true">&middot;</span>
                         <span className="truncate">{order.address || 'Kigali'}</span>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-base font-black font-mono text-orange-400">{formatRwf(order.totalRWF)} RWF</div>
+                      <div className="text-base font-black font-mono text-orange-600 dark:text-orange-400">{formatRwf(order.totalRWF)} RWF</div>
                       <div className="text-[10px] text-slate-500 font-mono mt-0.5">{formatClock(order.createdAt) || 'time unknown'}</div>
                     </div>
                   </div>
@@ -543,12 +543,12 @@ export default function AdminOrders() {
                       <p className="text-xs text-slate-500">No line items on this order.</p>
                     ) : (
                       order.items.map((item, idx) => (
-                        <div key={item.id ?? `${order.id}-item-${idx}`} className="text-xs text-slate-400 flex items-center justify-between gap-2">
+                        <div key={item.id ?? `${order.id}-item-${idx}`} className="text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between gap-2">
                           <span className="truncate">
-                            <strong className="text-white">{item.qty || 1}x</strong> {item.name}
-                            {item.spice && <span className="text-orange-400 text-[10px] ml-1">({item.spice})</span>}
+                            <strong className="text-slate-900 dark:text-white">{item.qty || 1}x</strong> {item.name}
+                            {item.spice && <span className="text-orange-500 text-[10px] ml-1">({item.spice})</span>}
                           </span>
-                          <span className="font-mono text-white text-[11px] shrink-0">{formatRwf(item.price)} RWF</span>
+                          <span className="font-mono text-slate-900 dark:text-white text-[11px] shrink-0">{formatRwf(item.price)} RWF</span>
                         </div>
                       ))
                     )}
@@ -557,24 +557,24 @@ export default function AdminOrders() {
 
                 {/* Motorcyclist Assignment Section */}
                 {['ongoing', 'ready'].includes(normalizeOrderStatus(order.status)) && (
-                  <div className="p-3.5 rounded-xl bg-[#12141A] border border-slate-800 space-y-2.5">
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12141A] border border-slate-200 dark:border-slate-800 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Bike className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+                      <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Bike className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" aria-hidden="true" />
                         <span>Motorcyclist Assignment</span>
                       </p>
                       {order.riderId ? (
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
                           (riderDeliveryCounts[String(order.riderId)] || 0) <= 1
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                            : 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
+                            : 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40'
                         }`}>
                           {(riderDeliveryCounts[String(order.riderId)] || 0) <= 1
                             ? 'Free (only this order)'
                             : `${riderDeliveryCounts[String(order.riderId)]} active deliveries`}
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                           No motorcyclist assigned
                         </span>
                       )}
@@ -585,27 +585,27 @@ export default function AdminOrders() {
                         {(() => {
                           const riderInfo = riders.find((r) => String(r.id) === String(order.riderId));
                           return (
-                            <div className="p-2.5 rounded-lg bg-[#181B22] border border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div className="p-2.5 rounded-lg bg-white dark:bg-[#181B22] border border-slate-200 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                               <div className="space-y-0.5">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-white">
+                                  <span className="text-xs font-bold text-slate-900 dark:text-white">
                                     {order.riderName || riderInfo?.name || 'Motorcyclist'}
                                   </span>
                                   {riderInfo?.plateNumber && (
-                                    <span className="font-mono text-[11px] font-bold text-amber-400">
+                                    <span className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400">
                                       {riderInfo.plateNumber}
                                     </span>
                                   )}
                                   {riderInfo?.vehicleType && (
-                                    <span className="text-[10px] text-slate-400">
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
                                       ({riderInfo.vehicleType})
                                     </span>
                                   )}
                                 </div>
                                 {riderInfo?.phone && (
-                                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                                    <Phone className="w-3 h-3 text-emerald-400" aria-hidden="true" />
-                                    <a href={`tel:${riderInfo.phone}`} className="text-emerald-400 hover:underline font-mono">
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                    <Phone className="w-3 h-3 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />
+                                    <a href={`tel:${riderInfo.phone}`} className="text-emerald-600 dark:text-emerald-400 hover:underline font-mono">
                                       {riderInfo.phone}
                                     </a>
                                   </div>
@@ -618,7 +618,7 @@ export default function AdminOrders() {
                                     setReassignSelectedRider('');
                                     setReassignTarget({ orderId: order.id, fromRiderId: order.riderId });
                                   }}
-                                  className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-200 text-[11px] font-bold hover:bg-amber-500/25 transition-all"
+                                  className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-200 text-[11px] font-bold hover:bg-amber-500/25 transition-all cursor-pointer"
                                 >
                                   Reassign
                                 </button>
@@ -638,7 +638,7 @@ export default function AdminOrders() {
                                     });
                                   }}
                                   disabled={isReassigning}
-                                  className="px-2.5 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 text-red-200 text-[11px] font-bold hover:bg-red-500/25 disabled:opacity-60 transition-all"
+                                  className="px-2.5 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 text-red-700 dark:text-red-200 text-[11px] font-bold hover:bg-red-500/25 disabled:opacity-60 transition-all cursor-pointer"
                                 >
                                   Release
                                 </button>
@@ -648,11 +648,11 @@ export default function AdminOrders() {
                         })()}
                       </div>
                     ) : ridersError ? (
-                      <p role="alert" className="text-[11px] text-red-300">
+                      <p role="alert" className="text-[11px] text-red-600 dark:text-red-300">
                         {ridersError}
                       </p>
                     ) : riders.length === 0 ? (
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
                         No motorcyclists registered yet. Go to Fleet to register couriers.
                       </p>
                     ) : (
@@ -664,7 +664,7 @@ export default function AdminOrders() {
                           id={`rider-${order.id}`}
                           value={draftRider}
                           onChange={(e) => setRiderDraft((prev) => ({ ...prev, [order.id]: e.target.value }))}
-                          className="flex-1 bg-[#181B22] border border-slate-700/60 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500 min-h-11"
+                          className="flex-1 bg-white dark:bg-[#181B22] border border-slate-200 dark:border-slate-700/60 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 min-h-11"
                         >
                           <option value="">-- Choose motorcyclist --</option>
                           {riders.map((rider) => {
@@ -681,7 +681,7 @@ export default function AdminOrders() {
                           type="button"
                           onClick={() => handleAssignRider(order, draftRider)}
                           disabled={isOrderBusy || !draftRider}
-                          className="px-3 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 min-h-11 disabled:opacity-60 transition-all shadow-md"
+                          className="px-3 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 min-h-11 disabled:opacity-60 transition-all shadow-md cursor-pointer"
                         >
                           {isDispatching ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
@@ -697,16 +697,16 @@ export default function AdminOrders() {
 
                 {/* If order is delivered, show rider summary */}
                 {normalizeOrderStatus(order.status) === 'delivered' && order.riderName && (
-                  <div className="p-2.5 rounded-xl bg-[#12141A] border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-slate-400">
-                      <Bike className="w-3.5 h-3.5 text-teal-400" aria-hidden="true" />
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#12141A] border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                      <Bike className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
                       Delivered by:
                     </span>
-                    <strong className="text-white font-medium">{order.riderName}</strong>
+                    <strong className="text-slate-900 dark:text-white font-medium">{order.riderName}</strong>
                   </div>
                 )}
 
-                <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2.5">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {transitions.map((t) => {
                       const isPending = pendingStatusChange === `${order.id}:${t.to}`;
@@ -716,7 +716,7 @@ export default function AdminOrders() {
                           type="button"
                           onClick={() => handleUpdateStatus(order, t.to)}
                           disabled={Boolean(pendingStatusChange)}
-                          className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all min-h-11 flex items-center justify-center gap-1.5 disabled:opacity-60 ${
+                          className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all min-h-11 flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer ${
                             toneClass[t.tone]
                           }`}
                         >
@@ -734,7 +734,7 @@ export default function AdminOrders() {
                         type="button"
                         onClick={() => handleCancelOrder(order)}
                         disabled={Boolean(pendingStatusChange) || deletingOrderId === order.id}
-                        className="px-3 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-600 hover:text-white transition-all min-h-11 disabled:opacity-60"
+                        className="px-3 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-600 hover:text-white transition-all min-h-11 disabled:opacity-60 cursor-pointer"
                       >
                         Decline order
                       </button>
@@ -743,7 +743,7 @@ export default function AdminOrders() {
                       type="button"
                       onClick={() => handleDeleteOrder(order)}
                       disabled={deletingOrderId === order.id || Boolean(pendingStatusChange)}
-                      className="px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-11 disabled:opacity-60"
+                      className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-600 dark:bg-red-950/40 dark:hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white border border-red-200 dark:border-red-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-11 disabled:opacity-60 cursor-pointer"
                       title={`Permanently delete order #${order.id}`}
                       aria-label={`Permanently delete order #${order.id}`}
                     >
@@ -765,10 +765,10 @@ export default function AdminOrders() {
                     <button
                       type="button"
                       onClick={() => handlePrintTicket(order)}
-                      className="px-3 py-2 rounded-xl bg-[#1F242D] hover:bg-white/10 text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all border border-slate-700/50 min-h-11"
+                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-white/10 text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all border border-slate-200 dark:border-slate-700/50 min-h-11 cursor-pointer"
                     >
                       <span className="sr-only">Print 80mm kitchen slip for order #{order.id}: </span>
-                      <Printer className="w-3.5 h-3.5 text-orange-400 shrink-0" aria-hidden="true" />
+                      <Printer className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400 shrink-0" aria-hidden="true" />
                       <span aria-hidden="true">Print ticket</span>
                     </button>
                     <button
@@ -777,7 +777,7 @@ export default function AdminOrders() {
                         setTrackingOrderId(order.id);
                         setSearchParams({ track: order.id });
                       }}
-                      className="px-3 py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500 text-orange-400 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all border border-orange-500/30 min-h-11"
+                      className="px-3 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500 text-orange-600 hover:text-white dark:bg-orange-500/20 dark:hover:bg-orange-500 dark:text-orange-400 text-xs font-bold flex items-center gap-1.5 transition-all border border-orange-500/30 min-h-11 cursor-pointer"
                     >
                       <span className="sr-only">Track order #{order.id} on the map: </span>
                       <Navigation className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -806,7 +806,7 @@ export default function AdminOrders() {
           }}
           label="Close the reassign dialog"
         >
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-slate-600 dark:text-slate-300">
             Move this delivery to another courier, or release it back to the ready queue.
           </p>
           <div className="space-y-4">
@@ -815,7 +815,7 @@ export default function AdminOrders() {
                 id="reassign-rider"
                 value={reassignSelectedRider}
                 onChange={(e) => setReassignSelectedRider(e.target.value)}
-                className="w-full bg-[#1F242D] border border-slate-700/50 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-white dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
               >
                 <option value="">-- Choose a courier --</option>
                 {freeRiders
@@ -834,7 +834,7 @@ export default function AdminOrders() {
                   setReassignTarget(null);
                   setReassignSelectedRider('');
                 }}
-                className="px-4 py-2.5 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-slate-300 font-bold text-xs"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 font-bold text-xs"
               >
                 Cancel
               </button>
@@ -861,25 +861,25 @@ export default function AdminOrders() {
 
       {/* Tracking modal with Map */}
       {trackingOrder && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
           <div
-            className="bg-[#1A1D24] border border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-7 w-full max-w-4xl shadow-2xl space-y-5 my-auto"
+            className="bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-7 w-full max-w-4xl shadow-2xl space-y-5 my-auto"
             role="dialog"
             aria-modal="true"
             aria-label={`Tracking order ${trackingOrder.id}`}
           >
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-4">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/40 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 flex items-center justify-center shrink-0">
                   <Navigation className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-base sm:text-lg font-black text-white">Order #{trackingOrder.id}</h3>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">Order #{trackingOrder.id}</h3>
                   <div className="flex items-center gap-2 flex-wrap mt-0.5">
                     <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${statusBadge(trackingOrder.status)}`}>
                       {statusLabel(trackingOrder.status)}
                     </span>
-                    <p className="text-xs text-slate-400 truncate">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                       {trackingOrder.customerName || 'Customer'} &middot; {trackingOrder.phone || 'no phone'} &middot;{' '}
                       {trackingOrder.address || 'Kigali'}
                     </p>
@@ -894,7 +894,7 @@ export default function AdminOrders() {
                   nextParams.delete('track');
                   setSearchParams(nextParams);
                 }}
-                className="p-2 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 border border-slate-700/50 text-slate-400 hover:text-white transition-colors"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                 aria-label="Close tracking"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
@@ -902,19 +902,19 @@ export default function AdminOrders() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              <div className="lg:col-span-2 h-72 sm:h-80 rounded-2xl overflow-hidden border border-slate-800 relative shadow-inner">
+              <div className="lg:col-span-2 h-72 sm:h-80 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner">
                 <div ref={setMapNode} className="w-full h-full" />
-                <div className="absolute top-3 left-3 z-400 bg-[#12141A]/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-800 text-xs shadow-xl space-y-1 pointer-events-none">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <Bike className="w-4 h-4 text-orange-400 shrink-0" aria-hidden="true" />
+                <div className="absolute top-3 left-3 z-400 bg-white/95 dark:bg-[#12141A]/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs shadow-xl space-y-1 pointer-events-none">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <Bike className="w-4 h-4 text-orange-600 dark:text-orange-400 shrink-0" aria-hidden="true" />
                     <span>{assignedRider?.name || trackingOrder.riderName || 'No courier assigned'}</span>
                   </div>
-                  <div className="text-[10px] font-mono text-amber-400">
+                  <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
                     {riderHasFix
                       ? `Live position &middot; fix ${formatWhen(assignedRider.lastSeenAt) || 'unknown'}`
                       : 'No live GPS fix reported yet'}
                   </div>
-                  <div className="text-[10px] font-mono text-slate-400">
+                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                     {trackingDestination
                       ? `Route ${trackingOrder.distanceKm ?? '-'} km &middot; ETA ${trackingOrder.etaMinutes ?? '-'} min`
                       : 'No coordinates on this order, showing the kitchen only'}
@@ -922,32 +922,32 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#12141A] border border-slate-800 flex flex-col justify-between space-y-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#12141A] border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-bold text-slate-400 text-xs uppercase tracking-wider">Ordered dishes</h4>
+                  <h4 className="font-bold text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">Ordered dishes</h4>
                   <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                     {(trackingOrder.items || []).map((item, idx) => (
-                      <div key={item.id ?? idx} className="text-xs text-slate-400 flex justify-between gap-2">
+                      <div key={item.id ?? idx} className="text-xs text-slate-600 dark:text-slate-400 flex justify-between gap-2">
                         <span className="truncate">
-                          <strong className="text-white">{item.qty || 1}x</strong> {item.name}
+                          <strong className="text-slate-900 dark:text-white">{item.qty || 1}x</strong> {item.name}
                         </span>
-                        <span className="font-mono text-white shrink-0">{formatRwf(item.price)} RWF</span>
+                        <span className="font-mono text-slate-900 dark:text-white shrink-0">{formatRwf(item.price)} RWF</span>
                       </div>
                     ))}
                   </div>
-                  <div className="pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
-                    <span className="text-slate-400">Total</span>
-                    <span className="font-mono font-black text-orange-400 text-sm">{formatRwf(trackingOrder.totalRWF)} RWF</span>
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex justify-between items-center text-xs">
+                    <span className="text-slate-600 dark:text-slate-400">Total</span>
+                    <span className="font-mono font-black text-orange-600 dark:text-orange-400 text-sm">{formatRwf(trackingOrder.totalRWF)} RWF</span>
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800/80">
                   {trackingOrder.phone && (
                     <a
                       href={`tel:${trackingOrder.phone}`}
-                      className="w-full py-2 rounded-xl bg-[#1F242D] hover:bg-slate-700/50 text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/50 transition-all min-h-11"
+                      className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] dark:hover:bg-slate-700/50 text-slate-800 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700/50 transition-all min-h-11"
                     >
-                      <Phone className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
+                      <Phone className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" aria-hidden="true" />
                       <span>Call customer</span>
                     </a>
                   )}

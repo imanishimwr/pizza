@@ -8,9 +8,9 @@ import { formatRwf } from '../../utils/adminHelpers';
 // ─── Row ────────────────────────────────────────────────────────────────────
 export function Row({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-2 text-slate-300">
-      <span className="text-slate-400">{label}</span>
-      <span className="font-medium text-white truncate">{value}</span>
+    <div className="flex items-center justify-between gap-2 text-slate-700 dark:text-slate-300">
+      <span className="text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="font-medium text-slate-900 dark:text-white truncate">{value}</span>
     </div>
   );
 }
@@ -19,7 +19,7 @@ export function Row({ label, value }) {
 export function Field({ label, id, children }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-bold text-slate-400 uppercase mb-1">
+      <label htmlFor={id} className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
         {label}
       </label>
       {children}
@@ -29,23 +29,23 @@ export function Field({ label, id, children }) {
 
 // ─── StatCard ────────────────────────────────────────────────────────────────
 const TONE_CLASS = {
-  emerald: 'text-emerald-400 bg-emerald-500/20',
-  blue:    'text-blue-400 bg-blue-500/20',
-  amber:   'text-amber-400 bg-amber-500/20',
-  orange:  'text-orange-400 bg-orange-500/20',
-  purple:  'text-purple-400 bg-purple-500/20',
-  slate:   'text-slate-400 bg-slate-700/30'
+  emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/20',
+  blue:    'text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20',
+  amber:   'text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/20',
+  orange:  'text-orange-600 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/20',
+  purple:  'text-purple-600 dark:text-purple-400 bg-purple-500/10 dark:bg-purple-500/20',
+  slate:   'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/30'
 };
 
 export function StatCard({ title, value, icon, tone = 'emerald', caption }) {
   return (
-    <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl">
+    <div className="p-5 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</span>
+        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</span>
         <div className={`p-2 rounded-xl ${TONE_CLASS[tone] || TONE_CLASS.emerald}`}>{icon}</div>
       </div>
-      <div className="text-2xl sm:text-3xl font-black text-white font-mono mt-3">{value}</div>
-      <p className="text-[11px] text-slate-400 mt-2">{caption}</p>
+      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono mt-3">{value}</div>
+      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">{caption}</p>
     </div>
   );
 }
@@ -58,19 +58,19 @@ export function Pager({ page, pageCount, onChange, noun = 'items' }) {
         type="button"
         onClick={() => onChange(Math.max(1, page - 1))}
         disabled={page === 1}
-        className="p-2 rounded-xl bg-[#1F242D] border border-slate-700/50 hover:bg-slate-700/50 disabled:opacity-30 text-white"
+        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 dark:hover:bg-slate-700/50 disabled:opacity-30 text-slate-700 dark:text-white cursor-pointer"
         aria-label="Previous page"
       >
         <ChevronLeft className="w-4 h-4" aria-hidden="true" />
       </button>
-      <span className="text-xs text-slate-400 font-bold px-3">
+      <span className="text-xs text-slate-600 dark:text-slate-400 font-bold px-3">
         Page {page} of {pageCount}
       </span>
       <button
         type="button"
         onClick={() => onChange(Math.min(pageCount, page + 1))}
         disabled={page === pageCount}
-        className="p-2 rounded-xl bg-[#1F242D] border border-slate-700/50 hover:bg-slate-700/50 disabled:opacity-30 text-white"
+        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1F242D] border border-slate-200 dark:border-slate-700/50 dark:hover:bg-slate-700/50 disabled:opacity-30 text-slate-700 dark:text-white cursor-pointer"
         aria-label="Next page"
       >
         <ChevronRight className="w-4 h-4" aria-hidden="true" />
@@ -82,22 +82,22 @@ export function Pager({ page, pageCount, onChange, noun = 'items' }) {
 // ─── ModalShell ─────────────────────────────────────────────────────────────
 export function ModalShell({ title, icon, onClose, label, children }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <div
-        className="bg-[#1A1D24] border border-slate-800 rounded-2xl sm:rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4"
+        className="bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4 text-slate-900 dark:text-white"
         role="dialog"
         aria-modal="true"
         aria-label={label}
       >
-        <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-          <h3 className="text-base font-black text-white flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-3">
+          <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
             {icon}
             <span className="truncate">{title}</span>
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white"
             aria-label={label}
           >
             <X className="w-5 h-5" aria-hidden="true" />
@@ -245,32 +245,32 @@ export function RevenueChart({ data, mode, hoveredKey, onHover }) {
 
 export function KpiCardSkeleton() {
   return (
-    <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl animate-pulse space-y-3">
+    <div className="p-5 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl animate-pulse space-y-3">
       <div className="flex items-center justify-between">
-        <div className="h-3 w-24 bg-slate-700/50 rounded" />
-        <div className="w-8 h-8 rounded-xl bg-slate-700/40" />
+        <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700/50 rounded" />
+        <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700/40" />
       </div>
-      <div className="h-8 w-32 bg-slate-700/60 rounded mt-2" />
-      <div className="h-3 w-40 bg-slate-800 rounded" />
+      <div className="h-8 w-32 bg-slate-200 dark:bg-slate-700/60 rounded mt-2" />
+      <div className="h-3 w-40 bg-slate-100 dark:bg-slate-800 rounded" />
     </div>
   );
 }
 
 export function ChartSkeleton() {
   return (
-    <div className="p-5 sm:p-6 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-2xl animate-pulse space-y-4">
+    <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-2xl animate-pulse space-y-4">
       <div className="flex justify-between items-center">
         <div className="space-y-1.5">
-          <div className="h-5 w-36 bg-slate-700/60 rounded" />
-          <div className="h-3 w-48 bg-slate-800 rounded" />
+          <div className="h-5 w-36 bg-slate-200 dark:bg-slate-700/60 rounded" />
+          <div className="h-3 w-48 bg-slate-100 dark:bg-slate-800 rounded" />
         </div>
-        <div className="h-8 w-24 bg-slate-800 rounded-xl" />
+        <div className="h-8 w-24 bg-slate-100 dark:bg-slate-800 rounded-xl" />
       </div>
-      <div className="h-44 sm:h-52 w-full bg-[#12141A] rounded-xl flex items-end justify-between p-6 gap-3">
+      <div className="h-44 sm:h-52 w-full bg-slate-50 dark:bg-[#12141A] rounded-xl flex items-end justify-between p-6 gap-3">
         {[40, 65, 30, 80, 50, 90, 70].map((h, i) => (
           <div
             key={i}
-            className="flex-1 bg-slate-700/40 rounded-t-lg transition-all"
+            className="flex-1 bg-slate-200 dark:bg-slate-700/40 rounded-t-lg transition-all"
             style={{ height: `${h}%` }}
           />
         ))}
@@ -281,27 +281,27 @@ export function ChartSkeleton() {
 
 export function OrderCardSkeleton() {
   return (
-    <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl space-y-4 animate-pulse">
-      <div className="flex items-start justify-between border-b border-slate-800/80 pb-3">
+    <div className="p-5 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl space-y-4 animate-pulse">
+      <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800/80 pb-3">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="h-4 w-16 bg-slate-700/60 rounded" />
-            <div className="h-4 w-20 bg-slate-700/40 rounded-full" />
+            <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700/60 rounded" />
+            <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700/40 rounded-full" />
           </div>
-          <div className="h-3 w-28 bg-slate-700/40 rounded" />
+          <div className="h-3 w-28 bg-slate-200 dark:bg-slate-700/40 rounded" />
         </div>
         <div className="space-y-1 text-right">
-          <div className="h-5 w-24 bg-slate-700/60 rounded" />
-          <div className="h-3 w-16 bg-slate-800 rounded ml-auto" />
+          <div className="h-5 w-24 bg-slate-200 dark:bg-slate-700/60 rounded" />
+          <div className="h-3 w-16 bg-slate-100 dark:bg-slate-800 rounded ml-auto" />
         </div>
       </div>
       <div className="space-y-2 py-2">
-        <div className="h-3 w-full bg-slate-800/60 rounded" />
-        <div className="h-3 w-4/5 bg-slate-800/40 rounded" />
+        <div className="h-3 w-full bg-slate-100 dark:bg-slate-800/60 rounded" />
+        <div className="h-3 w-4/5 bg-slate-100 dark:bg-slate-800/40 rounded" />
       </div>
-      <div className="pt-3 border-t border-slate-800/80 flex justify-between items-center">
-        <div className="h-9 w-28 bg-slate-800 rounded-xl" />
-        <div className="h-9 w-20 bg-slate-800 rounded-xl" />
+      <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
+        <div className="h-9 w-28 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+        <div className="h-9 w-20 bg-slate-100 dark:bg-slate-800 rounded-xl" />
       </div>
     </div>
   );
@@ -309,19 +309,19 @@ export function OrderCardSkeleton() {
 
 export function MealCardSkeleton() {
   return (
-    <div className="bg-[#1A1D24] border border-slate-800 rounded-2xl overflow-hidden shadow-xl animate-pulse flex flex-col">
-      <div className="h-44 w-full bg-slate-800/60" />
+    <div className="bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl animate-pulse flex flex-col">
+      <div className="h-44 w-full bg-slate-200 dark:bg-slate-800/60" />
       <div className="p-4 space-y-3 flex-1">
         <div className="flex justify-between items-center">
-          <div className="h-4 w-32 bg-slate-700/60 rounded" />
-          <div className="h-4 w-20 bg-slate-700/40 rounded" />
+          <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700/60 rounded" />
+          <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700/40 rounded" />
         </div>
-        <div className="h-3 w-full bg-slate-800/70 rounded" />
-        <div className="h-3 w-3/4 bg-slate-800/50 rounded" />
+        <div className="h-3 w-full bg-slate-100 dark:bg-slate-800/70 rounded" />
+        <div className="h-3 w-3/4 bg-slate-100 dark:bg-slate-800/50 rounded" />
       </div>
-      <div className="p-4 pt-0 border-t border-slate-800/80 flex gap-2">
-        <div className="h-9 flex-1 bg-slate-800 rounded-xl" />
-        <div className="h-9 w-10 bg-slate-800 rounded-xl" />
+      <div className="p-4 pt-0 border-t border-slate-200 dark:border-slate-800/80 flex gap-2">
+        <div className="h-9 flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+        <div className="h-9 w-10 bg-slate-100 dark:bg-slate-800 rounded-xl" />
       </div>
     </div>
   );
@@ -329,21 +329,21 @@ export function MealCardSkeleton() {
 
 export function RiderCardSkeleton() {
   return (
-    <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl animate-pulse space-y-4">
+    <div className="p-5 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl animate-pulse space-y-4">
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-slate-700/50" />
+        <div className="w-11 h-11 rounded-2xl bg-slate-200 dark:bg-slate-700/50" />
         <div className="space-y-1.5 flex-1">
-          <div className="h-4 w-28 bg-slate-700/60 rounded" />
-          <div className="h-3 w-20 bg-slate-800 rounded" />
+          <div className="h-4 w-28 bg-slate-200 dark:bg-slate-700/60 rounded" />
+          <div className="h-3 w-20 bg-slate-100 dark:bg-slate-800 rounded" />
         </div>
       </div>
-      <div className="space-y-2 bg-[#12141A] p-3 rounded-xl border border-slate-800/60">
-        <div className="h-3 w-32 bg-slate-800 rounded" />
-        <div className="h-3 w-40 bg-slate-800/70 rounded" />
+      <div className="space-y-2 bg-slate-50 dark:bg-[#12141A] p-3 rounded-xl border border-slate-200 dark:border-slate-800/60">
+        <div className="h-3 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
+        <div className="h-3 w-40 bg-slate-100 dark:bg-slate-800/70 rounded" />
       </div>
       <div className="flex gap-2">
-        <div className="h-8 flex-1 bg-slate-800 rounded-lg" />
-        <div className="h-8 w-24 bg-slate-800 rounded-lg" />
+        <div className="h-8 flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg" />
+        <div className="h-8 w-24 bg-slate-100 dark:bg-slate-800 rounded-lg" />
       </div>
     </div>
   );
@@ -353,11 +353,11 @@ export function TableRowsSkeleton({ cols = 5, rows = 6 }) {
   return (
     <div className="space-y-3 animate-pulse">
       {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className="p-3.5 rounded-xl bg-[#12141A] border border-slate-800/80 flex items-center justify-between gap-4">
+        <div key={r} className="p-3.5 rounded-xl bg-white dark:bg-[#12141A] border border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-4">
           {Array.from({ length: cols }).map((_, c) => (
             <div
               key={c}
-              className={`h-3.5 bg-slate-700/40 rounded ${c === 0 ? 'w-24' : c === cols - 1 ? 'w-20' : 'w-16'}`}
+              className={`h-3.5 bg-slate-200 dark:bg-slate-700/40 rounded ${c === 0 ? 'w-24' : c === cols - 1 ? 'w-20' : 'w-16'}`}
             />
           ))}
         </div>
@@ -368,16 +368,16 @@ export function TableRowsSkeleton({ cols = 5, rows = 6 }) {
 
 export function ReviewCardSkeleton() {
   return (
-    <div className="p-5 rounded-2xl bg-[#1A1D24] border border-slate-800 shadow-xl animate-pulse space-y-3">
+    <div className="p-5 rounded-2xl bg-white dark:bg-[#1A1D24] border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl animate-pulse space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-slate-700/50" />
-          <div className="h-4 w-24 bg-slate-700/60 rounded" />
+          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700/50" />
+          <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700/60 rounded" />
         </div>
-        <div className="h-4 w-20 bg-slate-700/40 rounded" />
+        <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700/40 rounded" />
       </div>
-      <div className="h-3 w-full bg-slate-800/80 rounded" />
-      <div className="h-3 w-4/5 bg-slate-800/60 rounded" />
+      <div className="h-3 w-full bg-slate-100 dark:bg-slate-800/80 rounded" />
+      <div className="h-3 w-4/5 bg-slate-100 dark:bg-slate-800/60 rounded" />
     </div>
   );
 }
