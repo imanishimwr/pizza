@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingBag, Clock, MapPin, Radio, History,
-  Settings, ChevronRight, ChevronLeft, User, Menu, X, Flame
+  Settings, ChevronRight, ChevronLeft, User, Menu, X, Flame, ArrowRight
 } from 'lucide-react';
 import { ROUTES } from '../../App';
 
